@@ -1,6 +1,8 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 
 export default function LoginForm() {
+  const navigate = useNavigate()
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -19,13 +21,15 @@ export default function LoginForm() {
   const handleSubmit = (e) => {
     e.preventDefault()
     console.log("Login attempt:", formData)
-    // Aquí puedes agregar la lógica de autenticación
+
+    // Simular autenticación exitosa y redirigir al dashboard
+    if (formData.email && formData.password) {
+      navigate("/dashboard")
+    }
   }
 
   const handleBackToHome = () => {
-    console.log("Volviendo al inicio...")
-    // Aquí puedes agregar navegación de vuelta al home
-    // navigate('/') o window.location.href = '/'
+    navigate("/")
   }
 
   return (

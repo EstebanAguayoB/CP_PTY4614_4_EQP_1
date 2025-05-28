@@ -1,3 +1,5 @@
+"use client"
+
 import { BookOpen, Users, BarChart3, ArrowRight, CheckCircle, Star } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
@@ -12,7 +14,7 @@ export default function LandingPage() {
 
   const handleGetStarted = () => {
     console.log("Comenzando...")
-    // Aquí puedes agregar navegación más adelante
+    navigate("/login")
   }
 
   return (
@@ -25,7 +27,7 @@ export default function LandingPage() {
       </div>
 
       {/* Header */}
-      <header className="relative z-10 flex items-center justify-between px-6 py-4 bg-white/80 backdrop-blur-sm border-b border-emerald-100">
+      <header className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-white/90 backdrop-blur-sm border-b border-emerald-100">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center shadow-lg">
             <BookOpen className="w-5 h-5 text-white" />
@@ -56,7 +58,7 @@ export default function LandingPage() {
             <div className="text-center lg:text-left space-y-8">
               <div className="inline-flex items-center px-4 py-2 bg-emerald-100 rounded-full text-emerald-700 text-sm font-medium mb-4">
                 <Star className="w-4 h-4 mr-2" />
-                Plataforma de gestion #1
+                Plataforma Educativa #1
               </div>
 
               <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
@@ -64,7 +66,7 @@ export default function LandingPage() {
                 <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
                   Eficiente
                 </span>{" "}
-                de Talleres Extracurriculares
+                de Talleres Educativos
               </h1>
 
               <p className="text-xl text-gray-600 leading-relaxed max-w-2xl">
@@ -75,8 +77,8 @@ export default function LandingPage() {
               {/* Lista de beneficios */}
               <div className="space-y-3">
                 {[
-                  "Automatización de procesos",
-                  "Generacion de reportes",
+                  "Automatización completa de procesos",
+                  "Reportes en tiempo real",
                   "Seguimiento personalizado de estudiantes",
                 ].map((benefit, index) => (
                   <div key={index} className="flex items-center space-x-3">
@@ -95,6 +97,9 @@ export default function LandingPage() {
                   <ArrowRight className="w-5 h-5" />
                 </button>
 
+                <button className="border-2 border-emerald-600 text-emerald-600 px-8 py-4 rounded-full hover:bg-emerald-50 transition-all duration-300 text-lg font-semibold">
+                  Ver Demo
+                </button>
               </div>
             </div>
 
@@ -138,7 +143,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
 
       {/* Features Section */}
       <section className="relative z-10 px-6 py-24 bg-white">
@@ -201,6 +205,25 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Stats Section */}
+      <section className="relative z-10 bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-16">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-8 text-center">
+            {[
+              { number: "500+", label: "Talleres Gestionados" },
+              { number: "2,000+", label: "Estudiantes Activos" },
+              { number: "50+", label: "Instituciones" },
+              { number: "99%", label: "Satisfacción" },
+            ].map((stat, index) => (
+              <div key={index} className="text-white">
+                <div className="text-4xl font-bold mb-2">{stat.number}</div>
+                <div className="text-emerald-100">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="relative z-10 bg-gray-900 text-white">
         <div className="max-w-6xl mx-auto px-6 py-12">
@@ -214,7 +237,7 @@ export default function LandingPage() {
                 <span className="text-2xl font-bold">SkillTrack</span>
               </div>
               <p className="text-gray-300 mb-4 max-w-md">
-                Plataforma líder en gestión de talleres extracurriculares. Automatizamos procesos para mejorar la experiencia
+                Plataforma líder en gestión de talleres educativos. Automatizamos procesos para mejorar la experiencia
                 de aprendizaje.
               </p>
               <div className="flex space-x-4">
@@ -241,6 +264,9 @@ export default function LandingPage() {
                   <button className="text-gray-300 hover:text-emerald-400 transition-colors">Funcionalidades</button>
                 </li>
                 <li>
+                  <button className="text-gray-300 hover:text-emerald-400 transition-colors">Precios</button>
+                </li>
+                <li>
                   <button className="text-gray-300 hover:text-emerald-400 transition-colors">Contacto</button>
                 </li>
               </ul>
@@ -252,6 +278,15 @@ export default function LandingPage() {
               <ul className="space-y-2">
                 <li>
                   <button className="text-gray-300 hover:text-emerald-400 transition-colors">Centro de Ayuda</button>
+                </li>
+                <li>
+                  <button className="text-gray-300 hover:text-emerald-400 transition-colors">Documentación</button>
+                </li>
+                <li>
+                  <button className="text-gray-300 hover:text-emerald-400 transition-colors">Términos de Uso</button>
+                </li>
+                <li>
+                  <button className="text-gray-300 hover:text-emerald-400 transition-colors">Privacidad</button>
                 </li>
               </ul>
             </div>
