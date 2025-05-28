@@ -1,5 +1,3 @@
-"use client"
-
 import { BookOpen, Users, BarChart3, ArrowRight, CheckCircle, Star } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
@@ -58,7 +56,7 @@ export default function LandingPage() {
             <div className="text-center lg:text-left space-y-8">
               <div className="inline-flex items-center px-4 py-2 bg-emerald-100 rounded-full text-emerald-700 text-sm font-medium mb-4">
                 <Star className="w-4 h-4 mr-2" />
-                Plataforma Educativa #1
+                Plataforma de gestion extracurricular #1
               </div>
 
               <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
@@ -77,9 +75,9 @@ export default function LandingPage() {
               {/* Lista de beneficios */}
               <div className="space-y-3">
                 {[
-                  "Automatización completa de procesos",
-                  "Reportes en tiempo real",
-                  "Seguimiento personalizado de estudiantes",
+                  "Automatización de procesos",
+                  "Generacion de reportes",
+                  "Seguimiento personalizado de progreso en estudiantes",
                 ].map((benefit, index) => (
                   <div key={index} className="flex items-center space-x-3">
                     <CheckCircle className="w-5 h-5 text-emerald-500" />
@@ -95,11 +93,7 @@ export default function LandingPage() {
                 >
                   <span>Comenzar Ahora</span>
                   <ArrowRight className="w-5 h-5" />
-                </button>
-
-                <button className="border-2 border-emerald-600 text-emerald-600 px-8 py-4 rounded-full hover:bg-emerald-50 transition-all duration-300 text-lg font-semibold">
-                  Ver Demo
-                </button>
+                </button> 
               </div>
             </div>
 
@@ -176,7 +170,7 @@ export default function LandingPage() {
               {
                 icon: BarChart3,
                 title: "Reportes Automáticos",
-                description: "Generación de informes para tutores y coordinadores con datos verificados.",
+                description: "Generación de reportes para tutores y coordinadores con datos verificados.",
                 color: "cyan",
               },
             ].map((feature, index) => {
@@ -201,25 +195,6 @@ export default function LandingPage() {
                 </div>
               )
             })}
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="relative z-10 bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-16">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8 text-center">
-            {[
-              { number: "500+", label: "Talleres Gestionados" },
-              { number: "2,000+", label: "Estudiantes Activos" },
-              { number: "50+", label: "Instituciones" },
-              { number: "99%", label: "Satisfacción" },
-            ].map((stat, index) => (
-              <div key={index} className="text-white">
-                <div className="text-4xl font-bold mb-2">{stat.number}</div>
-                <div className="text-emerald-100">{stat.label}</div>
-              </div>
-            ))}
           </div>
         </div>
       </section>
@@ -253,40 +228,20 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Quick Links */}
+
+
+            {/* links */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Enlaces Rápidos</h3>
+              <h3 className="text-lg font-semibold mb-4">Enlaces</h3>
               <ul className="space-y-2">
-                <li>
+                   <li>
                   <button className="text-gray-300 hover:text-emerald-400 transition-colors">Inicio</button>
                 </li>
                 <li>
                   <button className="text-gray-300 hover:text-emerald-400 transition-colors">Funcionalidades</button>
                 </li>
                 <li>
-                  <button className="text-gray-300 hover:text-emerald-400 transition-colors">Precios</button>
-                </li>
-                <li>
                   <button className="text-gray-300 hover:text-emerald-400 transition-colors">Contacto</button>
-                </li>
-              </ul>
-            </div>
-
-            {/* Support */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Soporte</h3>
-              <ul className="space-y-2">
-                <li>
-                  <button className="text-gray-300 hover:text-emerald-400 transition-colors">Centro de Ayuda</button>
-                </li>
-                <li>
-                  <button className="text-gray-300 hover:text-emerald-400 transition-colors">Documentación</button>
-                </li>
-                <li>
-                  <button className="text-gray-300 hover:text-emerald-400 transition-colors">Términos de Uso</button>
-                </li>
-                <li>
-                  <button className="text-gray-300 hover:text-emerald-400 transition-colors">Privacidad</button>
                 </li>
               </ul>
             </div>
@@ -294,7 +249,7 @@ export default function LandingPage() {
 
           {/* Bottom Bar */}
           <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-400 text-sm">© 2024 SkillTrack. Todos los derechos reservados.</p>
+            <p className="text-gray-400 text-sm">© 2025 SkillTrack. Todos los derechos reservados.</p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <button className="text-gray-400 hover:text-emerald-400 text-sm transition-colors">
                 Política de Privacidad

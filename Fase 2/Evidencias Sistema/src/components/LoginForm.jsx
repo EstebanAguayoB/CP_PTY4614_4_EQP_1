@@ -53,39 +53,10 @@ export default function LoginForm() {
       {/* Formulario */}
       <div className="max-w-md w-full bg-gradient-to-r from-emerald-600 to-teal-500 rounded-xl shadow-2xl overflow-hidden p-8 space-y-8 animate-slideInFromLeft relative z-10 backdrop-blur-sm">
         <h2 className="text-center text-4xl font-extrabold text-white animate-appear">Bienvenido</h2>
-        <p className="text-center text-gray-200 animate-appear-delayed">Inicia sesion con tus credenciales</p>
+        <p className="text-center text-gray-200 animate-appear-delayed">Inicia sesion con tus credenciales de Coordinador o Profesor.</p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Selector de tipo de usuario */}
-          <div className="space-y-2">
-            <label className="text-sm text-gray-200 font-medium">Tipo de Usuario</label>
-            <div className="flex space-x-4">
-              <label className="flex items-center text-sm text-gray-200">
-                <input
-                  type="radio"
-                  name="userType"
-                  value="Profesor"
-                  checked={formData.userType === "Profesor"}
-                  onChange={handleInputChange}
-                  className="form-radio h-4 w-4 text-emerald-400 bg-gray-800 border-gray-300"
-                />
-                <span className="ml-2">Profesor</span>
-              </label>
-              <label className="flex items-center text-sm text-gray-200">
-                <input
-                  type="radio"
-                  name="userType"
-                  value="Coordinador"
-                  checked={formData.userType === "Coordinador"}
-                  onChange={handleInputChange}
-                  className="form-radio h-4 w-4 text-emerald-400 bg-gray-800 border-gray-300"
-                />
-                <span className="ml-2">Coordinador</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="relative">
+           <div className="relative">
             <input
               placeholder="john@example.com"
               className="peer h-10 w-full border-b-2 border-gray-300 text-white bg-transparent placeholder-transparent focus:outline-none focus:border-emerald-400"
