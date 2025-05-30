@@ -160,57 +160,50 @@ export default function DashboardCoordinador() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/40 relative overflow-hidden">
       {/* Elementos decorativos de fondo */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-60 -right-60 w-96 h-96 bg-emerald-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob"></div>
-        <div className="absolute top-1/3 -left-60 w-80 h-80 bg-teal-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-        <div className="absolute bottom-0 right-1/3 w-72 h-72 bg-cyan-100 rounded-full mix-blend-multiply filter blur-3xl opacity-35 animate-blob animation-delay-4000"></div>
-
-        {/* Patrón de puntos sutil */}
-        <div className="absolute inset-0 bg-dot-pattern opacity-10"></div>
-
-        {/* Formas geométricas sutiles */}
-        <div className="absolute top-32 right-32 w-8 h-8 bg-emerald-200 rounded-lg rotate-45 opacity-20 animate-float"></div>
-        <div className="absolute bottom-40 left-32 w-6 h-6 bg-teal-200 rounded-full opacity-25 animate-float-delayed"></div>
-        <div className="absolute top-2/3 right-1/4 w-4 h-4 bg-cyan-200 rotate-12 opacity-20 animate-pulse"></div>
-      </div>
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 50%, transparent 100%)",
+        }}
+      ></div>
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-white" />
-              </div>
-              <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-            </div>
-
-            <nav className="flex space-x-8">
-              <button
-                onClick={() => setActiveTab("talleres")}
-                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeTab === "talleres" ? "bg-emerald-100 text-emerald-700" : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                Talleres
-              </button>
-              <button
-                onClick={() => setActiveTab("profesores")}
-                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeTab === "profesores" ? "bg-emerald-100 text-emerald-700" : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                Profesores
-              </button>
-              <button
-                onClick={() => setActiveTab("actividad")}
-                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeTab === "actividad" ? "bg-emerald-100 text-emerald-700" : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                Actividad Reciente
-              </button>
-            </nav>
-          </div>
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+          <h1 className="text-xl font-semibold text-gray-900">Dashboard</h1>
+          <nav>
+            <ul className="flex space-x-4">
+              <li>
+                <button
+                  onClick={() => setActiveTab("talleres")}
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    activeTab === "talleres" ? "bg-gray-200 text-gray-900" : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  Talleres
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => setActiveTab("profesores")}
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    activeTab === "profesores" ? "bg-gray-200 text-gray-900" : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  Profesores
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => setActiveTab("actividad")}
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    activeTab === "actividad" ? "bg-gray-200 text-gray-900" : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  Actividad Reciente
+                </button>
+              </li>
+            </ul>
+          </nav>
         </div>
       </header>
 
@@ -272,11 +265,11 @@ export default function DashboardCoordinador() {
 
         {/* Content based on active tab */}
         {activeTab === "talleres" && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+          <div className="bg-white rounded-xl shadow-md overflow-hidden">
             <div className="p-6 border-b border-gray-200">
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-semibold text-gray-900">Dashboard Coordinador</h2>
-                <button className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-2 rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all duration-300">
+                <button className="bg-emerald-500 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded">
                   Crear Taller
                 </button>
               </div>
@@ -308,9 +301,9 @@ export default function DashboardCoordinador() {
                       </div>
                     </div>
 
-                    <button className="w-full bg-white border border-emerald-600 text-emerald-600 py-2 rounded-lg hover:bg-emerald-50 transition-colors flex items-center justify-center space-x-2">
-                      <Eye className="w-4 h-4" />
-                      <span>Ver Detalles</span>
+                    <button className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded w-full flex items-center justify-center">
+                      <Eye className="mr-2 w-4 h-4" />
+                      Ver Detalles
                     </button>
                   </div>
                 ))}
@@ -320,11 +313,11 @@ export default function DashboardCoordinador() {
         )}
 
         {activeTab === "profesores" && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+          <div className="bg-white rounded-xl shadow-md overflow-hidden">
             <div className="p-6 border-b border-gray-200">
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-semibold text-gray-900">Dashboard Coordinador</h2>
-                <button className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-2 rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all duration-300">
+                <button className="bg-emerald-500 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded">
                   Añadir Profesor
                 </button>
               </div>
@@ -358,9 +351,9 @@ export default function DashboardCoordinador() {
                       </div>
                     </div>
 
-                    <button className="w-full bg-white border border-emerald-600 text-emerald-600 py-2 rounded-lg hover:bg-emerald-50 transition-colors flex items-center justify-center space-x-2">
-                      <Eye className="w-4 h-4" />
-                      <span>Ver Perfil</span>
+                    <button className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded w-full flex items-center justify-center">
+                      <Eye className="mr-2 w-4 h-4" />
+                      Ver Perfil
                     </button>
                   </div>
                 ))}
@@ -370,7 +363,7 @@ export default function DashboardCoordinador() {
         )}
 
         {activeTab === "actividad" && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+          <div className="bg-white rounded-xl shadow-md overflow-hidden">
             <div className="p-6 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-gray-900">Actividad Reciente</h2>
               <p className="text-gray-600">Últimas actividades en el sistema</p>
@@ -394,57 +387,6 @@ export default function DashboardCoordinador() {
           </div>
         )}
       </div>
-      <style jsx>{`
-        @keyframes blob {
-          0% {
-            transform: translate(0px, 0px) scale(1);
-          }
-          33% {
-            transform: translate(30px, -50px) scale(1.1);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-          100% {
-            transform: translate(0px, 0px) scale(1);
-          }
-        }
-        
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0px) rotate(0deg);
-          }
-          50% {
-            transform: translateY(-15px) rotate(8deg);
-          }
-        }
-        
-        .animate-blob {
-          animation: blob 8s infinite;
-        }
-        
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-        
-        .animate-float {
-          animation: float 8s ease-in-out infinite;
-        }
-        
-        .animate-float-delayed {
-          animation: float 8s ease-in-out infinite;
-          animation-delay: 4s;
-        }
-        
-        .bg-dot-pattern {
-          background-image: radial-gradient(circle, rgba(16, 185, 129, 0.08) 1px, transparent 1px);
-          background-size: 24px 24px;
-        }
-      `}</style>
     </div>
   )
 }

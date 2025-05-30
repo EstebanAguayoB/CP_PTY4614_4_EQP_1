@@ -1,5 +1,6 @@
 import { BookOpen, Users, BarChart3, ArrowRight, CheckCircle, Star } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import Navbar from "./shared/Navbar"
 
 export default function LandingPage() {
   const navigate = useNavigate()
@@ -24,26 +25,8 @@ export default function LandingPage() {
         <div className="absolute bottom-0 right-1/4 w-72 h-72 bg-cyan-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
       </div>
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-white/90 backdrop-blur-sm border-b border-emerald-100">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center shadow-lg">
-            <BookOpen className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-            SkillTrack
-          </span>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={handleLogin}
-            className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-8 py-3 rounded-full hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-          >
-            Iniciar Sesión
-          </button>
-        </div>
-      </header>
+      {/* Navbar */}
+      <Navbar variant="landing" transparent={true} />
 
       {/* Hero Section */}
       <section className="relative z-10 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 px-6 py-24">
@@ -56,7 +39,7 @@ export default function LandingPage() {
             <div className="text-center lg:text-left space-y-8">
               <div className="inline-flex items-center px-4 py-2 bg-emerald-100 rounded-full text-emerald-700 text-sm font-medium mb-4">
                 <Star className="w-4 h-4 mr-2" />
-                Plataforma de gestion extracurricular #1
+                Plataforma para gestionamiento de talleres #1
               </div>
 
               <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
@@ -64,7 +47,7 @@ export default function LandingPage() {
                 <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
                   Eficiente
                 </span>{" "}
-                de Talleres Educativos
+                de Talleres Extracurriculares
               </h1>
 
               <p className="text-xl text-gray-600 leading-relaxed max-w-2xl">
@@ -93,7 +76,7 @@ export default function LandingPage() {
                 >
                   <span>Comenzar Ahora</span>
                   <ArrowRight className="w-5 h-5" />
-                </button> 
+                </button>
               </div>
             </div>
 
@@ -149,7 +132,7 @@ export default function LandingPage() {
               </span>
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Descubre cómo SkillTrack puede transformar la gestión de tus talleres educativos
+              Descubre cómo SkillTrack puede transformar la gestión de tus talleres extracurriculares
             </p>
           </div>
 
@@ -212,7 +195,7 @@ export default function LandingPage() {
                 <span className="text-2xl font-bold">SkillTrack</span>
               </div>
               <p className="text-gray-300 mb-4 max-w-md">
-                Plataforma líder en gestión de talleres educativos. Automatizamos procesos para mejorar la experiencia
+                Plataforma líder en gestión de talleres extracurrilulares. Automatizamos procesos para mejorar la experiencia
                 de aprendizaje.
               </p>
               <div className="flex space-x-4">
@@ -228,17 +211,12 @@ export default function LandingPage() {
               </div>
             </div>
 
-
-
             {/* links */}
             <div>
               <h3 className="text-lg font-semibold mb-4">Enlaces</h3>
               <ul className="space-y-2">
-                   <li>
-                  <button className="text-gray-300 hover:text-emerald-400 transition-colors">Inicio</button>
-                </li>
                 <li>
-                  <button className="text-gray-300 hover:text-emerald-400 transition-colors">Funcionalidades</button>
+                  <button className="text-gray-300 hover:text-emerald-400 transition-colors">Inicio</button>
                 </li>
                 <li>
                   <button className="text-gray-300 hover:text-emerald-400 transition-colors">Contacto</button>

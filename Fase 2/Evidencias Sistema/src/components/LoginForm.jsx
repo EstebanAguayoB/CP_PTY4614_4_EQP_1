@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { BookOpen } from "lucide-react"
 
 export default function LoginForm() {
   const navigate = useNavigate()
@@ -34,29 +35,66 @@ export default function LoginForm() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Header fijo */}
+      <header className="absolute top-0 left-0 w-full bg-white/90 backdrop-blur-md z-20">
+        <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+          <a href="/" className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+            <BookOpen className="h-6 w-6 text-emerald-500" />
+            SkillTrack
+          </a>
+        </div>
+      </header>
       {/* Elementos decorativos de fondo */}
-      <div className="absolute inset-0 overflow-hidden">
-        {/* Círculos decorativos */}
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-emerald-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-teal-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
-        <div className="absolute top-40 left-40 w-80 h-80 bg-cyan-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
-
-        {/* Patrón de puntos */}
-        <div className="absolute inset-0 bg-dot-pattern opacity-20"></div>
-
-        {/* Formas geométricas flotantes */}
-        <div className="absolute top-20 right-20 w-16 h-16 bg-emerald-300 rounded-lg rotate-45 opacity-30 animate-float"></div>
-        <div className="absolute bottom-32 left-20 w-12 h-12 bg-teal-300 rounded-full opacity-40 animate-float-delayed"></div>
-        <div className="absolute top-1/2 right-1/4 w-8 h-8 bg-cyan-300 rotate-12 opacity-30 animate-pulse"></div>
+      <div
+        className="absolute inset-0 pointer-events-none [mask-image:radial-gradient(50%_50%_at_50%_50%,_white,_transparent_70%)]"
+        aria-hidden="true"
+      >
+        <div
+          className="absolute bg-emerald-200 opacity-50 h-[300px] w-[300px] rounded-full top-[20%] left-[20%] blur-3xl"
+          style={{ transform: "translate(-50%, -50%)" }}
+        />
+        <div
+          className="absolute bg-teal-200 opacity-50 h-[300px] w-[300px] rounded-full bottom-[20%] right-[20%] blur-3xl"
+          style={{ transform: "translate(-50%, -50%)" }}
+        />
       </div>
 
       {/* Formulario */}
       <div className="max-w-md w-full bg-gradient-to-r from-emerald-600 to-teal-500 rounded-xl shadow-2xl overflow-hidden p-8 space-y-8 animate-slideInFromLeft relative z-10 backdrop-blur-sm">
         <h2 className="text-center text-4xl font-extrabold text-white animate-appear">Bienvenido</h2>
-        <p className="text-center text-gray-200 animate-appear-delayed">Inicia sesion con tus credenciales de Coordinador o Profesor.</p>
+        <p className="text-center text-gray-200 animate-appear-delayed">Inicia sesion con tus credenciales</p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-           <div className="relative">
+          {/* Selector de tipo de usuario */}
+          <div className="space-y-2">
+            <label className="text-sm text-gray-200 font-medium">Tipo de Usuario</label>
+            <div className="flex space-x-4">
+              <label className="flex items-center text-sm text-gray-200">
+                <input
+                  type="radio"
+                  name="userType"
+                  value="Profesor"
+                  checked={formData.userType === "Profesor"}
+                  onChange={handleInputChange}
+                  className="form-radio h-4 w-4 text-emerald-400 bg-gray-800 border-gray-300"
+                />
+                <span className="ml-2">Profesor</span>
+              </label>
+              <label className="flex items-center text-sm text-gray-200">
+                <input
+                  type="radio"
+                  name="userType"
+                  value="Coordinador"
+                  checked={formData.userType === "Coordinador"}
+                  onChange={handleInputChange}
+                  className="form-radio h-4 w-4 text-emerald-400 bg-gray-800 border-gray-300"
+                />
+                <span className="ml-2">Coordinador</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="relative">
             <input
               placeholder="john@example.com"
               className="peer h-10 w-full border-b-2 border-gray-300 text-white bg-transparent placeholder-transparent focus:outline-none focus:border-emerald-400"
@@ -115,8 +153,8 @@ export default function LoginForm() {
           </div>
 
           <button
-            className="w-full py-2 px-4 bg-emerald-500 hover:bg-emerald-700 rounded-md shadow-lg text-white font-semibold transition duration-200"
             type="submit"
+            className="w-full rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-75 transition-colors duration-200"
           >
             Iniciar
           </button>
@@ -136,90 +174,6 @@ export default function LoginForm() {
           </button>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes slideInFromLeft {
-          0% {
-            transform: translateX(-100%);
-            opacity: 0;
-          }
-          100% {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-        
-        @keyframes appear {
-          0% {
-            opacity: 0;
-          }
-          100% {
-            opacity: 1;
-          }
-        }
-        
-        @keyframes blob {
-          0% {
-            transform: translate(0px, 0px) scale(1);
-          }
-          33% {
-            transform: translate(30px, -50px) scale(1.1);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-          100% {
-            transform: translate(0px, 0px) scale(1);
-          }
-        }
-        
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0px) rotate(0deg);
-          }
-          50% {
-            transform: translateY(-20px) rotate(10deg);
-          }
-        }
-        
-        .animate-slideInFromLeft {
-          animation: slideInFromLeft 1s ease-out;
-        }
-        
-        .animate-appear {
-          animation: appear 2s ease-out;
-        }
-        
-        .animate-appear-delayed {
-          animation: appear 3s ease-out;
-        }
-        
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-        
-        .animate-float {
-          animation: float 6s ease-in-out infinite;
-        }
-        
-        .animate-float-delayed {
-          animation: float 6s ease-in-out infinite;
-          animation-delay: 3s;
-        }
-        
-        .bg-dot-pattern {
-          background-image: radial-gradient(circle, rgba(16, 185, 129, 0.15) 1px, transparent 1px);
-          background-size: 20px 20px;
-        }
-      `}</style>
     </div>
   )
 }

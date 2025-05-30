@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Search, UserPlus, Edit, ToggleRight, ArrowLeft } from "lucide-react"
+import { Search, UserPlus, Edit, ToggleRight, ArrowLeft, BookOpen } from "lucide-react"
 
 export default function GestionEstudiante() {
   const [showAddForm, setShowAddForm] = useState(false)
@@ -72,31 +72,29 @@ export default function GestionEstudiante() {
   if (showAddForm) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-teal-50/30 to-emerald-50/40 relative overflow-hidden">
-        {/* Elementos decorativos de fondo */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -left-40 w-80 h-80 bg-teal-100 rounded-full mix-blend-multiply filter blur-3xl opacity-35 animate-blob"></div>
-          <div className="absolute top-1/2 -right-40 w-72 h-72 bg-emerald-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-3000"></div>
-          <div className="absolute bottom-20 left-1/3 w-64 h-64 bg-cyan-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob animation-delay-5000"></div>
-
-          {/* Patrón de líneas sutiles */}
-          <div className="absolute inset-0 bg-grid-pattern opacity-8"></div>
-
-          {/* Elementos geométricos */}
-          <div className="absolute top-24 left-24 w-6 h-6 bg-teal-200 rounded-full opacity-25 animate-float"></div>
-          <div className="absolute bottom-32 right-24 w-8 h-8 bg-emerald-200 rounded-lg rotate-45 opacity-20 animate-float-delayed"></div>
-          <div className="absolute top-1/3 left-1/4 w-4 h-4 bg-cyan-200 rotate-12 opacity-25 animate-pulse"></div>
-        </div>
-        {/* Header */}
-        <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200 relative z-10">
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: "url(/bg-decorative.svg) repeat",
+            opacity: 0.1,
+            zIndex: -1,
+          }}
+        />
+        <div className="sticky top-0 bg-white/95 backdrop-blur-sm z-10 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center py-4">
+            <div className="flex items-center justify-between h-16">
+              <div className="flex items-center space-x-4">
+                <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-white" />
+                </div>
+                <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+              </div>
               <button onClick={() => setShowAddForm(false)} className="mr-4 p-2 text-gray-400 hover:text-gray-600">
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
             </div>
           </div>
-        </header>
+        </div>
 
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100 p-8">
@@ -147,15 +145,14 @@ export default function GestionEstudiante() {
 
               <div className="flex space-x-4 pt-6">
                 <button
-                  type="button"
                   onClick={() => setShowAddForm(false)}
-                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 bg-white border border-gray-300 rounded-md font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all duration-300"
+                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-md font-medium shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 >
                   Registrar alumno
                 </button>
@@ -169,31 +166,29 @@ export default function GestionEstudiante() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-teal-50/30 to-emerald-50/40 relative overflow-hidden">
-      {/* Elementos decorativos de fondo */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -left-40 w-80 h-80 bg-teal-100 rounded-full mix-blend-multiply filter blur-3xl opacity-35 animate-blob"></div>
-        <div className="absolute top-1/2 -right-40 w-72 h-72 bg-emerald-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-3000"></div>
-        <div className="absolute bottom-20 left-1/3 w-64 h-64 bg-cyan-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob animation-delay-5000"></div>
-
-        {/* Patrón de líneas sutiles */}
-        <div className="absolute inset-0 bg-grid-pattern opacity-8"></div>
-
-        {/* Elementos geométricos */}
-        <div className="absolute top-24 left-24 w-6 h-6 bg-teal-200 rounded-full opacity-25 animate-float"></div>
-        <div className="absolute bottom-32 right-24 w-8 h-8 bg-emerald-200 rounded-lg rotate-45 opacity-20 animate-float-delayed"></div>
-        <div className="absolute top-1/3 left-1/4 w-4 h-4 bg-cyan-200 rotate-12 opacity-25 animate-pulse"></div>
-      </div>
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200 relative z-10">
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "url(/bg-decorative.svg) repeat",
+          opacity: 0.1,
+          zIndex: -1,
+        }}
+      />
+      <div className="sticky top-0 bg-white/95 backdrop-blur-sm z-10 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-4">
+              <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
+                <BookOpen className="w-5 h-5 text-white" />
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+            </div>
           </div>
         </div>
-      </header>
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100">
           <div className="p-6 border-b border-gray-200">
             <div className="flex justify-between items-center mb-4">
               <div>
@@ -202,10 +197,10 @@ export default function GestionEstudiante() {
               </div>
               <button
                 onClick={() => setShowAddForm(true)}
-                className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-2 rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 flex items-center space-x-2"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
               >
-                <UserPlus className="w-4 h-4" />
-                <span>Añadir Alumno</span>
+                <UserPlus className="w-5 h-5 mr-2 -ml-1" />
+                Añadir Alumno
               </button>
             </div>
 
@@ -298,58 +293,6 @@ export default function GestionEstudiante() {
           </div>
         </div>
       </div>
-      <style jsx>{`
-        @keyframes blob {
-          0% {
-            transform: translate(0px, 0px) scale(1);
-          }
-          33% {
-            transform: translate(25px, -40px) scale(1.05);
-          }
-          66% {
-            transform: translate(-15px, 25px) scale(0.95);
-          }
-          100% {
-            transform: translate(0px, 0px) scale(1);
-          }
-        }
-        
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0px) rotate(0deg);
-          }
-          50% {
-            transform: translateY(-12px) rotate(6deg);
-          }
-        }
-        
-        .animate-blob {
-          animation: blob 9s infinite;
-        }
-        
-        .animation-delay-3000 {
-          animation-delay: 3s;
-        }
-        
-        .animation-delay-5000 {
-          animation-delay: 5s;
-        }
-        
-        .animate-float {
-          animation: float 7s ease-in-out infinite;
-        }
-        
-        .animate-float-delayed {
-          animation: float 7s ease-in-out infinite;
-          animation-delay: 3.5s;
-        }
-        
-        .bg-grid-pattern {
-          background-image: linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px),
-                            linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px);
-          background-size: 32px 32px;
-        }
-      `}</style>
     </div>
   )
 }
