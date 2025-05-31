@@ -1,9 +1,29 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { BookOpen, Users, TrendingUp, FileText, Eye } from "lucide-react"
+import { supabase } from "../../../lib/supabase"
+import { useNavigate } from 'react-router-dom'
+
 
 export default function DashboardCoordinador() {
   const [activeTab, setActiveTab] = useState("talleres")
 
+  const [user, setUser] = useState(null)
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data } = await supabase.auth.getUser()
+      if (data.user) setUser(data.user)
+      else navigate('/')
+    }
+    getUser()
+  }, [navigate])
+
+  const logout = async () => {
+    await supabase.auth.signOut()
+    navigate('/')
+  }
+  
   const talleres = [
     {
       id: 1,
@@ -217,7 +237,10 @@ export default function DashboardCoordinador() {
           </nav>
         </div>
       </header>
-
+       <div >
+            {user && <p> {user.email}</p>}
+            <button onClick={logout}>cerrar sesion</button>
+        </div>           
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
