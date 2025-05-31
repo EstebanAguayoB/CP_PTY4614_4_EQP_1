@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
-import { supabase } from '../../lib/supabase'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from "react"
+import { supabase } from "../../lib/supabase"
+import { useNavigate } from "react-router-dom"
+import { LoadingSpinner } from "./shared/LoadingSpinner"
 
 function ProtectedRoute({ children }) {
   const [loading, setLoading] = useState(true)
@@ -9,18 +10,23 @@ function ProtectedRoute({ children }) {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data } = await supabase.auth.getUser()
-      if (data.user) {
-        setIsAuthenticated(true)
-      } else {
-        navigate('/')
+      try {
+        const { data } = await supabase.auth.getUser()
+        if (data.user) {
+          setIsAuthenticated(true)
+        } else {
+          navigate("/")
+        }
+      } catch (error) {
+        console.error("Error checking user:", error)
+        navigate("/")
       }
       setLoading(false)
     }
     checkUser()
   }, [navigate])
 
-  if (loading) return <p>Cargando...</p>
+  if (loading) return <LoadingSpinner />
 
   return isAuthenticated ? children : null
 }
