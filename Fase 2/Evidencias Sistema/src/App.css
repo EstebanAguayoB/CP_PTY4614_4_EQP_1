@@ -1,0 +1,22 @@
+.App {
+  text-align: center;
+}
+
+.logo {
+  height: 6rem;
+  padding: 1.5rem;
+  will-change: filter;
+  transition: filter 0.3s ease;
+}
+
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafb);
+}
+
+.card {
+  padding: 2rem;
+}
+
+.read-the-docs {
+  color: #888;
+}
