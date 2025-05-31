@@ -1,9 +1,13 @@
 import { useState } from "react"
 import { Search, UserPlus, Edit, ToggleRight, ArrowLeft, BookOpen } from "lucide-react"
+import { supabase } from "../../../lib/supabase"
+import { useNavigate } from "react-router-dom"
 
 export default function GestionEstudiante() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
+
+  
 
   const alumnos = [
     {
