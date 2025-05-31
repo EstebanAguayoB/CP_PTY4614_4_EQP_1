@@ -1,14 +1,14 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { BookOpen } from "lucide-react"
+import Navbar from "./shared/Navbar"
 
 export default function LoginForm() {
   const navigate = useNavigate()
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    rememberMe: false,
-    userType: "Profesor", // Nuevo campo para tipo de usuario
+    rememberMe: false
   })
 
   const handleInputChange = (e) => {
@@ -35,15 +35,10 @@ export default function LoginForm() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Header fijo */}
-      <header className="absolute top-0 left-0 w-full bg-white/90 backdrop-blur-md z-20">
-        <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          <a href="/" className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-            <BookOpen className="h-6 w-6 text-emerald-500" />
-            SkillTrack
-          </a>
-        </div>
-      </header>
+
+    {/* Navbar */}
+      <Navbar variant="landing" transparent={true} />
+
       {/* Elementos decorativos de fondo */}
       <div
         className="absolute inset-0 pointer-events-none [mask-image:radial-gradient(50%_50%_at_50%_50%,_white,_transparent_70%)]"
@@ -65,34 +60,6 @@ export default function LoginForm() {
         <p className="text-center text-gray-200 animate-appear-delayed">Inicia sesion con tus credenciales</p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Selector de tipo de usuario */}
-          <div className="space-y-2">
-            <label className="text-sm text-gray-200 font-medium">Tipo de Usuario</label>
-            <div className="flex space-x-4">
-              <label className="flex items-center text-sm text-gray-200">
-                <input
-                  type="radio"
-                  name="userType"
-                  value="Profesor"
-                  checked={formData.userType === "Profesor"}
-                  onChange={handleInputChange}
-                  className="form-radio h-4 w-4 text-emerald-400 bg-gray-800 border-gray-300"
-                />
-                <span className="ml-2">Profesor</span>
-              </label>
-              <label className="flex items-center text-sm text-gray-200">
-                <input
-                  type="radio"
-                  name="userType"
-                  value="Coordinador"
-                  checked={formData.userType === "Coordinador"}
-                  onChange={handleInputChange}
-                  className="form-radio h-4 w-4 text-emerald-400 bg-gray-800 border-gray-300"
-                />
-                <span className="ml-2">Coordinador</span>
-              </label>
-            </div>
-          </div>
 
           <div className="relative">
             <input

@@ -76,7 +76,7 @@ export default function Navbar({
                   <span className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent group-hover:from-emerald-700 group-hover:to-teal-700 transition-all duration-300">
                     SkillTrack
                   </span>
-                  <div className="text-xs text-gray-500 -mt-1 font-medium">Gestión Educativa</div>
+                  <div className="text-xs text-gray-500 -mt-1 font-medium">Gestión Extracurricular</div>
                 </div>
               </div>
             )}
