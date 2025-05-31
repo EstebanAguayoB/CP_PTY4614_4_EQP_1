@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { BookOpen } from "lucide-react"
 import Navbar from "./shared/Navbar"
+import { supabase } from "../../lib/supabase"
 
 export default function LoginForm() {
   const navigate = useNavigate()
@@ -19,14 +20,18 @@ export default function LoginForm() {
     }))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     console.log("Login attempt:", formData)
 
-    // Simular autenticación exitosa y redirigir al dashboard
-    if (formData.email && formData.password) {
-      navigate("/dashboard")
-    }
+    const { data, error } = await supabase.auth.signInWithPassword({
+    email: formData.email,
+    password: formData.password,
+    })
+      if ( error )
+        {console.log(error)}
+
+      else navigate('/dashboard')
   }
 
   const handleBackToHome = () => {
