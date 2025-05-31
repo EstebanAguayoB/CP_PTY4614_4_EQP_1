@@ -35,23 +35,19 @@ export default function Navbar({
       showLogo: true,
       showLogin: true,
       showNavigation: false,
-      bgClass: transparent
-        ? isScrolled
-          ? "bg-white/95 backdrop-blur-md shadow-lg border-b border-emerald-100/50"
-          : "bg-transparent"
-        : "bg-white/95 backdrop-blur-md shadow-sm border-b border-emerald-100/50",
+      bgClass: "bg-white shadow-sm border-b border-emerald-100/50",
     },
     dashboard: {
       showLogo: true,
       showLogin: false,
       showNavigation: true,
-      bgClass: "bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-200/50",
+      bgClass: "bg-white shadow-sm border-b border-gray-200/50",
     },
     auth: {
       showLogo: true,
       showLogin: false,
       showNavigation: false,
-      bgClass: "bg-white/90 backdrop-blur-md shadow-sm",
+      bgClass: "bg-white shadow-sm",
     },
   }
 
@@ -134,7 +130,7 @@ export default function Navbar({
 
         {/* Menú móvil */}
         {isMobileMenuOpen && (
-          <div className="lg:hidden absolute top-full left-0 right-0 bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-lg">
+          <div className="lg:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200/50 shadow-lg">
             <div className="px-4 py-6 space-y-4">
               {config.showNavigation &&
                 navigationItems.map((item, index) => (
@@ -176,3 +172,4 @@ export default function Navbar({
     </>
   )
 }
+

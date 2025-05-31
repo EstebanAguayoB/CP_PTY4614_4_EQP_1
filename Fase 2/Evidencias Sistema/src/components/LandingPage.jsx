@@ -17,7 +17,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white relative overflow-hidden">
+    <div className="min-h-screen bg-emerald-50 relative overflow-hidden">
       {/* Elementos decorativos de fondo */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-emerald-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
@@ -29,7 +29,7 @@ export default function LandingPage() {
       <Navbar variant="landing" transparent={true} />
 
       {/* Hero Section */}
-      <section className="relative z-10 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 px-6 py-24">
+      <section className="relative z-10 bg-emerald-50 px-6 py-24">
         {/* Patrón decorativo */}
         <div className="absolute inset-0 bg-dot-pattern opacity-20"></div>
 
@@ -122,7 +122,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="relative z-10 px-6 py-24 bg-white">
+      <section className="relative z-10 px-6 py-24 bg-emerald-50">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
@@ -161,7 +161,7 @@ export default function LandingPage() {
               return (
                 <div
                   key={index}
-                  className="group relative bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-emerald-200 transform hover:-translate-y-2"
+                  className="group relative bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-emerald-200 transform hover:-translate-y-2"
                 >
                   <div
                     className={`w-16 h-16 bg-gradient-to-r from-${feature.color}-100 to-${feature.color}-200 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300`}
@@ -180,6 +180,11 @@ export default function LandingPage() {
             })}
           </div>
         </div>
+
+        {/* Floating decorative elements */}
+        <div className="absolute top-1/4 left-10 w-20 h-20 bg-emerald-100 rounded-full opacity-20 animate-float"></div>
+        <div className="absolute bottom-1/4 right-10 w-16 h-16 bg-teal-100 rounded-lg rotate-45 opacity-20 animate-float-delayed"></div>
+        <div className="absolute top-1/2 left-1/4 w-12 h-12 bg-cyan-100 rounded-full opacity-15 animate-pulse"></div>
       </section>
 
       {/* Footer */}
@@ -195,8 +200,8 @@ export default function LandingPage() {
                 <span className="text-2xl font-bold">SkillTrack</span>
               </div>
               <p className="text-gray-300 mb-4 max-w-md">
-                Plataforma líder en gestión de talleres extracurrilulares. Automatizamos procesos para mejorar la experiencia
-                de aprendizaje.
+                Plataforma líder en gestión de talleres extracurrilulares. Automatizamos procesos para mejorar la
+                experiencia de aprendizaje.
               </p>
               <div className="flex space-x-4">
                 <button className="text-gray-400 hover:text-emerald-400 transition-colors">

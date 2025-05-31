@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react"
 import { BookOpen, Users, TrendingUp, FileText, Eye } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
-import { useNavigate } from 'react-router-dom'
-
+import { useNavigate } from "react-router-dom"
 
 export default function DashboardCoordinador() {
   const [activeTab, setActiveTab] = useState("talleres")
@@ -14,16 +13,16 @@ export default function DashboardCoordinador() {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser()
       if (data.user) setUser(data.user)
-      else navigate('/')
+      else navigate("/")
     }
     getUser()
   }, [navigate])
 
   const logout = async () => {
     await supabase.auth.signOut()
-    navigate('/')
+    navigate("/")
   }
-  
+
   const talleres = [
     {
       id: 1,
@@ -189,18 +188,12 @@ export default function DashboardCoordinador() {
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-      <div className="sticky top-0 bg-white/95 backdrop-blur-sm z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-white" />
-              </div>
-              <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <div className="flex items-center space-x-4">
+            <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-white" />
             </div>
+            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
           </div>
-        </div>
-      </div>
           <nav>
             <ul className="flex space-x-4">
               <li>
@@ -237,10 +230,39 @@ export default function DashboardCoordinador() {
           </nav>
         </div>
       </header>
-       <div >
-            {user && <p> {user.email}</p>}
-            <button onClick={logout}>cerrar sesion</button>
-        </div>           
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 flex justify-between items-center">
+          <div className="flex items-center">
+            <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold">
+              {user && user.email.charAt(0).toUpperCase()}
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-gray-900">Usuario</p>
+              {user && <p className="text-sm text-gray-600">{user.email}</p>}
+            </div>
+          </div>
+          <button
+            onClick={logout}
+            className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-lg flex items-center transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4 mr-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+              />
+            </svg>
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
