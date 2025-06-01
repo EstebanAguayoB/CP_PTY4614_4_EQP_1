@@ -27,63 +27,28 @@ export default function DashboardCoordinador() {
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen)
   }
+  
+  const [talleres, setTalleres] = useState([]);
+  const [error, setError] = useState(null);
 
-  const talleres = [
-    {
-      id: 1,
-      nombre: "Robótica",
-      descripcion: "Taller de robótica para todas las edades",
-      profesor: "Juan Pérez",
-      alumnos: 32,
-      niveles: ["Básico", "Intermedio", "Avanzado"],
-      estado: "activo",
-    },
-    {
-      id: 2,
-      nombre: "Deportes",
-      descripcion: "Actividades deportivas variadas",
-      profesor: "Carlos Martínez",
-      alumnos: 45,
-      niveles: ["Básico", "Avanzado"],
-      estado: "activo",
-    },
-    {
-      id: 3,
-      nombre: "Música",
-      descripcion: "Taller de instrumentos musicales y teoría musical",
-      profesor: "María González",
-      alumnos: 28,
-      niveles: ["Todos los niveles"],
-      estado: "activo",
-    },
-    {
-      id: 4,
-      nombre: "Fotografía",
-      descripcion: "Aprende los fundamentos de la fotografía",
-      profesor: "Luis Sánchez",
-      alumnos: 15,
-      niveles: ["Intermedio", "Avanzado"],
-      estado: "activo",
-    },
-    {
-      id: 5,
-      nombre: "Pintura",
-      descripcion: "Técnicas de pintura y expresión artística",
-      profesor: "Ana Rodríguez",
-      alumnos: 24,
-      niveles: ["Básico"],
-      estado: "activo",
-    },
-    {
-      id: 6,
-      nombre: "Teatro",
-      descripcion: "Expresión corporal y actuación",
-      profesor: "Elena Torres",
-      alumnos: 22,
-      niveles: ["Básico", "Intermedio"],
-      estado: "activo",
-    },
-  ]
+  useEffect(() => {
+    const talleres = async () => {
+      try {
+        let { data, error } = await supabase.from("TallerDefinido").select("*");
+        if (error) setError(error);
+        else setTalleres(data);
+      } catch (err) {
+        setError(err);
+      }
+    };
+    talleres();
+  }, []);
+
+  console.log('talleres:', talleres);
+  console.log('Error:', error);
+  //const { data, error } = await supabase  .from('TallerDefinido')  .select()
+ // console.log(data)
+  
 
   const profesores = [
     {
@@ -370,16 +335,17 @@ export default function DashboardCoordinador() {
 
                         <div className="space-y-2 mb-4">
                           <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Profesor:</span>
-                            <span className="text-gray-900">{taller.profesor}</span>
+                              <span className="text-gray-500">Profesor:</span>
+                                {/* '<span className="text-gray-900">{taller.profesor}</span> */}
                           </div>
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-500">Alumnos:</span>
-                            <span className="text-gray-900">{taller.alumnos}</span>
+                            {/* <span className="text-gray-900">{taller.alumnos}</span> */}
+                            {/*cantid*/}
                           </div>
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-500">Niveles:</span>
-                            <span className="text-gray-900">{taller.niveles.join(", ")}</span>
+                            <span className="text-gray-900">{taller.nivel_minimo}</span>
                           </div>
                         </div>
 

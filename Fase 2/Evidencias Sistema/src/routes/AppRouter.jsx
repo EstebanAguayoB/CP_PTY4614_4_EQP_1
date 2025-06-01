@@ -14,7 +14,7 @@ export default function AppRouter() {
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={ <ProtectedRoute> <CoordinatorDashboardPage /></ProtectedRoute>}/>
         <Route path="/dashboard/alumnos" element={<ProtectedRoute> <StudentManagementPage /> </ProtectedRoute> } />
-        <Route path="/dashboard/talleres" element={<TalleresManagement />} />
+        <Route path="/dashboard/talleres" element={<ProtectedRoute><TalleresManagement /></ProtectedRoute>} />
       </Routes>
     </Router>
   )
