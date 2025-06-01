@@ -1,9 +1,8 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { BookOpen } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { toast } from "react-toastify"
-
 
 export default function LoginForm() {
   const navigate = useNavigate()
@@ -22,29 +21,50 @@ export default function LoginForm() {
   }
 
   const handleSubmit = async (e) => {
-  e.preventDefault()
+    e.preventDefault()
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: formData.email,
-    password: formData.password,
-  })
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: formData.email,
+      password: formData.password,
+    })
 
-  if (error) {
-    toast.error("Credenciales incorrectas. Intenta de nuevo.", {
-      position: "top-right",
-    })
-  } else {
-    toast.success("Inicio de sesión exitoso. Redirigiendo...", {
-      position: "top-right",
-    })
-    setTimeout(() => navigate("/dashboard"), 1500) 
+    if (error) {
+      toast.error("Credenciales incorrectas. Intenta de nuevo.", {
+        position: "top-right",
+      })
+    } else {
+      toast.success("Inicio de sesión exitoso. Redirigiendo...", {
+        position: "top-right",
+      })
+      setTimeout(() => navigate("/dashboard"), 1500)
+    }
   }
-}
-
 
   const handleBackToHome = () => {
     navigate("/")
   }
+
+  useEffect(() => {
+    const style = document.createElement("style")
+    style.textContent = `
+      input:-webkit-autofill,
+      input:-webkit-autofill:hover,
+      input:-webkit-autofill:focus,
+      input:-webkit-autofill:active {
+        -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+        -webkit-text-fill-color: white !important;
+        background-color: transparent !important;
+        background-image: none !important;
+        transition: background-color 5000s ease-in-out 0s !important;
+        -webkit-transition: background-color 5000s ease-in-out 0s !important;
+      }
+    `
+    document.head.appendChild(style)
+
+    return () => {
+      document.head.removeChild(style)
+    }
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4 relative overflow-hidden">
@@ -88,10 +108,13 @@ export default function LoginForm() {
               className="peer h-10 w-full border-b-2 border-gray-300 text-white bg-transparent placeholder-transparent focus:outline-none focus:border-emerald-400 focus:bg-transparent active:bg-transparent autofill:bg-transparent autofill:text-white"
               style={{
                 backgroundColor: "transparent !important",
-                boxShadow: "none",
-                WebkitBoxShadow: "0 0 0 1000px transparent inset",
-                WebkitTextFillColor: "white",
+                boxShadow: "none !important",
+                WebkitBoxShadow: "0 0 0 1000px transparent inset !important",
+                WebkitTextFillColor: "white !important",
+                transition: "background-color 5000s ease-in-out 0s !important",
+                WebkitTransition: "background-color 5000s ease-in-out 0s !important",
               }}
+              autoComplete="email"
               required
               id="email"
               name="email"
@@ -113,10 +136,13 @@ export default function LoginForm() {
               className="peer h-10 w-full border-b-2 border-gray-300 text-white bg-transparent placeholder-transparent focus:outline-none focus:border-emerald-400 focus:bg-transparent active:bg-transparent autofill:bg-transparent autofill:text-white"
               style={{
                 backgroundColor: "transparent !important",
-                boxShadow: "none",
-                WebkitBoxShadow: "0 0 0 1000px transparent inset",
-                WebkitTextFillColor: "white",
+                boxShadow: "none !important",
+                WebkitBoxShadow: "0 0 0 1000px transparent inset !important",
+                WebkitTextFillColor: "white !important",
+                transition: "background-color 5000s ease-in-out 0s !important",
+                WebkitTransition: "background-color 5000s ease-in-out 0s !important",
               }}
+              autoComplete="current-password"
               required
               id="password"
               name="password"
@@ -146,7 +172,12 @@ export default function LoginForm() {
             <button
               type="button"
               className="text-sm text-emerald-200 hover:underline"
-              onClick={() => console.log("Forgot password clicked")}
+              onClick={() =>
+                window.open(
+                  "https://mail.google.com/mail/?view=cm&to=skilltrack@educacion.cl&su=Restablecer%20contraseña",
+                  "_blank",
+                )
+              }
             >
               ¿Olvidaste tu contraseña?
             </button>
@@ -162,7 +193,15 @@ export default function LoginForm() {
 
         <div className="text-center text-gray-300">
           {"No tienes una cuenta? "}
-          <button className="text-emerald-300 hover:underline" onClick={() => console.log("Sign up clicked")}>
+          <button
+            className="text-emerald-300 hover:underline"
+            onClick={() =>
+              window.open(
+                "https://mail.google.com/mail/?view=cm&to=skilltrack@educacion.cl&su=Solicitud%20para%20crear%20cuenta%20en%20sistema",
+                "_blank",
+              )
+            }
+          >
             Contacta aqui
           </button>
         </div>
@@ -177,4 +216,3 @@ export default function LoginForm() {
     </div>
   )
 }
-
