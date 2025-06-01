@@ -316,9 +316,6 @@ export default function DashboardCoordinador() {
                 <div className="p-6 border-b border-gray-200">
                   <div className="flex justify-between items-center">
                     <h2 className="text-xl font-semibold text-gray-900">Talleres Activos</h2>
-                    <button className="bg-emerald-500 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded transition-colors">
-                      Crear Taller
-                    </button>
                   </div>
                 </div>
 
@@ -348,11 +345,6 @@ export default function DashboardCoordinador() {
                             <span className="text-gray-900">{taller.nivel_minimo}</span>
                           </div>
                         </div>
-
-                        <button className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded w-full flex items-center justify-center transition-colors">
-                          <Eye className="mr-2 w-4 h-4" />
-                          Ver Detalles
-                        </button>
                       </div>
                     ))}
                   </div>

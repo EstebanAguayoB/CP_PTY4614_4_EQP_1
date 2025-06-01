@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Search, Plus, Users, BookOpen, Award, Eye, ToggleRight, ArrowLeft, Menu } from "lucide-react"
+import {Search,Plus,Users,BookOpen,Award,Eye,ToggleRight,ArrowLeft,Menu,Edit,Calendar,Clock,} from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { useNavigate } from "react-router-dom"
 import DashboardSidebar from "../shared/DashboardSidebar"
@@ -7,9 +7,12 @@ import DashboardSidebar from "../shared/DashboardSidebar"
 export function GestionTalleres() {
   const [searchTerm, setSearchTerm] = useState("")
   const [showAddForm, setShowAddForm] = useState(false)
+  const [showEditForm, setShowEditForm] = useState(false)
+  const [showDetailView, setShowDetailView] = useState(false)
   const [activeTab, setActiveTab] = useState("activos")
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [user, setUser] = useState(null)
+  const [selectedTaller, setSelectedTaller] = useState(null)
   const [newTaller, setNewTaller] = useState({
     nombre: "",
     descripcion: "",
@@ -46,6 +49,15 @@ export function GestionTalleres() {
       alumnos: 32,
       niveles: ["Básico", "Intermedio", "Avanzado"],
       estado: "activo",
+      fechaCreacion: "15/01/2025",
+      horario: "Lunes y Miércoles, 15:00 - 17:00",
+      ubicacion: "Sala 101, Edificio Principal",
+      materiales: ["Kit de Arduino", "Sensores", "Cables", "Motores"],
+      objetivos: [
+        "Aprender conceptos básicos de electrónica",
+        "Desarrollar habilidades de programación",
+        "Construir proyectos robóticos funcionales",
+      ],
     },
     {
       id: 2,
@@ -55,6 +67,15 @@ export function GestionTalleres() {
       alumnos: 28,
       niveles: ["Básico", "Intermedio"],
       estado: "activo",
+      fechaCreacion: "20/01/2025",
+      horario: "Martes y Jueves, 16:00 - 18:00",
+      ubicacion: "Sala de Arte, Edificio B",
+      materiales: ["Lienzos", "Pinceles", "Pinturas acrílicas", "Caballetes"],
+      objetivos: [
+        "Dominar técnicas básicas de pintura",
+        "Desarrollar estilo artístico propio",
+        "Crear un portafolio de obras",
+      ],
     },
     {
       id: 3,
@@ -64,6 +85,11 @@ export function GestionTalleres() {
       alumnos: 32,
       niveles: ["Básico", "Intermedio", "Avanzado"],
       estado: "activo",
+      fechaCreacion: "10/02/2025",
+      horario: "Lunes, Miércoles y Viernes, 14:00 - 15:30",
+      ubicacion: "Auditorio, Edificio Principal",
+      materiales: ["Instrumentos varios", "Partituras", "Atriles"],
+      objetivos: ["Aprender lectura musical", "Dominar un instrumento", "Participar en ensambles musicales"],
     },
     {
       id: 4,
@@ -73,6 +99,11 @@ export function GestionTalleres() {
       alumnos: 32,
       niveles: ["Básico", "Intermedio"],
       estado: "activo",
+      fechaCreacion: "05/02/2025",
+      horario: "Martes y Jueves, 15:00 - 17:00",
+      ubicacion: "Gimnasio Principal",
+      materiales: ["Balones", "Equipamiento deportivo", "Conos", "Colchonetas"],
+      objetivos: ["Desarrollar habilidades físicas", "Fomentar trabajo en equipo", "Mejorar condición física"],
     },
     {
       id: 5,
@@ -82,6 +113,11 @@ export function GestionTalleres() {
       alumnos: 32,
       niveles: ["Básico", "Avanzado"],
       estado: "activo",
+      fechaCreacion: "12/03/2025",
+      horario: "Viernes, 16:00 - 19:00",
+      ubicacion: "Laboratorio de Fotografía, Edificio C",
+      materiales: ["Cámaras", "Trípodes", "Equipo de iluminación", "Software de edición"],
+      objetivos: ["Dominar técnicas fotográficas", "Aprender composición visual", "Crear un portafolio fotográfico"],
     },
     {
       id: 6,
@@ -91,6 +127,11 @@ export function GestionTalleres() {
       alumnos: 22,
       niveles: ["Básico", "Intermedio"],
       estado: "activo",
+      fechaCreacion: "20/02/2025",
+      horario: "Lunes y Miércoles, 17:00 - 19:00",
+      ubicacion: "Auditorio Pequeño, Edificio B",
+      materiales: ["Guiones", "Vestuario", "Utilería básica"],
+      objetivos: ["Desarrollar expresión corporal", "Mejorar técnicas de actuación", "Montar una obra de teatro"],
     },
     {
       id: 7,
@@ -100,6 +141,15 @@ export function GestionTalleres() {
       alumnos: 1,
       niveles: ["Básico"],
       estado: "inactivo",
+      fechaCreacion: "05/01/2025",
+      horario: "Martes y Jueves, 18:00 - 20:00",
+      ubicacion: "Laboratorio de Computación",
+      materiales: ["Computadoras", "Software de programación", "Material didáctico"],
+      objetivos: [
+        "Aprender fundamentos de programación",
+        "Desarrollar aplicaciones básicas",
+        "Comprender lógica computacional",
+      ],
     },
   ]
 
@@ -142,9 +192,25 @@ export function GestionTalleres() {
     }
   }
 
+  const handleSelectedNivelChange = (nivel) => {
+    if (selectedTaller.niveles.includes(nivel)) {
+      setSelectedTaller({
+        ...selectedTaller,
+        niveles: selectedTaller.niveles.filter((n) => n !== nivel),
+      })
+    } else {
+      setSelectedTaller({
+        ...selectedTaller,
+        niveles: [...selectedTaller.niveles, nivel],
+      })
+    }
+  }
+
   const handleCreateTaller = (e) => {
     e.preventDefault()
     console.log("Crear taller:", newTaller)
+    // Aquí iría la lógica para crear el taller en la base de datos
+    alert(`Taller "${newTaller.nombre}" creado exitosamente`)
     setShowAddForm(false)
     setNewTaller({
       nombre: "",
@@ -154,6 +220,32 @@ export function GestionTalleres() {
     })
   }
 
+  const handleEditTaller = (e) => {
+    e.preventDefault()
+    console.log("Editar taller:", selectedTaller)
+    // Aquí iría la lógica para actualizar el taller en la base de datos
+    alert(`Taller "${selectedTaller.nombre}" actualizado exitosamente`)
+    setShowEditForm(false)
+    setSelectedTaller(null)
+  }
+
+  const handleViewDetails = (taller) => {
+    setSelectedTaller(taller)
+    setShowDetailView(true)
+  }
+
+  const handleEditClick = (taller) => {
+    setSelectedTaller({ ...taller })
+    setShowEditForm(true)
+  }
+
+  const handleBackToList = () => {
+    setShowDetailView(false)
+    setShowEditForm(false)
+    setSelectedTaller(null)
+  }
+
+  // Vista de formulario de creación
   if (showAddForm) {
     return (
       <div className="flex h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/40">
@@ -193,7 +285,7 @@ export function GestionTalleres() {
             </div>
           </header>
 
-          {/* User info bar - Añadido también para la vista de formulario */}
+          {/* User info bar */}
           <div className="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-3">
             <div className="flex justify-between items-center">
               <div className="flex items-center">
@@ -324,6 +416,406 @@ export function GestionTalleres() {
     )
   }
 
+  // Vista de formulario de edición
+  if (showEditForm && selectedTaller) {
+    return (
+      <div className="flex h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/40">
+        {/* Sidebar */}
+        <DashboardSidebar sidebarOpen={sidebarOpen} toggleSidebar={toggleSidebar} userRole="Coordinador" />
+
+        {/* Overlay para móvil */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" onClick={toggleSidebar}></div>
+        )}
+
+        {/* Contenido principal */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Header */}
+          <header className="bg-white shadow-sm border-b border-gray-200">
+            <div className="px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={toggleSidebar}
+                  className="md:hidden p-2 rounded-md hover:bg-gray-100 transition-colors"
+                >
+                  <Menu className="h-6 w-6 text-gray-600" />
+                </button>
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
+                    <Edit className="w-5 h-5 text-white" />
+                  </div>
+                  <h1 className="text-2xl font-bold text-gray-900">Editar Taller</h1>
+                </div>
+              </div>
+              <button onClick={handleBackToList} className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            </div>
+          </header>
+
+          {/* User info bar */}
+          <div className="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-3">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold">
+                  {user && user.email.charAt(0).toUpperCase()}
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-900">Usuario</p>
+                  {user && <p className="text-sm text-gray-600">{user.email}</p>}
+                </div>
+              </div>
+              <button
+                onClick={logout}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-lg flex items-center transition-colors"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-1"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                  />
+                </svg>
+                Cerrar sesión
+              </button>
+            </div>
+          </div>
+
+          {/* Contenido principal con scroll */}
+          <main className="flex-1 overflow-y-auto">
+            <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100 p-8">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Editar Taller: {selectedTaller.nombre}</h2>
+                <p className="text-gray-600 mb-8">Modifica la información del taller</p>
+
+                <form className="space-y-6" onSubmit={handleEditTaller}>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
+                    <input
+                      type="text"
+                      placeholder="Nombre del taller"
+                      value={selectedTaller.nombre}
+                      onChange={(e) => setSelectedTaller({ ...selectedTaller, nombre: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
+                    <textarea
+                      placeholder="Descripción del taller"
+                      value={selectedTaller.descripcion}
+                      onChange={(e) => setSelectedTaller({ ...selectedTaller, descripcion: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      rows="3"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Profesor</label>
+                    <select
+                      value={selectedTaller.profesor}
+                      onChange={(e) => setSelectedTaller({ ...selectedTaller, profesor: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    >
+                      <option value="">Seleccione un profesor</option>
+                      {profesores.map((profesor) => (
+                        <option key={profesor} value={profesor}>
+                          {profesor}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Niveles</label>
+                    <div className="space-y-2">
+                      {["Básico", "Intermedio", "Avanzado"].map((nivel) => (
+                        <div key={nivel} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id={`edit-${nivel}`}
+                            checked={selectedTaller.niveles.includes(nivel)}
+                            onChange={() => handleSelectedNivelChange(nivel)}
+                            className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                          />
+                          <label htmlFor={`edit-${nivel}`} className="ml-2 block text-sm text-gray-700">
+                            {nivel}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Horario</label>
+                    <input
+                      type="text"
+                      placeholder="Horario del taller"
+                      value={selectedTaller.horario}
+                      onChange={(e) => setSelectedTaller({ ...selectedTaller, horario: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Ubicación</label>
+                    <input
+                      type="text"
+                      placeholder="Ubicación del taller"
+                      value={selectedTaller.ubicacion}
+                      onChange={(e) => setSelectedTaller({ ...selectedTaller, ubicacion: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div className="flex space-x-4 pt-6">
+                    <button
+                      type="button"
+                      onClick={handleBackToList}
+                      className="flex-1 px-4 py-2 bg-white border border-gray-300 rounded-md font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={
+                        !selectedTaller.nombre ||
+                        !selectedTaller.descripcion ||
+                        !selectedTaller.profesor ||
+                        selectedTaller.niveles.length === 0
+                      }
+                      className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-md font-medium shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Guardar Cambios
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    )
+  }
+
+  // Vista de detalles
+  if (showDetailView && selectedTaller) {
+    return (
+      <div className="flex h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/40">
+        {/* Sidebar */}
+        <DashboardSidebar sidebarOpen={sidebarOpen} toggleSidebar={toggleSidebar} userRole="Coordinador" />
+
+        {/* Overlay para móvil */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" onClick={toggleSidebar}></div>
+        )}
+
+        {/* Contenido principal */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Header */}
+          <header className="bg-white shadow-sm border-b border-gray-200">
+            <div className="px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={toggleSidebar}
+                  className="md:hidden p-2 rounded-md hover:bg-gray-100 transition-colors"
+                >
+                  <Menu className="h-6 w-6 text-gray-600" />
+                </button>
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
+                    <BookOpen className="w-5 h-5 text-white" />
+                  </div>
+                  <h1 className="text-2xl font-bold text-gray-900">Detalles del Taller</h1>
+                </div>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => handleEditClick(selectedTaller)}
+                  className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  <Edit className="w-5 h-5" />
+                </button>
+                <button onClick={handleBackToList} className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </header>
+
+          {/* User info bar */}
+          <div className="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-3">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold">
+                  {user && user.email.charAt(0).toUpperCase()}
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-900">Usuario</p>
+                  {user && <p className="text-sm text-gray-600">{user.email}</p>}
+                </div>
+              </div>
+              <button
+                onClick={logout}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-lg flex items-center transition-colors"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-1"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                  />
+                </svg>
+                Cerrar sesión
+              </button>
+            </div>
+          </div>
+
+          {/* Contenido principal con scroll */}
+          <main className="flex-1 overflow-y-auto">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                {/* Encabezado del taller */}
+                <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900">{selectedTaller.nombre}</h2>
+                      <p className="text-gray-600 mt-1">{selectedTaller.descripcion}</p>
+                    </div>
+                    <span className="px-3 py-1 text-sm font-medium bg-emerald-100 text-emerald-800 rounded-full">
+                      {selectedTaller.estado === "activo" ? "Activo" : "Inactivo"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Información general */}
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                      Información General
+                    </h3>
+
+                    <div className="flex items-center">
+                      <BookOpen className="w-5 h-5 text-emerald-600 mr-3" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Profesor</p>
+                        <p className="text-sm text-gray-900">{selectedTaller.profesor}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center">
+                      <Users className="w-5 h-5 text-emerald-600 mr-3" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Alumnos</p>
+                        <p className="text-sm text-gray-900">{selectedTaller.alumnos} estudiantes</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center">
+                      <Calendar className="w-5 h-5 text-emerald-600 mr-3" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Fecha de Creación</p>
+                        <p className="text-sm text-gray-900">{selectedTaller.fechaCreacion}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center">
+                      <Clock className="w-5 h-5 text-emerald-600 mr-3" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Horario</p>
+                        <p className="text-sm text-gray-900">{selectedTaller.horario}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                      Detalles Adicionales
+                    </h3>
+
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 mb-2">Niveles</p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedTaller.niveles.map((nivel) => (
+                          <span key={nivel} className="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-full">
+                            {nivel}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 mb-2">Ubicación</p>
+                      <p className="text-sm text-gray-900">{selectedTaller.ubicacion}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 mb-2">Materiales</p>
+                      <ul className="list-disc pl-5 text-sm text-gray-900 space-y-1">
+                        {selectedTaller.materiales.map((material, index) => (
+                          <li key={index}>{material}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Objetivos */}
+                <div className="p-6 border-t border-gray-200 bg-gray-50">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Objetivos del Taller</h3>
+                  <ul className="space-y-2">
+                    {selectedTaller.objetivos.map((objetivo, index) => (
+                      <li key={index} className="flex items-start">
+                        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center mt-0.5">
+                          <div className="w-2 h-2 rounded-full bg-emerald-600"></div>
+                        </div>
+                        <span className="ml-3 text-gray-700">{objetivo}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Botones de acción */}
+                <div className="p-6 border-t border-gray-200 flex flex-wrap gap-4">
+                  <button
+                    onClick={() => handleEditClick(selectedTaller)}
+                    className="flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Editar Taller
+                  </button>
+                  <button
+                    onClick={handleBackToList}
+                    className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Volver a la Lista
+                  </button>
+                </div>
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    )
+  }
+
+  // Vista principal de lista de talleres
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/40">
       {/* Sidebar */}
@@ -353,7 +845,7 @@ export function GestionTalleres() {
           </div>
         </header>
 
-        {/* User info bar - Añadido */}
+        {/* User info bar */}
         <div className="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex justify-between items-center">
             <div className="flex items-center">
@@ -489,10 +981,20 @@ export function GestionTalleres() {
                                 ))}
                               </div>
                             </div>
-                            <div className="pt-2">
-                              <button className="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-emerald-700 bg-emerald-100 hover:bg-emerald-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors">
+                            <div className="pt-2 flex space-x-2">
+                              <button
+                                onClick={() => handleViewDetails(taller)}
+                                className="flex-1 flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-emerald-700 bg-emerald-100 hover:bg-emerald-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
+                              >
                                 <Eye className="w-4 h-4 mr-2" />
                                 Ver Detalles
+                              </button>
+                              <button
+                                onClick={() => handleEditClick(taller)}
+                                className="flex-1 flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                              >
+                                <Edit className="w-4 h-4 mr-2" />
+                                Editar Taller
                               </button>
                             </div>
                           </div>
@@ -555,7 +1057,10 @@ export function GestionTalleres() {
                               </div>
                             </div>
                             <div className="pt-2 flex space-x-2">
-                              <button className="flex-1 flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-emerald-700 bg-emerald-100 hover:bg-emerald-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors">
+                              <button
+                                onClick={() => handleViewDetails(taller)}
+                                className="flex-1 flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-emerald-700 bg-emerald-100 hover:bg-emerald-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
+                              >
                                 <Eye className="w-4 h-4 mr-2" />
                                 Ver Detalles
                               </button>

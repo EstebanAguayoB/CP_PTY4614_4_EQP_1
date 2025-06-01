@@ -186,7 +186,7 @@ export default function GestionEstudiante() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email Tutor</label>
                     <input
                       type="email"
                       placeholder="Correo@institucion.edu"
@@ -344,7 +344,7 @@ export default function GestionEstudiante() {
                         Nombre
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Email
+                        Email Tutor
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Taller

@@ -46,7 +46,7 @@ const DashboardSidebar = ({ sidebarOpen, toggleSidebar, userRole = "Coordinador"
       roles: ["Coordinador", "Admin"],
     },
     {
-      name: "Gestión de Estudiantes",
+      name: "Gestión de Alumnos",
       path: "/dashboard/alumnos",
       icon: GraduationCap,
       roles: ["Coordinador", "Profesor", "Admin"],
@@ -61,24 +61,6 @@ const DashboardSidebar = ({ sidebarOpen, toggleSidebar, userRole = "Coordinador"
       name: "Reportes y Evidencias",
       path: "/dashboard/reportes",
       icon: FileText,
-      roles: ["Coordinador", "Profesor", "Admin"],
-    },
-    {
-      name: "Estadísticas",
-      path: "/dashboard/estadisticas",
-      icon: BarChart3,
-      roles: ["Coordinador", "Admin"],
-    },
-    {
-      name: "Calendario",
-      path: "/dashboard/calendario",
-      icon: Calendar,
-      roles: ["Coordinador", "Profesor", "Admin"],
-    },
-    {
-      name: "Evaluaciones",
-      path: "/dashboard/evaluaciones",
-      icon: Award,
       roles: ["Coordinador", "Profesor", "Admin"],
     },
   ]
@@ -145,25 +127,7 @@ const DashboardSidebar = ({ sidebarOpen, toggleSidebar, userRole = "Coordinador"
             </div>
           )
         })}
-
-        {/* Separador */}
-        <div className="border-t border-gray-200 my-4"></div>
-
-        {/* Configuración */}
-        <div>
-          <Link to="/dashboard/configuracion" className="w-full block">
-            <button
-              className={`w-full justify-start flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                isActiveRoute("/dashboard/configuracion")
-                  ? "bg-emerald-100 text-emerald-700 border-r-2 border-emerald-500"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-              }`}
-            >
-              <Settings className="mr-3 h-5 w-5" />
-              Configuración
-            </button>
-          </Link>
-        </div>
+        
       </nav>
 
       {/* Footer del sidebar */}
