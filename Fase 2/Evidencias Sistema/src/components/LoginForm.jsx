@@ -2,6 +2,8 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { BookOpen } from "lucide-react"
 import { supabase } from "../../lib/supabase"
+import { toast } from "react-toastify"
+
 
 export default function LoginForm() {
   const navigate = useNavigate()
@@ -20,17 +22,25 @@ export default function LoginForm() {
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    console.log("Login attempt:", formData)
+  e.preventDefault()
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: formData.email,
-      password: formData.password,
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: formData.email,
+    password: formData.password,
+  })
+
+  if (error) {
+    toast.error("Credenciales incorrectas. Intenta de nuevo.", {
+      position: "top-right",
     })
-    if (error) {
-      console.log(error)
-    } else navigate("/dashboard")
+  } else {
+    toast.success("Inicio de sesión exitoso. Redirigiendo...", {
+      position: "top-right",
+    })
+    setTimeout(() => navigate("/dashboard"), 1500) 
   }
+}
+
 
   const handleBackToHome = () => {
     navigate("/")
