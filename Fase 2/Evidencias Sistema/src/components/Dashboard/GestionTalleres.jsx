@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import {Search,Plus,Users,BookOpen,Award,Eye,ToggleRight,ArrowLeft,Menu,Edit,Calendar,Clock,} from "lucide-react"
+import { Search, Plus, Users, BookOpen, Award, Eye, ToggleRight, ArrowLeft, Menu, Edit, Calendar, Clock, } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { useNavigate } from "react-router-dom"
 import DashboardSidebar from "../shared/DashboardSidebar"
@@ -162,20 +162,37 @@ export function GestionTalleres() {
     "Elena Torres",
     "Pedro Gómez",
   ]
+  const [taller_impartido, setTalleres] = useState([]);
+  const [error, setError] = useState(null);
 
-  const talleresActivos = talleres.filter((t) => t.estado === "activo")
-  const talleresInactivos = talleres.filter((t) => t.estado === "inactivo")
+  useEffect(() => {
+    const fetchTalleres = async () => {
+      try {
+        let { data, error } = await supabase
+          .from("TallerImpartido")
+          .select("*, Usuario(nombre)");
+        if (error) setError(error);
+        else setTalleres(data);
+      } catch (err) {
+        setError(err);
+      }
+    };
+    fetchTalleres();
+  }, []);
+
+  const talleresActivos = taller_impartido.filter((t) => t.estado?.toLowerCase() === "activo");
+  const talleresInactivos = taller_impartido.filter((t) => t.estado?.toLowerCase() === "inactivo");
 
   const filteredTalleresActivos = talleresActivos.filter(
     (taller) =>
-      taller.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      taller.profesor.toLowerCase().includes(searchTerm.toLowerCase()),
+      taller.nombre_publico.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      taller.Usuario?.nombre.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   const filteredTalleresInactivos = talleresInactivos.filter(
     (taller) =>
-      taller.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      taller.profesor.toLowerCase().includes(searchTerm.toLowerCase()),
+      taller.nombre_publico.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      taller.Usuario?.nombre.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   const handleNivelChange = (nivel) => {
@@ -915,21 +932,19 @@ export function GestionTalleres() {
                 <div className="flex space-x-2">
                   <button
                     onClick={() => setActiveTab("activos")}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                      activeTab === "activos"
-                        ? "bg-emerald-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === "activos"
+                      ? "bg-emerald-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
                   >
                     Activos ({filteredTalleresActivos.length})
                   </button>
                   <button
                     onClick={() => setActiveTab("inactivos")}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                      activeTab === "inactivos"
-                        ? "bg-emerald-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === "inactivos"
+                      ? "bg-emerald-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
                   >
                     Inactivos ({filteredTalleresInactivos.length})
                   </button>
@@ -948,8 +963,8 @@ export function GestionTalleres() {
                           <div className="p-5 border-b border-gray-100">
                             <div className="flex justify-between items-start">
                               <div>
-                                <h3 className="text-lg font-semibold text-gray-900">{taller.nombre}</h3>
-                                <p className="text-sm text-gray-600 mt-1">{taller.descripcion}</p>
+                                <h3 className="text-lg font-semibold text-gray-900">{taller.nombre_publico}</h3>
+                                <p className="text-sm text-gray-600 mt-1">{taller.descripcion_publica}</p>
                               </div>
                               <span className="px-2 py-1 text-xs font-medium bg-emerald-100 text-emerald-800 rounded-full">
                                 Activo
@@ -960,25 +975,25 @@ export function GestionTalleres() {
                             <div className="flex items-center text-sm">
                               <BookOpen className="w-4 h-4 text-emerald-600 mr-2" />
                               <span className="font-medium text-gray-700">Profesor:</span>
-                              <span className="ml-2 text-gray-600">{taller.profesor}</span>
+                              <span className="ml-2 text-gray-600">{taller.Usuario?.nombre}</span>
                             </div>
                             <div className="flex items-center text-sm">
                               <Users className="w-4 h-4 text-emerald-600 mr-2" />
                               <span className="font-medium text-gray-700">Alumnos:</span>
-                              <span className="ml-2 text-gray-600">{taller.alumnos}</span>
+                              {/*                              <span className="ml-2 text-gray-600">{taller.alumnos}</span>*/}
                             </div>
                             <div className="flex items-center text-sm">
                               <Award className="w-4 h-4 text-emerald-600 mr-2" />
                               <span className="font-medium text-gray-700">Niveles:</span>
                               <div className="ml-2 flex flex-wrap gap-1">
-                                {taller.niveles.map((nivel) => (
+                                {/* {taller.niveles.map((nivel) => (
                                   <span
                                     key={nivel}
                                     className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full"
                                   >
                                     {nivel}
                                   </span>
-                                ))}
+                                ))}*/}
                               </div>
                             </div>
                             <div className="pt-2 flex space-x-2">

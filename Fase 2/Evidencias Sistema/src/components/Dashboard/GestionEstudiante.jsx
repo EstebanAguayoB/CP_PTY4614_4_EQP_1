@@ -30,69 +30,32 @@ export default function GestionEstudiante() {
     navigate("/")
   }
 
-  const alumnos = [
-    {
-      id: 1,
-      nombre: "Laura Martínez",
-      email: "laura.martinez@estudiante.edu",
-      taller: "Robótica",
-      nivel: "Avanzado",
-      progreso: 77,
-      estado: "Activo",
-    },
-    {
-      id: 2,
-      nombre: "Carlos Sánchez",
-      email: "carlos.sanchez@estudiante.edu",
-      taller: "Robótica",
-      nivel: "Intermedio",
-      progreso: 77,
-      estado: "Activo",
-    },
-    {
-      id: 3,
-      nombre: "Ana García",
-      email: "ana.garcia@estudiante.edu",
-      taller: "Deporte",
-      nivel: "Básico",
-      progreso: 77,
-      estado: "Activo",
-    },
-    {
-      id: 4,
-      nombre: "Miguel Torres",
-      email: "miguel.torres@estudiante.edu",
-      taller: "Pintura",
-      nivel: "Intermedio",
-      progreso: 77,
-      estado: "Activo",
-    },
-    {
-      id: 5,
-      nombre: "Sofía Rodríguez",
-      email: "sofia.rodriguez@estudiante.edu",
-      taller: "Teatro",
-      nivel: "Avanzado",
-      progreso: 77,
-      estado: "Activo",
-    },
-    {
-      id: 6,
-      nombre: "Pedro López",
-      email: "pedro.lopez@estudiante.edu",
-      taller: "Fotografía",
-      nivel: "Intermedio",
-      progreso: 77,
-      estado: "Activo",
-    },
-  ]
+// alumnos
+    const [alumnos, setAlumnos] = useState([]);
+  const [error, setError] = useState(null);
 
-  const filteredAlumnos = alumnos.filter(
-    (alumno) =>
-      alumno.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      alumno.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      alumno.taller.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  useEffect(() => {
+    const alumnos = async () => {
+      try {
+        let { data, error } = await supabase.from("Estudiante").select("*");
+        if (error) setError(error);
+        else setAlumnos(data);
+      } catch (err) {
+        setError(err);
+      }
+    };
+    alumnos();
+  }, []);
+
+  console.log('alumnos:', alumnos);
+  console.log('Error:', error);
+
+const filteredAlumnos = alumnos.filter((alumno) =>
+  (alumno.nombre?.toLowerCase()?.includes(searchTerm?.toLowerCase()) ||
+   alumno.email?.toLowerCase()?.includes(searchTerm?.toLowerCase()) ||
+   alumno.taller?.toLowerCase()?.includes(searchTerm?.toLowerCase()))
+);
+
 
   if (showAddForm) {
     return (
@@ -367,7 +330,7 @@ export default function GestionEstudiante() {
                     {filteredAlumnos.map((alumno) => (
                       <tr key={alumno.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{alumno.nombre}</div>
+                          <div className="text-sm font-medium text-gray-900">{alumno.nombre} {alumno.apellido}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-500">{alumno.email}</div>
