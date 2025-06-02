@@ -6,6 +6,7 @@ import StudentManagementPage from "../pages/StudentManagement"
 import { TalleresManagement } from '../pages/TalleresManagement'
 import ProfesoresManagementPage from "../pages/ProfesoresManagement"
 import ReportesManagementPage from "../pages/ReportesManagement"
+import DashboardProfesorPage from "../pages/DashboardProfesor";
 import ProtectedRoute from "../components/protected_route"
 
 export default function AppRouter() {
@@ -19,6 +20,7 @@ export default function AppRouter() {
         <Route path="/dashboard/talleres" element={<ProtectedRoute> <TalleresManagement /></ProtectedRoute>} />
         <Route path="/dashboard/profesores" element={<ProtectedRoute> <ProfesoresManagementPage /></ProtectedRoute>}/>
         <Route path="/dashboard/reportes" element={ <ProtectedRoute> <ReportesManagementPage /></ProtectedRoute>}/>
+        <Route path="/dashboardprofesor" element={<ProtectedRoute><DashboardProfesorPage /></ProtectedRoute>}/>
       </Routes>
     </Router>
   )
