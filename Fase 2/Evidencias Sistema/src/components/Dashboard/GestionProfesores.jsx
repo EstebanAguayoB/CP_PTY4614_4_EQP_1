@@ -30,67 +30,32 @@ export default function GestionProfesores() {
     await supabase.auth.signOut()
     navigate("/")
   }
+// profesores
+    const [Profesorinfo, setProfesor] = useState([]);
+    const [error, setError] = useState(null);
 
-  const profesores = [
-    {
-      id: 1,
-      nombre: "Juan Pérez",
-      email: "juan.perez@institucion.edu",
-      taller: "Robótica",
-      especialidad: "Robótica",
-      estado: "Activo",
-    },
-    {
-      id: 2,
-      nombre: "María González",
-      email: "maria.gonzalez@institucion.edu",
-      taller: "Pintura",
-      especialidad: "Arte",
-      estado: "Activo",
-    },
-    {
-      id: 3,
-      nombre: "Ana Rodríguez",
-      email: "ana.rodriguez@institucion.edu",
-      taller: "Música",
-      especialidad: "Música",
-      estado: "Activo",
-    },
-    {
-      id: 4,
-      nombre: "Carlos Martínez",
-      email: "carlos.martinez@institucion.edu",
-      taller: "Fútbol",
-      especialidad: "Deportes",
-      estado: "Activo",
-    },
-    {
-      id: 5,
-      nombre: "Luis Sánchez",
-      email: "luis.sanchez@institucion.edu",
-      taller: "Fotografía",
-      especialidad: "Arte",
-      estado: "Activo",
-    },
-    {
-      id: 6,
-      nombre: "Elena Torres",
-      email: "elena.torres@institucion.edu",
-      taller: "Teatro",
-      especialidad: "Arte",
-      estado: "Activo",
-    },
-  ]
+  useEffect(() => {
+    const Profesorinfo = async () => {
+      try {
+        let { data, error } = await supabase.from("Usuario").select("*").eq("rol", "PROFESOR");
+        if (error) setError(error);
+        else setProfesor(data);
+      } catch (err) {
+        setError(err);
+      }
+    };
+    Profesorinfo();
+  }, []);
 
   const especialidades = ["Robótica", "Arte", "Música", "Deportes", "Ciencias", "Literatura"]
   const talleres = ["Robótica", "Pintura", "Música", "Fútbol", "Fotografía", "Teatro", "Programación"]
 
-  const filteredProfesores = profesores.filter(
-    (profesor) =>
-      profesor.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      profesor.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      profesor.taller.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      profesor.especialidad.toLowerCase().includes(searchTerm.toLowerCase()),
+  const filteredProfesores = Profesorinfo.filter(
+    (Profesorinfo) =>
+      Profesorinfo.nombre?.toLowerCase()?.includes(searchTerm?.toLowerCase()) ||
+      Profesorinfo.email?.toLowerCase()?.includes(searchTerm?.toLowerCase()) ||
+      Profesorinfo.taller?.toLowerCase()?.includes(searchTerm?.toLowerCase()) ||
+      Profesorinfo.especialidad?.toLowerCase()?.includes(searchTerm?.toLowerCase()),
   )
 
   if (showAddForm) {
@@ -297,32 +262,32 @@ export default function GestionProfesores() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredProfesores.map((profesor) => (
-                      <tr key={profesor.id} className="hover:bg-gray-50 transition-colors">
+                    {filteredProfesores.map((Profesorinfo) => (
+                      <tr key={Profesorinfo.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                              {profesor.nombre.charAt(0)}
+                              {Profesorinfo.nombre.charAt(0)} 
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{profesor.nombre}</div>
+                              <div className="text-sm font-medium text-gray-900">{Profesorinfo.nombre} {Profesorinfo.apellido}</div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">{profesor.email}</div>
+                          <div className="text-sm text-gray-500">{Profesorinfo.correo}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{profesor.taller}</div>
+                          <div className="text-sm text-gray-900">{Profesorinfo.taller}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                            {profesor.especialidad}
+                            {Profesorinfo.especialidad}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="px-2 py-1 text-xs font-medium bg-emerald-100 text-emerald-800 rounded-full">
-                            {profesor.estado}
+                            {Profesorinfo.estado}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

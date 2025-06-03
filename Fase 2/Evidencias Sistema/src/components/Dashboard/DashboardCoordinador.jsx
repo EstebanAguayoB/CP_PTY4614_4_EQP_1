@@ -100,7 +100,7 @@ export default function DashboardCoordinador() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [user, setUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [talleres, setTalleres] = useState([])
+  const [taller_impartido, setTaller_impartido] = useState([]);
   const [error, setError] = useState(null)
   const navigate = useNavigate()
 
@@ -138,35 +138,20 @@ export default function DashboardCoordinador() {
 
   // Efecto para cargar talleres
   useEffect(() => {
-    let isMounted = true
-
-    const fetchTalleres = async () => {
+    const taller_impartido = async () => {
       try {
-        const { data, error: talleresError } = await supabase
-          .from("TallerDefinido")
-          .select("*")
-        
-        if (talleresError) throw talleresError
-
-        if (isMounted) {
-          setTalleres(data || [])
-        }
+        let { data, error } = await supabase.from("TallerImpartido").select("*");
+        if (error) setError(error);
+        else setTaller_impartido(data);
       } catch (err) {
-        console.error("Error al obtener talleres:", err)
-        if (isMounted) {
-          setError(err.message)
-        }
+        setError(err);
       }
-    }
+    };
+    taller_impartido();
+  }, []);
 
-    if (user) {
-      fetchTalleres()
-    }
-
-    return () => {
-      isMounted = false
-    }
-  }, [user])
+  console.log('talleres:', taller_impartido);
+  console.log('Error:', error);
 
   const logout = async () => {
     try {
@@ -311,19 +296,19 @@ export default function DashboardCoordinador() {
 
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {talleres.map((taller) => (
-                    <div key={taller.id} className="bg-gray-50 rounded-lg p-6 hover:shadow-md transition-shadow">
+                  {taller_impartido.map((taller_impartido) => (
+                    <div key={taller_impartido.id} className="bg-gray-50 rounded-lg p-6 hover:shadow-md transition-shadow">
                       <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900">{taller.nombre}</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">{taller_impartido.nombre_publico}</h3>
                         <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs rounded-full">Activo</span>
                       </div>
 
-                      <p className="text-gray-600 text-sm mb-4">{taller.descripcion}</p>
+                      <p className="text-gray-600 text-sm mb-4">{taller_impartido.descripcion_publica}</p>
 
                       <div className="space-y-2 mb-4">
                         <div className="flex justify-between text-sm">
                             <span className="text-gray-500">Profesor:</span>
-                              {/* '<span className="text-gray-900">{taller.profesor}</span> */}
+                              <span className="text-gray-900">{taller_impartido.profesor_asignado}</span> 
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Alumnos:</span>
@@ -332,7 +317,7 @@ export default function DashboardCoordinador() {
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Niveles:</span>
-                          <span className="text-gray-900">{taller.nivel_minimo}</span>
+                          <span className="text-gray-900">{taller_impartido.nivel_minimo}</span>
                         </div>
                       </div>
                     </div>
@@ -365,7 +350,7 @@ export default function DashboardCoordinador() {
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Talleres:</span>
-                          <span className="text-gray-900">{profesor.talleres}</span>
+                          <span className="text-gray-900">{profesor.taller_impartido}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Alumnos:</span>

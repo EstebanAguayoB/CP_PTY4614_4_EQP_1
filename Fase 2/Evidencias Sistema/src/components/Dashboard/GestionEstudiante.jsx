@@ -269,7 +269,7 @@ export default function GestionEstudiante() {
                           <div className="text-sm font-medium text-gray-900">{alumno.nombre} {alumno.apellido}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">{alumno.email}</div>
+                          <div className="text-sm text-gray-500">{alumno.correo_apoderado}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">{alumno.taller}</div>
