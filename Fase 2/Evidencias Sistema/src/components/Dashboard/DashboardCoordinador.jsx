@@ -1,151 +1,214 @@
 import { useState, useEffect } from "react"
-import { BookOpen, Users, TrendingUp, FileText, Eye, Menu } from "lucide-react"
+import { BookOpen, Users, TrendingUp, FileText, Eye, Menu, Loader2 } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { useNavigate } from "react-router-dom"
 import DashboardSidebar from "../shared/DashboardSidebar"
 import UserInfoBar from '../shared/UserInfoBar'
 
+// Datos estáticos
+const PROFESORES = [
+  {
+    id: 1,
+    nombre: "Juan Pérez",
+    email: "juan.perez@example.com",
+    talleres: "Taller de React, Taller de Node.js",
+    alumnos: 25,
+    especialidad: "Desarrollo Web",
+  },
+  {
+    id: 2,
+    nombre: "María Gómez",
+    email: "maria.gomez@example.com",
+    talleres: "Taller de Angular, Taller de PHP",
+    alumnos: 30,
+    especialidad: "Desarrollo Web",
+  },
+  {
+    id: 3,
+    nombre: "Luis Rodríguez",
+    email: "luis.rodriguez@example.com",
+    talleres: "Taller de Python, Taller de Django",
+    alumnos: 20,
+    especialidad: "Desarrollo Web",
+  },
+  {
+    id: 4,
+    nombre: "Ana Martínez",
+    email: "ana.martinez@example.com",
+    talleres: "Taller de Java, Taller de Spring",
+    alumnos: 28,
+    especialidad: "Desarrollo Web",
+  },
+  {
+    id: 5,
+    nombre: "Carlos Fernández",
+    email: "carlos.fernandez@example.com",
+    talleres: "Taller de C#, Taller de .NET",
+    alumnos: 22,
+    especialidad: "Desarrollo Web",
+  },
+  {
+    id: 6,
+    nombre: "Laura López",
+    email: "laura.lopez@example.com",
+    talleres: "Taller de Swift, Taller de iOS",
+    alumnos: 18,
+    especialidad: "Desarrollo Móvil",
+  },
+]
+
+const ACTIVIDAD_RECIENTE = [
+  {
+    id: 1,
+    accion: "Juan Pérez creó un nuevo taller: Introducción a React",
+    tiempo: "Hace 10 minutos",
+    usuario: "Juan Pérez",
+  },
+  {
+    id: 2,
+    accion: "María Gómez actualizó el taller: Taller de Angular",
+    tiempo: "Hace 30 minutos",
+    usuario: "María Gómez",
+  },
+  {
+    id: 3,
+    accion: "Luis Rodríguez eliminó un taller: Taller de Django",
+    tiempo: "Hace 1 hora",
+    usuario: "Luis Rodríguez",
+  },
+  {
+    id: 4,
+    accion: "Ana Martínez creó un nuevo taller: Fundamentos de Java",
+    tiempo: "Hace 2 horas",
+    usuario: "Ana Martínez",
+  },
+  {
+    id: 5,
+    accion: "Carlos Fernández actualizó el taller: Taller de C#",
+    tiempo: "Hace 3 horas",
+    usuario: "Carlos Fernández",
+  },
+  {
+    id: 6,
+    accion: "Laura López creó un nuevo taller: Desarrollo de Apps iOS",
+    tiempo: "Hace 4 horas",
+    usuario: "Laura López",
+  },
+]
+
 export default function DashboardCoordinador() {
-  //const [activeTab, setActiveTab] = useState("talleres")
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [user, setUser] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [talleres, setTalleres] = useState([])
+  const [error, setError] = useState(null)
   const navigate = useNavigate()
 
+  // Efecto para cargar el usuario
   useEffect(() => {
+    let isMounted = true
+
     const getUser = async () => {
-      const { data } = await supabase.auth.getUser()
-      if (data.user) setUser(data.user)
-      else navigate("/")
+      try {
+        const { data, error: userError } = await supabase.auth.getUser()
+        if (userError) throw userError
+
+        if (isMounted) {
+          if (data.user) {
+            setUser(data.user)
+            setIsLoading(false)
+          } else {
+            navigate("/")
+          }
+        }
+      } catch (err) {
+        console.error("Error al obtener usuario:", err)
+        if (isMounted) {
+          setError(err.message)
+          setIsLoading(false)
+        }
+      }
     }
+
     getUser()
+    return () => {
+      isMounted = false
+    }
   }, [navigate])
 
+  // Efecto para cargar talleres
+  useEffect(() => {
+    let isMounted = true
+
+    const fetchTalleres = async () => {
+      try {
+        const { data, error: talleresError } = await supabase
+          .from("TallerDefinido")
+          .select("*")
+        
+        if (talleresError) throw talleresError
+
+        if (isMounted) {
+          setTalleres(data || [])
+        }
+      } catch (err) {
+        console.error("Error al obtener talleres:", err)
+        if (isMounted) {
+          setError(err.message)
+        }
+      }
+    }
+
+    if (user) {
+      fetchTalleres()
+    }
+
+    return () => {
+      isMounted = false
+    }
+  }, [user])
+
   const logout = async () => {
-    await supabase.auth.signOut()
-    navigate("/")
+    try {
+      await supabase.auth.signOut()
+      navigate("/")
+    } catch (err) {
+      console.error("Error al cerrar sesión:", err)
+      setError(err.message)
+    }
   }
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen)
   }
-  
-  const [talleres, setTalleres] = useState([]);
-  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const talleres = async () => {
-      try {
-        let { data, error } = await supabase.from("TallerDefinido").select("*");
-        if (error) setError(error);
-        else setTalleres(data);
-      } catch (err) {
-        setError(err);
-      }
-    };
-    talleres();
-  }, []);
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/40">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+          <p className="text-gray-600">Cargando dashboard...</p>
+        </div>
+      </div>
+    )
+  }
 
-  console.log('talleres:', talleres);
-  console.log('Error:', error);
-  //const { data, error } = await supabase  .from('TallerDefinido')  .select()
- // console.log(data)
-  
-
-  const profesores = [
-    {
-      id: 1,
-      nombre: "Juan Pérez",
-      email: "juan.perez@institucion.edu",
-      taller: "Robótica",
-      especialidad: "Robótica",
-      talleres: 1,
-      alumnos: 32,
-      estado: "activo",
-    },
-    {
-      id: 2,
-      nombre: "Carlos Martínez",
-      email: "carlos.martinez@institucion.edu",
-      taller: "Educación Física",
-      especialidad: "Deportes",
-      talleres: 1,
-      alumnos: 45,
-      estado: "activo",
-    },
-    {
-      id: 3,
-      nombre: "Ana Rodríguez",
-      email: "ana.rodriguez@institucion.edu",
-      taller: "Música",
-      especialidad: "Música",
-      talleres: 1,
-      alumnos: 28,
-      estado: "activo",
-    },
-    {
-      id: 4,
-      nombre: "Luis Sánchez",
-      email: "luis.sanchez@institucion.edu",
-      taller: "Teatro",
-      especialidad: "Arte",
-      talleres: 1,
-      alumnos: 15,
-      estado: "activo",
-    },
-    {
-      id: 5,
-      nombre: "María González",
-      email: "maria.gonzalez@institucion.edu",
-      taller: "Fotografía",
-      especialidad: "Arte",
-      talleres: 1,
-      alumnos: 24,
-      estado: "activo",
-    },
-    {
-      id: 6,
-      nombre: "Elena Torres",
-      email: "elena.torres@institucion.edu",
-      taller: "Artes Visuales",
-      especialidad: "Arte",
-      talleres: 1,
-      alumnos: 22,
-      estado: "activo",
-    },
-  ]
-
-  const actividadReciente = [
-    {
-      id: 1,
-      accion: "Taller de Pintura: Nuevo alumno registrado",
-      tiempo: "Hace 10 minutos",
-      usuario: "Prof. María González",
-    },
-    {
-      id: 2,
-      accion: "Taller de Robótica: Evidencia subida",
-      tiempo: "Hace 25 minutos",
-      usuario: "Prof. Juan Pérez",
-    },
-    {
-      id: 3,
-      accion: "Taller de Música: Alumno avanzó a nivel intermedio",
-      tiempo: "Hace 1 hora",
-      usuario: "Prof. Ana Rodríguez",
-    },
-    {
-      id: 4,
-      accion: "Taller de Deportes: Reporte semanal enviado",
-      tiempo: "Hace 2 horas",
-      usuario: "Prof. Carlos Martínez",
-    },
-    {
-      id: 5,
-      accion: "Nuevo taller creado: Fotografía",
-      tiempo: "Hace 3 horas",
-      usuario: "Coord. Luis Sánchez",
-    },
-  ]
+  if (error) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/40">
+        <div className="max-w-md p-6 bg-white rounded-lg shadow-lg">
+          <h2 className="text-red-600 text-lg font-semibold mb-2">Error</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/40">
@@ -288,7 +351,7 @@ export default function DashboardCoordinador() {
 
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {profesores.map((profesor) => (
+                  {PROFESORES.map((profesor) => (
                     <div key={profesor.id} className="bg-gray-50 rounded-lg p-6 hover:shadow-md transition-shadow">
                       <div className="flex justify-between items-start mb-4">
                         <h3 className="text-lg font-semibold text-gray-900">{profesor.nombre}</h3>
@@ -333,7 +396,7 @@ export default function DashboardCoordinador() {
 
               <div className="p-6">
                 <div className="space-y-4">
-                  {actividadReciente.map((actividad) => (
+                  {ACTIVIDAD_RECIENTE.map((actividad) => (
                     <div key={actividad.id} className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
                       <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2"></div>
                       <div className="flex-1">
