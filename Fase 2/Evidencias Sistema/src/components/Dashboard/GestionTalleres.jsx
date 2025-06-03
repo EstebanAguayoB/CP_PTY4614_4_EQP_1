@@ -1,9 +1,22 @@
 import { useState, useEffect } from "react"
-import { Search, Plus, Users, BookOpen, Award, Eye, ToggleRight, ArrowLeft, Menu, Edit, Calendar, Clock } from "lucide-react"
+import {
+  Search,
+  Plus,
+  Users,
+  BookOpen,
+  Award,
+  Eye,
+  ToggleRight,
+  ArrowLeft,
+  Menu,
+  Edit,
+  Calendar,
+  Clock,
+} from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { useNavigate } from "react-router-dom"
 import DashboardSidebar from "../shared/DashboardSidebar"
-import UserInfoBar from "../shared/UserInfoBar" 
+import UserInfoBar from "../shared/UserInfoBar"
 
 export function GestionTalleres() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -15,10 +28,16 @@ export function GestionTalleres() {
   const [user, setUser] = useState(null)
   const [selectedTaller, setSelectedTaller] = useState(null)
   const [newTaller, setNewTaller] = useState({
+    id: "",
     nombre: "",
     descripcion: "",
-    profesor: "",
-    niveles: [],
+    objetivos: "",
+    requisitos: "",
+    niveles_totales: "",
+    creado_por: "",
+    nivel_educativo_minimo: "",
+    edad_minima: "",
+    edad_maxima: "",
   })
   const navigate = useNavigate()
 
@@ -163,26 +182,24 @@ export function GestionTalleres() {
     "Elena Torres",
     "Pedro Gómez",
   ]
-  const [taller_impartido, setTalleres] = useState([]);
-  const [error, setError] = useState(null);
+  const [taller_impartido, setTalleres] = useState([])
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     const fetchTalleres = async () => {
       try {
-        let { data, error } = await supabase
-          .from("TallerImpartido")
-          .select("*, Usuario(nombre)");
-        if (error) setError(error);
-        else setTalleres(data);
+        const { data, error } = await supabase.from("TallerImpartido").select("*, Usuario(nombre)")
+        if (error) setError(error)
+        else setTalleres(data)
       } catch (err) {
-        setError(err);
+        setError(err)
       }
-    };
-    fetchTalleres();
-  }, []);
+    }
+    fetchTalleres()
+  }, [])
 
-  const talleresActivos = taller_impartido.filter((t) => t.estado?.toLowerCase() === "activo");
-  const talleresInactivos = taller_impartido.filter((t) => t.estado?.toLowerCase() === "inactivo");
+  const talleresActivos = taller_impartido.filter((t) => t.estado?.toLowerCase() === "activo")
+  const talleresInactivos = taller_impartido.filter((t) => t.estado?.toLowerCase() === "inactivo")
 
   const filteredTalleresActivos = talleresActivos.filter(
     (taller) =>
@@ -196,34 +213,6 @@ export function GestionTalleres() {
       taller.Usuario?.nombre.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const handleNivelChange = (nivel) => {
-    if (newTaller.niveles.includes(nivel)) {
-      setNewTaller({
-        ...newTaller,
-        niveles: newTaller.niveles.filter((n) => n !== nivel),
-      })
-    } else {
-      setNewTaller({
-        ...newTaller,
-        niveles: [...newTaller.niveles, nivel],
-      })
-    }
-  }
-
-  const handleSelectedNivelChange = (nivel) => {
-    if (selectedTaller.niveles.includes(nivel)) {
-      setSelectedTaller({
-        ...selectedTaller,
-        niveles: selectedTaller.niveles.filter((n) => n !== nivel),
-      })
-    } else {
-      setSelectedTaller({
-        ...selectedTaller,
-        niveles: [...selectedTaller.niveles, nivel],
-      })
-    }
-  }
-
   const handleCreateTaller = (e) => {
     e.preventDefault()
     console.log("Crear taller:", newTaller)
@@ -231,10 +220,16 @@ export function GestionTalleres() {
     alert(`Taller "${newTaller.nombre}" creado exitosamente`)
     setShowAddForm(false)
     setNewTaller({
+      id: "",
       nombre: "",
       descripcion: "",
-      profesor: "",
-      niveles: [],
+      objetivos: "",
+      requisitos: "",
+      niveles_totales: "",
+      creado_por: "",
+      nivel_educativo_minimo: "",
+      edad_minima: "",
+      edad_maxima: "",
     })
   }
 
@@ -291,7 +286,7 @@ export function GestionTalleres() {
                   <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
                     <BookOpen className="w-5 h-5 text-white" />
                   </div>
-                  <h1 className="text-2xl font-bold text-gray-900">Crear Nuevo Taller</h1>
+                  <h1 className="text-2xl font-bold text-gray-900">Añadir Taller</h1>
                 </div>
               </div>
               <button
@@ -310,66 +305,169 @@ export function GestionTalleres() {
           <main className="flex-1 overflow-y-auto">
             <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100 p-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Crear Nuevo Taller</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Añadir Nuevo Taller</h2>
                 <p className="text-gray-600 mb-8">Completa la información para crear un nuevo taller</p>
 
                 <form className="space-y-6" onSubmit={handleCreateTaller}>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
-                    <input
-                      type="text"
-                      placeholder="Nombre del taller"
-                      value={newTaller.nombre}
-                      onChange={(e) => setNewTaller({ ...newTaller, nombre: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">ID del taller</label>
+                      <input
+                        type="text"
+                        placeholder="ID único del taller"
+                        value={newTaller.id}
+                        onChange={(e) => setNewTaller({ ...newTaller, id: e.target.value })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Nombre del taller</label>
+                      <input
+                        type="text"
+                        placeholder="Nombre del taller"
+                        value={newTaller.nombre}
+                        onChange={(e) => setNewTaller({ ...newTaller, nombre: e.target.value })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        required
+                      />
+                    </div>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
                     <textarea
-                      placeholder="Descripción del taller"
+                      placeholder="Descripción detallada del taller"
                       value={newTaller.descripcion}
                       onChange={(e) => setNewTaller({ ...newTaller, descripcion: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                       rows="3"
+                      required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Profesor</label>
-                    <select
-                      value={newTaller.profesor}
-                      onChange={(e) => setNewTaller({ ...newTaller, profesor: e.target.value })}
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Objetivos</label>
+                    <textarea
+                      placeholder="Objetivos del taller"
+                      value={newTaller.objetivos}
+                      onChange={(e) => setNewTaller({ ...newTaller, objetivos: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    >
-                      <option value="">Seleccione un profesor</option>
-                      {profesores.map((profesor) => (
-                        <option key={profesor} value={profesor}>
-                          {profesor}
-                        </option>
-                      ))}
-                    </select>
+                      rows="3"
+                      required
+                    />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Niveles</label>
-                    <div className="space-y-2">
-                      {["Básico", "Intermedio", "Avanzado"].map((nivel) => (
-                        <div key={nivel} className="flex items-center">
-                          <input
-                            type="checkbox"
-                            id={nivel}
-                            checked={newTaller.niveles.includes(nivel)}
-                            onChange={() => handleNivelChange(nivel)}
-                            className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
-                          />
-                          <label htmlFor={nivel} className="ml-2 block text-sm text-gray-700">
-                            {nivel}
-                          </label>
-                        </div>
-                      ))}
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Requisitos</label>
+                    <textarea
+                      placeholder="Requisitos para participar en el taller"
+                      value={newTaller.requisitos}
+                      onChange={(e) => setNewTaller({ ...newTaller, requisitos: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      rows="3"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Niveles totales</label>
+                      <input
+                        type="number"
+                        placeholder="Número de niveles"
+                        min="1"
+                        value={newTaller.niveles_totales}
+                        onChange={(e) => setNewTaller({ ...newTaller, niveles_totales: e.target.value })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        required
+                      />
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Creado por</label>
+                      <input
+                        type="text"
+                        placeholder="Nombre del creador"
+                        value={newTaller.creado_por}
+                        onChange={(e) => setNewTaller({ ...newTaller, creado_por: e.target.value })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Nivel educativo mínimo</label>
+                    <div className="flex space-x-4">
+                      <div className="flex items-center">
+                        <input
+                          type="radio"
+                          id="basica"
+                          name="nivel_educativo"
+                          value="BASICA"
+                          checked={newTaller.nivel_educativo_minimo === "BASICA"}
+                          onChange={(e) => setNewTaller({ ...newTaller, nivel_educativo_minimo: e.target.value })}
+                          className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300"
+                          required
+                        />
+                        <label htmlFor="basica" className="ml-2 block text-sm text-gray-700">
+                          BÁSICA
+                        </label>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          type="radio"
+                          id="media"
+                          name="nivel_educativo"
+                          value="MEDIA"
+                          checked={newTaller.nivel_educativo_minimo === "MEDIA"}
+                          onChange={(e) => setNewTaller({ ...newTaller, nivel_educativo_minimo: e.target.value })}
+                          className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300"
+                        />
+                        <label htmlFor="media" className="ml-2 block text-sm text-gray-700">
+                          MEDIA
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Rango de edad</label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Edad mínima</label>
+                        <input
+                          type="number"
+                          placeholder="Ej: 8"
+                          min="1"
+                          max="100"
+                          value={newTaller.edad_minima}
+                          onChange={(e) => setNewTaller({ ...newTaller, edad_minima: e.target.value })}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Edad máxima</label>
+                        <input
+                          type="number"
+                          placeholder="Ej: 18"
+                          min="1"
+                          max="100"
+                          value={newTaller.edad_maxima}
+                          onChange={(e) => setNewTaller({ ...newTaller, edad_maxima: e.target.value })}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                          required
+                        />
+                      </div>
+                    </div>
+                    {newTaller.edad_minima &&
+                      newTaller.edad_maxima &&
+                      Number.parseInt(newTaller.edad_minima) >= Number.parseInt(newTaller.edad_maxima) && (
+                        <p className="text-red-500 text-sm mt-1">La edad mínima debe ser menor que la edad máxima</p>
+                      )}
                   </div>
 
                   <div className="flex space-x-4 pt-6">
@@ -383,10 +481,17 @@ export function GestionTalleres() {
                     <button
                       type="submit"
                       disabled={
+                        !newTaller.id ||
                         !newTaller.nombre ||
                         !newTaller.descripcion ||
-                        !newTaller.profesor ||
-                        newTaller.niveles.length === 0
+                        !newTaller.objetivos ||
+                        !newTaller.requisitos ||
+                        !newTaller.niveles_totales ||
+                        !newTaller.creado_por ||
+                        !newTaller.nivel_educativo_minimo ||
+                        !newTaller.edad_minima ||
+                        !newTaller.edad_maxima ||
+                        Number.parseInt(newTaller.edad_minima) >= Number.parseInt(newTaller.edad_maxima)
                       }
                       className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-md font-medium shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
@@ -497,7 +602,7 @@ export function GestionTalleres() {
                             type="checkbox"
                             id={`edit-${nivel}`}
                             checked={selectedTaller.niveles.includes(nivel)}
-                            onChange={() => handleSelectedNivelChange(nivel)}
+                            onChange={() => {}}
                             className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
                           />
                           <label htmlFor={`edit-${nivel}`} className="ml-2 block text-sm text-gray-700">
@@ -785,7 +890,7 @@ export function GestionTalleres() {
                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
                   >
                     <Plus className="w-5 h-5 mr-2 -ml-1" />
-                    Crear Taller
+                    Añadir Taller
                   </button>
                 </div>
 
@@ -805,19 +910,21 @@ export function GestionTalleres() {
                 <div className="flex space-x-2">
                   <button
                     onClick={() => setActiveTab("activos")}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === "activos"
-                      ? "bg-emerald-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                      activeTab === "activos"
+                        ? "bg-emerald-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
                   >
                     Activos ({filteredTalleresActivos.length})
                   </button>
                   <button
                     onClick={() => setActiveTab("inactivos")}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === "inactivos"
-                      ? "bg-emerald-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                      activeTab === "inactivos"
+                        ? "bg-emerald-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
                   >
                     Inactivos ({filteredTalleresInactivos.length})
                   </button>
