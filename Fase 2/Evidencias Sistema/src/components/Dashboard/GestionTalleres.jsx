@@ -158,7 +158,7 @@ export function GestionTalleres() {
     }
 
     const preconfig = preconfiguraciones.find(
-      (p) => p.id_preconfiguracion.toString() === selectedPreconfiguracionId
+      (p) => p.id_taller_definido.toString() === selectedPreconfiguracionId
     )
 
     if (preconfig) {
@@ -166,12 +166,10 @@ export function GestionTalleres() {
       setSelectedTaller({
         nombre: preconfig.nombre,
         nombre_publico: preconfig.nombre,
-        descripcion: preconfig.descripcion,
         descripcion_publica: preconfig.descripcion,
-        objetivos: preconfig.objetivos.join("\n"), 
+        objetivos: preconfig.objetivos, 
         requisitos: preconfig.requisitos,
         niveles_totales: preconfig.niveles_totales,
-        creado_por: user?.id || "", 
         nivel_educativo_minimo: preconfig.nivel_educativo_minimo,
         edad_minima: preconfig.edad_minima,
         edad_maxima: preconfig.edad_maxima,
@@ -546,8 +544,8 @@ export function GestionTalleres() {
                         </option>
                         {preconfiguraciones.map((preconfig) => (
                           <option
-                            key={preconfig.id_preconfiguracion}
-                            value={preconfig.id_preconfiguracion}
+                            key={preconfig.id_taller_definido}
+                            value={preconfig.id_taller_definido}
                           >
                             {preconfig.nombre}
                           </option>
@@ -581,7 +579,7 @@ export function GestionTalleres() {
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {preconfiguraciones.map((preconfig) => (
                           <div
-                            key={preconfig.id_preconfiguracion}
+                            key={preconfig.id_taller_definido}
                             className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden"
                           >
                             <div className="p-5">
@@ -618,7 +616,7 @@ export function GestionTalleres() {
                               <button
                                 onClick={() => {
                                   setSelectedPreconfiguracionId(
-                                    preconfig.id_preconfiguracion.toString()
+                                    preconfig.id_taller_definido.toString()
                                   )
                                   handleApplyPreconfiguracion()
                                 }}

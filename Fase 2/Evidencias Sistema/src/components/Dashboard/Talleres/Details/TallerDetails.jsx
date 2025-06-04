@@ -19,7 +19,7 @@ export function TallerDetails({ taller, onEdit }) {
         <div className="flex justify-between items-start">
           <div>
             <h3 className="text-2xl font-bold text-gray-900">{taller.nombre}</h3>
-            <p className="mt-1 text-sm text-gray-500">{taller.descripcion}</p>
+            <p className="mt-1 text-sm text-gray-500">{taller.descripcion_publica}</p>
           </div>
           <button
             onClick={onEdit}

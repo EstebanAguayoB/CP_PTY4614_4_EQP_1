@@ -6,12 +6,10 @@ export function TallerForm({ onClose, initialData = null }) {
   const [formData, setFormData] = useState(initialData || {
     nombre: '',
     nombre_publico: '',
-    descripcion: '',
     descripcion_publica: '',
     objetivos: '',
     requisitos: '',
     niveles_totales: '',
-    creado_por: '',
     nivel_educativo_minimo: '',
     edad_minima: '',
     edad_maxima: '',
@@ -72,12 +70,11 @@ export function TallerForm({ onClose, initialData = null }) {
           Descripción
         </label>
         <textarea
-          id="descripcion"
+          id="descripcion_publica"
           required
-          value={formData.descripcion}
+          value={formData.descripcion_publica}
           onChange={(e) => setFormData({ 
             ...formData, 
-            descripcion: e.target.value,
             descripcion_publica: e.target.value 
           })}
           className="w-full px-3 py-2 border border-gray-300 rounded-md"
