@@ -74,7 +74,7 @@ export function useTalleres() {
       const { data, error } = await supabase
         .from('TallerImpartido')
         .update({ evidencias })
-        .eq('id', tallerId)
+        .eq('id_taller_impartido', tallerId)
         .select()
         .single()
       
@@ -93,7 +93,7 @@ export function useTalleres() {
       const { data, error } = await supabase
         .from('TallerImpartido')
         .update({ estado })
-        .eq('id', tallerId)
+        .eq('id_taller_impartido', tallerId)
         .select()
         .single()
       
