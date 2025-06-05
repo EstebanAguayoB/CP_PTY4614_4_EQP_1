@@ -204,11 +204,9 @@ export function GestionTalleres() {
 
   const handleEstadoChange = async (tallerId, currentEstado) => {
     const newEstado =
-      currentEstado === "activo"
-        ? "inactivo"
-        : currentEstado === "inactivo"
-          ? "activo"
-          : "archivado"
+  currentEstado === "activo"
+    ? "finalizado"
+    : "activo"
     if (
       !window.confirm(
         `¿Estás seguro de que quieres cambiar el estado a ${newEstado}?`
@@ -250,14 +248,12 @@ export function GestionTalleres() {
             .toLowerCase()
             .includes(term))
 
-        const matchesTab =
-          activeTab === "activos"
-            ? taller.estado === "activo"
-            : activeTab === "inactivos"
-              ? taller.estado === "inactivo"
-              : activeTab === "archivados"
-                ? taller.estado === "archivado"
-                : true
+       const matchesTab =
+  activeTab === "activos"
+    ? taller.estado === "activo"
+    : activeTab === "finalizados"
+      ? taller.estado === "finalizado"
+      : true
 
         const matchesPeriod = selectedPeriod
           ? taller.periodo &&
@@ -278,17 +274,15 @@ export function GestionTalleres() {
   }, [talleres])
 
   const getTallerCountByTab = (tab) => {
-    if (tab === "preconfiguraciones") return preconfiguraciones.length
-    return talleres.filter((t) =>
-      tab === "activos"
-        ? t.estado === "activo"
-        : tab === "inactivos"
-          ? t.estado === "inactivo"
-          : tab === "archivados"
-            ? t.estado === "archivado"
-            : false
-    ).length
-  }
+  if (tab === "preconfiguraciones") return preconfiguraciones.length
+  return talleres.filter((t) =>
+    tab === "activos"
+      ? t.estado === "activo"
+      : tab === "finalizados"
+        ? t.estado === "finalizado"
+        : false
+  ).length
+}
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -342,8 +336,8 @@ export function GestionTalleres() {
                   <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
                     {[
                       { name: "Activos", key: "activos", icon: Power },
-                      { name: "Inactivos", key: "inactivos", icon: PowerOff },
-                      { name: "Archivados", key: "archivados", icon: X },
+                      { name: "Finalizados", key: "finalizados", icon: PowerOff },
+                      //{ name: "Cancelados", key: "cancelados", icon: X },
                       {
                         name: "Preconfiguraciones",
                         key: "preconfiguraciones",
