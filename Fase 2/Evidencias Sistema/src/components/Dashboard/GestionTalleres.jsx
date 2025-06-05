@@ -1,19 +1,32 @@
-import { useState, useEffect } from "react"
-import {Search,Plus,Users,BookOpen,Award,Eye,ArrowLeft,Menu,Edit,Calendar,Clock,Settings,Filter,X,Power,PowerOff,ClipboardList, Trash2 
+import { useState, useEffect, useMemo } from "react"
+import {
+  Search,
+  Plus,
+  Users,
+  BookOpen,
+  Eye,
+  ArrowLeft,
+  Edit,
+  Calendar,
+  Settings,
+  X,
+  Power,
+  PowerOff,
+  ClipboardList,
+  Trash2,
 } from "lucide-react"
-import { supabase } from "../../lib/supabase" 
+import { supabase } from "../../lib/supabase"
 import { useNavigate } from "react-router-dom"
 import DashboardSidebar from "../shared/DashboardSidebar"
 import UserInfoBar from "../shared/UserInfoBar"
 
-
-import { TallerForm } from "./Talleres/Form/TallerForm" 
-import { TallerDetails } from "./Talleres/Details/TallerDetails" 
-import { useTalleres } from "../../hooks/useTalleres" 
+import { TallerForm } from "./Talleres/Form/TallerForm"
+import { TallerDetails } from "./Talleres/Details/TallerDetails"
+import { useTalleres } from "../../hooks/useTalleres"
 
 export function GestionTalleres() {
   const navigate = useNavigate()
-  
+
   const {
     talleres,
     loading: loadingTalleres,
@@ -29,29 +42,31 @@ export function GestionTalleres() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [showEditForm, setShowEditForm] = useState(false)
   const [showDetailView, setShowDetailView] = useState(false)
-  const [activeTab, setActiveTab] = useState("activos") 
-  const [preconfiguraciones, setPreconfiguraciones] = useState([]) 
-  const [loadingPreconfiguraciones, setLoadingPreconfiguraciones] =
-    useState(true)
+  const [activeTab, setActiveTab] = useState("activos")
+  const [preconfiguraciones, setPreconfiguraciones] = useState([])
+  const [loadingPreconfiguraciones, setLoadingPreconfiguraciones] = useState(true)
   const [errorPreconfiguraciones, setErrorPreconfiguraciones] = useState(null)
-  const [selectedPeriod, setSelectedPeriod] = useState("") 
+  const [selectedPeriod, setSelectedPeriod] = useState("")
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [user, setUser] = useState(null) 
+  const [user, setUser] = useState(null)
   const [selectedTaller, setSelectedTaller] = useState(null)
-  const [selectedPreconfiguracionId, setSelectedPreconfiguracionId] = useState("") 
-  const [error, setError] = useState(null); 
+  const [selectedPreconfiguracionId, setSelectedPreconfiguracionId] = useState("")
+  const [error, setError] = useState(null)
+  const [selectedPeriodoId, setSelectedPeriodoId] = useState("")
+  const [selectedProfesorId, setSelectedProfesorId] = useState("")
 
-  
+  const [periodos, setPeriodos] = useState([])
+  const [profesores, setProfesores] = useState([])
+
   useEffect(() => {
     async function getUser() {
       const {
-        data: { user },
+        data: { user: supaUser },
       } = await supabase.auth.getUser()
-      setUser(user)
+      setUser(supaUser)
     }
     getUser()
 
-   
     async function loadPreconfiguraciones() {
       try {
         setLoadingPreconfiguraciones(true)
@@ -67,32 +82,45 @@ export function GestionTalleres() {
       }
     }
     loadPreconfiguraciones()
+
+    supabase
+      .from("PeriodoAcademico")
+      .select("*")
+      .then(({ data, error }) => {
+        if (!error) setPeriodos(data || [])
+      })
+
+    supabase
+      .from("Usuario")
+      .select("id_usuario, nombre, apellido")
+      .eq("rol", "PROFESOR")
+      .then(({ data, error }) => {
+        if (!error) setProfesores(data || [])
+      })
   }, [])
 
-  
   const handleSearch = (event) => {
     setSearchTerm(event.target.value)
   }
 
   const toggleAddForm = () => {
-    setSelectedTaller(null); 
+    setSelectedTaller(null)
     setShowAddForm(!showAddForm)
     setShowDetailView(false)
     setShowEditForm(false)
-    setError(null); 
+    setError(null)
   }
 
   const handleTallerCreated = async (success) => {
     if (success) {
       setShowAddForm(false)
-      setShowEditForm(false) 
-      await refreshTalleres() 
+      setShowEditForm(false)
+      await refreshTalleres()
     } else {
-      
       setShowAddForm(false)
       setShowEditForm(false)
     }
-    setError(null); 
+    setError(null)
   }
 
   const handleEditTaller = (taller) => {
@@ -100,26 +128,25 @@ export function GestionTalleres() {
     setShowEditForm(true)
     setShowAddForm(false)
     setShowDetailView(false)
-    setError(null); 
+    setError(null)
   }
 
   const handleTallerUpdated = async (success) => {
     if (success) {
       setShowEditForm(false)
-      await refreshTalleres() 
+      await refreshTalleres()
     } else {
       setShowEditForm(false)
     }
-    setError(null); 
+    setError(null)
   }
-
 
   const handleViewDetails = (taller) => {
     setSelectedTaller(taller)
     setShowDetailView(true)
     setShowAddForm(false)
     setShowEditForm(false)
-    setError(null); 
+    setError(null)
   }
 
   const handleBackToList = () => {
@@ -127,9 +154,9 @@ export function GestionTalleres() {
     setShowAddForm(false)
     setShowEditForm(false)
     setSelectedTaller(null)
-    setSelectedPreconfiguracionId("") 
-    setError(null); 
-    refreshTalleres() 
+    setSelectedPreconfiguracionId("")
+    setError(null)
+    refreshTalleres()
   }
 
   const handleTabChange = (tab) => {
@@ -137,10 +164,10 @@ export function GestionTalleres() {
     setShowAddForm(false)
     setShowEditForm(false)
     setShowDetailView(false)
-    setSearchTerm("") 
-    setSelectedPeriod("") 
-    setSelectedPreconfiguracionId("") 
-    setError(null); 
+    setSearchTerm("")
+    setSelectedPeriod("")
+    setSelectedPreconfiguracionId("")
+    setError(null)
   }
 
   const handlePeriodChange = (e) => {
@@ -151,39 +178,27 @@ export function GestionTalleres() {
     setSelectedPreconfiguracionId(e.target.value)
   }
 
-  const handleApplyPreconfiguracion = async () => {
+  const handleApplyPreconfiguracion = () => {
     if (!selectedPreconfiguracionId) {
       setError("Por favor selecciona una preconfiguración.")
       return
     }
-
     const preconfig = preconfiguraciones.find(
       (p) => p.id_taller_definido.toString() === selectedPreconfiguracionId
     )
-
     if (preconfig) {
-      
       setSelectedTaller({
-        nombre: preconfig.nombre,
+        id_taller_definido: preconfig.id_taller_definido,
         nombre_publico: preconfig.nombre,
         descripcion_publica: preconfig.descripcion,
-        objetivos: preconfig.objetivos, 
-        requisitos: preconfig.requisitos,
-        niveles_totales: preconfig.niveles_totales,
-        nivel_educativo_minimo: preconfig.nivel_educativo_minimo,
-        edad_minima: preconfig.edad_minima,
-        edad_maxima: preconfig.edad_maxima,
-        
-        periodo: new Date().toISOString().split('T')[0], 
-        profesor_a_cargo: "", 
+        id_periodo: "",
+        profesor_asignado: "",
         estado: "activo",
-        
-        evidencias: [],
       })
       setShowAddForm(true)
-      setError(null); 
+      setError(null)
     } else {
-        setError("Preconfiguración no encontrada.");
+      setError("Preconfiguración no encontrada.")
     }
   }
 
@@ -192,8 +207,8 @@ export function GestionTalleres() {
       currentEstado === "activo"
         ? "inactivo"
         : currentEstado === "inactivo"
-        ? "activo"
-        : "archivado" 
+          ? "activo"
+          : "archivado"
     if (
       !window.confirm(
         `¿Estás seguro de que quieres cambiar el estado a ${newEstado}?`
@@ -203,7 +218,7 @@ export function GestionTalleres() {
     }
     try {
       await updateEstadoTaller(tallerId, newEstado)
-      
+      await refreshTalleres()
     } catch (err) {
       alert("Error al cambiar el estado del taller: " + err.message)
     }
@@ -211,63 +226,68 @@ export function GestionTalleres() {
 
   const handleDeleteTaller = async (tallerId) => {
     if (
-      !window.confirm(
-        "¿Estás seguro de que quieres desactivar este taller?"
-      )
+      !window.confirm("¿Estás seguro de que quieres desactivar este taller?")
     ) {
       return
     }
     try {
       await deleteTaller(tallerId)
-      
+      await refreshTalleres()
     } catch (err) {
       alert("Error al desactivar el taller: " + err.message)
     }
   }
 
-  // --- Filtering Logic for Display ---
-  const filteredTalleres = talleres
-    .filter((taller) => {
-      // Filter by search term
-      const matchesSearch =
-  (taller.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-  (taller.descripcion?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-  ((taller.Usuario?.nombre || taller.profesor_a_cargo || "") // Use Usuario.nombre from hook if available, otherwise professor_a_cargo
-    .toLowerCase()
-    .includes(searchTerm.toLowerCase()));
+  // Memoizar filtrado de talleres
+  const filteredTalleres = useMemo(() => {
+    return talleres
+      .filter((taller) => {
+        const term = searchTerm.toLowerCase()
+        const matchesSearch =
+          (taller.nombre?.toLowerCase().includes(term) || false) ||
+          (taller.descripcion?.toLowerCase().includes(term) || false) ||
+          ((taller.Usuario?.nombre || taller.profesor_a_cargo || "")
+            .toLowerCase()
+            .includes(term))
 
+        const matchesTab =
+          activeTab === "activos"
+            ? taller.estado === "activo"
+            : activeTab === "inactivos"
+              ? taller.estado === "inactivo"
+              : activeTab === "archivados"
+                ? taller.estado === "archivado"
+                : true
 
-      // Filter by active tab status
-      const matchesTab =
-        activeTab === "activos"
-          ? taller.estado === "activo"
-          : activeTab === "inactivos"
-          ? taller.estado === "inactivo"
-          : activeTab === "archivados"
-          ? taller.estado === "archivado"
-          : true // No status filter for preconfiguraciones tab
+        const matchesPeriod = selectedPeriod
+          ? taller.periodo &&
+          new Date(taller.periodo).getFullYear().toString() ===
+          selectedPeriod
+          : true
 
-      // Filter by period
-      const matchesPeriod = selectedPeriod
-        ? taller.periodo &&
-          new Date(taller.periodo).getFullYear().toString() === selectedPeriod
-        : true
+        return matchesSearch && matchesTab && matchesPeriod
+      })
+      .sort((a, b) => new Date(b.periodo || "1970-01-01") - new Date(a.periodo || "1970-01-01"))
+  }, [talleres, searchTerm, activeTab, selectedPeriod])
 
-      return matchesSearch && matchesTab && matchesPeriod
-    })
-    .sort((a, b) => new Date(b.periodo) - new Date(a.periodo)) // Sort by newest period first
-
-  const uniquePeriods = [
-    ...new Set(
-      talleres
-        .filter((t) => t.periodo)
-        .map((t) => new Date(t.periodo).getFullYear().toString())
-    ),
-  ].sort((a, b) => b - a)
+  const uniquePeriods = useMemo(() => {
+    const años = talleres
+      .filter((t) => t.periodo)
+      .map((t) => new Date(t.periodo).getFullYear().toString())
+    return [...new Set(años)].sort((a, b) => b - a)
+  }, [talleres])
 
   const getTallerCountByTab = (tab) => {
     if (tab === "preconfiguraciones") return preconfiguraciones.length
-    return talleres.filter((t) => t.estado === tab).length
+    return talleres.filter((t) =>
+      tab === "activos"
+        ? t.estado === "activo"
+        : tab === "inactivos"
+          ? t.estado === "inactivo"
+          : tab === "archivados"
+            ? t.estado === "archivado"
+            : false
+    ).length
   }
 
   return (
@@ -306,19 +326,7 @@ export function GestionTalleres() {
               )}
             </div>
 
-            {/* Render Forms or Details based on state */}
-            {(showAddForm || showEditForm) && (
-              <div className="bg-white p-6 rounded-lg shadow">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                  {selectedTaller ? "Editar Taller" : "Crear Nuevo Taller"}
-                </h2>
-                <TallerForm
-                  onClose={selectedTaller ? handleTallerUpdated : handleTallerCreated}
-                  initialData={selectedTaller}
-                />
-              </div>
-            )}
-
+            {/* Detalle del Taller */}
             {showDetailView && selectedTaller && (
               <TallerDetails
                 taller={selectedTaller}
@@ -326,14 +334,14 @@ export function GestionTalleres() {
               />
             )}
 
-            {/* Main content: Tabs, Search, Filters, and Lists */}
+            {/* Contenido principal: tabs, búsqueda, filtros, lista */}
             {!showAddForm && !showEditForm && !showDetailView && (
               <div className="bg-white rounded-lg shadow-sm">
-                {/* Tabs for filtering */}
+                {/* Tabs para filtrar */}
                 <div className="border-b border-gray-200">
                   <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
                     {[
-                      { name: "Activos", key: "activo", icon: Power },
+                      { name: "Activos", key: "activos", icon: Power },
                       { name: "Inactivos", key: "inactivos", icon: PowerOff },
                       { name: "Archivados", key: "archivados", icon: X },
                       {
@@ -345,26 +353,18 @@ export function GestionTalleres() {
                       <button
                         key={tab.key}
                         onClick={() => handleTabChange(tab.key)}
-                        className={`
-                          ${
-                            activeTab === tab.key
-                              ? "border-emerald-500 text-emerald-600"
-                              : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                          }
-                          whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center
-                        `}
+                        className={`${activeTab === tab.key
+                            ? "border-emerald-500 text-emerald-600"
+                            : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                          } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
                       >
                         <tab.icon className="mr-2 h-5 w-5" />
                         {tab.name}
                         <span
-                          className={`
-                            ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                            ${
-                              activeTab === tab.key
-                                ? "bg-emerald-100 text-emerald-800"
-                                : "bg-gray-100 text-gray-900"
-                            }
-                          `}
+                          className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${activeTab === tab.key
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-gray-100 text-gray-900"
+                            }`}
                         >
                           {getTallerCountByTab(tab.key)}
                         </span>
@@ -410,7 +410,7 @@ export function GestionTalleres() {
                   )}
                 </div>
 
-                {/* Loading and Error States for Talleres */}
+                {/* Cargando y errores */}
                 {(loadingTalleres || loadingPreconfiguraciones) && (
                   <div className="text-center py-12">Cargando...</div>
                 )}
@@ -420,14 +420,14 @@ export function GestionTalleres() {
                   </div>
                 )}
 
-                {/* Content based on active tab */}
+                {/* Contenido según pestaña */}
                 {activeTab !== "preconfiguraciones" && (
                   <div className="px-6 pb-6">
                     {filteredTalleres.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {filteredTalleres.map((taller) => (
                           <div
-                            key={taller.id}
+                            key={taller.id_taller_impartido}
                             className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden"
                           >
                             <div className="p-5">
@@ -442,7 +442,11 @@ export function GestionTalleres() {
                                   <BookOpen className="mr-2 h-4 w-4 text-emerald-500" />
                                   <span>
                                     Profesor:{" "}
-                                    {taller.Usuario?.nombre + ' ' +taller.Usuario?.apellido || taller.profesor_a_cargo || "No asignado"}
+                                    {taller.Usuario?.nombre +
+                                      " " +
+                                      taller.Usuario?.apellido ||
+                                      taller.profesor_a_cargo ||
+                                      "No asignado"}
                                   </span>
                                 </div>
                                 <div className="flex items-center text-sm text-gray-600">
@@ -450,10 +454,6 @@ export function GestionTalleres() {
                                   <span>
                                     Período:{" "}
                                     {taller.PeriodoAcademico?.nombre_periodo}
-                                    {/* {new Date(taller.periodo).toLocaleDateString(
-                                      "es-ES",
-                                      { year: "numeric", month: "long" }
-                                    )} */}
                                   </span>
                                 </div>
                                 <div className="flex items-center text-sm text-gray-600">
@@ -483,13 +483,12 @@ export function GestionTalleres() {
                             <div className="bg-gray-50 px-5 py-3 flex space-x-3 border-t border-gray-200">
                               <button
                                 onClick={() =>
-                                  handleEstadoChange(taller.id, taller.estado)
+                                  handleEstadoChange(taller.id_taller_impartido, taller.estado)
                                 }
-                                className={`flex-1 flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md ${
-                                  taller.estado === "activo"
+                                className={`flex-1 flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md ${taller.estado === "activo"
                                     ? "text-orange-700 bg-orange-100 hover:bg-orange-200"
                                     : "text-green-700 bg-green-100 hover:bg-green-200"
-                                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors`}
+                                  } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors`}
                               >
                                 {taller.estado === "activo" ? (
                                   <>
@@ -505,7 +504,7 @@ export function GestionTalleres() {
                               </button>
                               {activeTab === "archivados" && (
                                 <button
-                                  onClick={() => handleDeleteTaller(taller.id)}
+                                  onClick={() => handleDeleteTaller(taller.id_taller_impartido)}
                                   className="flex-1 flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
                                 >
                                   <Trash2 className="w-4 h-4 mr-2" />
@@ -637,14 +636,233 @@ export function GestionTalleres() {
                           No hay preconfiguraciones disponibles
                         </h3>
                         <p className="text-gray-500">
-                          {searchTerm
-                            ? "No se encontraron preconfiguraciones que coincidan con tu búsqueda."
-                            : "Las preconfiguraciones aparecerán aquí cuando se agreguen al sistema."}
+                          Las preconfiguraciones aparecerán aquí cuando se agreguen al sistema.
                         </p>
                       </div>
                     )}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Formularios según contexto */}
+            {showAddForm && selectedTaller && selectedTaller.id_taller_definido && !showEditForm && (
+              <div className="bg-white p-6 rounded-lg shadow">
+                <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+                  Crear Taller a partir de Preconfiguración
+                </h2>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    if (!selectedPeriodoId || !selectedProfesorId) {
+                      setError("Debes seleccionar un período y un profesor.")
+                      return
+                    }
+                    try {
+                      await createTaller({
+                        id_taller_definido: selectedTaller.id_taller_definido,
+                        nombre_publico: selectedTaller.nombre_publico,
+                        descripcion_publica: selectedTaller.descripcion_publica,
+                        id_periodo: parseInt(selectedPeriodoId),
+                        profesor_asignado: parseInt(selectedProfesorId),
+                        estado: "activo",
+                      })
+                      setShowAddForm(false)
+                      setSelectedTaller(null)
+                      setSelectedPeriodoId("")
+                      setSelectedProfesorId("")
+                      setError(null)
+                      await refreshTalleres()
+                    } catch (err) {
+                      setError("Error al crear el taller: " + err.message)
+                    }
+                  }}
+                  className="space-y-4"
+                >
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Nombre del Taller
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedTaller.nombre_publico}
+                      onChange={(e) =>
+                        setSelectedTaller({ ...selectedTaller, nombre_publico: e.target.value })
+                      }
+                      className="w-full border rounded px-3 py-2"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Descripción
+                    </label>
+                    <textarea
+                      value={selectedTaller.descripcion_publica}
+                      disabled
+                      className="w-full border rounded px-3 py-2 bg-gray-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Período académico
+                    </label>
+                    <select
+                      value={selectedPeriodoId}
+                      onChange={(e) => setSelectedPeriodoId(e.target.value)}
+                      className="w-full border rounded px-3 py-2"
+                      required
+                    >
+                      <option value="">Selecciona un período</option>
+                      {periodos
+                        .filter((p) => p.estado === "ACTIVO")
+                        .map((periodo) => (
+                          <option key={periodo.id_periodo} value={periodo.id_periodo}>
+                            {periodo.nombre_periodo}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Profesor a cargo
+                    </label>
+                    <select
+                      value={selectedProfesorId}
+                      onChange={(e) => setSelectedProfesorId(e.target.value)}
+                      className="w-full border rounded px-3 py-2"
+                      required
+                    >
+                      <option value="">Selecciona un profesor</option>
+                      {profesores.map((prof) => (
+                        <option key={prof.id_usuario} value={prof.id_usuario}>
+                          {prof.nombre} {prof.apellido}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    type="submit"
+                    className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700"
+                  >
+                    Crear Taller
+                  </button>
+                  {error && <div className="text-red-600">{error}</div>}
+                </form>
+              </div>
+            )}
+
+            {showEditForm && selectedTaller && (
+              <div className="bg-white p-6 rounded-lg shadow">
+                <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+                  Editar Taller
+                </h2>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    if (!selectedTaller.nombre_publico || !selectedTaller.descripcion_publica || !selectedTaller.profesor_asignado || !selectedTaller.id_periodo) {
+                      setError("Completa todos los campos obligatorios.")
+                      return
+                    }
+                    try {
+                      await updateTaller(selectedTaller.id_taller_impartido, {
+                        nombre_publico: selectedTaller.nombre_publico,
+                        descripcion_publica: selectedTaller.descripcion_publica,
+                        profesor_asignado: parseInt(selectedTaller.profesor_asignado),
+                        id_periodo: parseInt(selectedTaller.id_periodo)
+                      })
+                      setShowEditForm(false)
+                      setSelectedTaller(null)
+                      setError(null)
+                      await refreshTalleres()
+                    } catch (err) {
+                      setError("Error al actualizar el taller: " + err.message)
+                    }
+                  }}
+                  className="space-y-4"
+                >
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Nombre del Taller</label>
+                    <input
+                      type="text"
+                      value={selectedTaller.nombre_publico}
+                      onChange={e => setSelectedTaller({ ...selectedTaller, nombre_publico: e.target.value })}
+                      className="w-full border rounded px-3 py-2"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Descripción</label>
+                    <textarea
+                      value={selectedTaller.descripcion_publica}
+                      onChange={e => setSelectedTaller({ ...selectedTaller, descripcion_publica: e.target.value })}
+                      className="w-full border rounded px-3 py-2"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Período académico</label>
+                    <select
+                      value={selectedTaller.id_periodo}
+                      onChange={e => setSelectedTaller({ ...selectedTaller, id_periodo: e.target.value })}
+                      className="w-full border rounded px-3 py-2"
+                      required
+                    >
+                      <option value="">Selecciona un período</option>
+                      {periodos
+                        .filter(p => p.estado === "ACTIVO")
+                        .map(periodo => (
+                          <option key={periodo.id_periodo} value={periodo.id_periodo}>
+                            {periodo.nombre_periodo}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Profesor a cargo</label>
+                    <select
+                      value={selectedTaller.profesor_asignado}
+                      onChange={e => setSelectedTaller({ ...selectedTaller, profesor_asignado: e.target.value })}
+                      className="w-full border rounded px-3 py-2"
+                      required
+                    >
+                      <option value="">Selecciona un profesor</option>
+                      {profesores.map(prof => (
+                        <option key={prof.id_usuario} value={prof.id_usuario}>
+                          {prof.nombre} {prof.apellido}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    type="submit"
+                    className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700"
+                  >
+                    Guardar Cambios
+                  </button>
+                  {error && <div className="text-red-600">{error}</div>}
+                </form>
+              </div>
+            )}
+
+            {showAddForm && (!selectedTaller || !selectedTaller.id_taller_definido) && (
+              <div className="bg-white p-6 rounded-lg shadow">
+                <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+                  Crear Nuevo Taller
+                </h2>
+                <TallerForm
+                  onClose={(success) => {
+                    if (success) {
+                      setShowAddForm(false)
+                      setShowEditForm(false)
+                      refreshTalleres()
+                    } else {
+                      setShowAddForm(false)
+                    }
+                    setError(null)
+                  }}
+                  userId={user?.id_usuario}
+                />
               </div>
             )}
           </div>

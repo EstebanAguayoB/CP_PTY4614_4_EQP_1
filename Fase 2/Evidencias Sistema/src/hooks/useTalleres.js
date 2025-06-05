@@ -29,7 +29,14 @@ export function useTalleres() {
     try {
       const { data, error } = await supabase
         .from('TallerImpartido')
-        .insert([tallerData])
+        .insert([{
+          id_taller_definido: parseInt(tallerData.id_taller_definido),
+          id_periodo: parseInt(tallerData.id_periodo),
+          nombre_publico: tallerData.nombre_publico,
+          descripcion_publica: tallerData.descripcion_publica,
+          profesor_asignado: parseInt(tallerData.profesor_asignado),
+          estado: tallerData.estado
+        }])
         .select()
         .single()
       
@@ -48,7 +55,7 @@ export function useTalleres() {
       const { data, error } = await supabase
         .from('TallerImpartido')
         .update(tallerData)
-        .eq('id', tallerId)
+        .eq('id_taller_impartido', tallerId)
         .select()
         .single()
       
@@ -105,7 +112,7 @@ export function useTalleres() {
       const { error } = await supabase
         .from('TallerImpartido')
         .delete()
-        .eq('id', tallerId)
+        .eq('id_taller_impartido', tallerId)
       
       if (error) throw error
 
