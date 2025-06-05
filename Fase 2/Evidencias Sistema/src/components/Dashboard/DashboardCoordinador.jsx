@@ -140,7 +140,7 @@ export default function DashboardCoordinador() {
   useEffect(() => {
     const taller_impartido = async () => {
       try {
-        let { data, error } = await supabase.from("TallerImpartido").select("*");
+        let { data, error } = await supabase.from("TallerImpartido").select("*, Usuario(nombre, apellido)");;
         if (error) setError(error);
         else setTaller_impartido(data);
       } catch (err) {
@@ -308,7 +308,7 @@ export default function DashboardCoordinador() {
                       <div className="space-y-2 mb-4">
                         <div className="flex justify-between text-sm">
                             <span className="text-gray-500">Profesor:</span>
-                              <span className="text-gray-900">{taller_impartido.profesor_asignado}</span> 
+                              <span className="text-gray-900">{taller_impartido.Usuario.nombre} {taller_impartido.Usuario.apellido}</span> 
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Alumnos:</span>

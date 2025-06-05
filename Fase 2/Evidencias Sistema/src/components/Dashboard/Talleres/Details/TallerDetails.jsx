@@ -18,7 +18,7 @@ export function TallerDetails({ taller, onEdit }) {
       <div className="px-4 py-5 sm:px-6 bg-gradient-to-r from-emerald-50 to-teal-50">
         <div className="flex justify-between items-start">
           <div>
-            <h3 className="text-2xl font-bold text-gray-900">{taller.nombre}</h3>
+            <h3 className="text-2xl font-bold text-gray-900">{taller.nombre_publico}</h3>
             <p className="mt-1 text-sm text-gray-500">{taller.descripcion_publica}</p>
           </div>
           <button
@@ -39,7 +39,7 @@ export function TallerDetails({ taller, onEdit }) {
               Profesor a cargo
             </dt>
             <dd className="mt-1 text-sm text-gray-900">
-              {taller.profesor_a_cargo}
+              {taller.Usuario.nombre} {taller.Usuario.apellido}
             </dd>
           </div>
 
@@ -59,7 +59,8 @@ export function TallerDetails({ taller, onEdit }) {
               Periodo
             </dt>
             <dd className="mt-1 text-sm text-gray-900">
-              {new Date(taller.periodo).toLocaleDateString('es-ES')}
+              {taller.PeriodoAcademico?.nombre_periodo}
+              {/* {new Date(taller.periodo).toLocaleDateString('es-ES')} */}
             </dd>
           </div>
 
@@ -79,14 +80,14 @@ export function TallerDetails({ taller, onEdit }) {
               Nivel educativo mínimo
             </dt>
             <dd className="mt-1 text-sm text-gray-900">
-              {taller.nivel_educativo_minimo}
+              {taller.TallerDefinido.nivel_minimo}
             </dd>
           </div>
 
           <div className="sm:col-span-1">
             <dt className="text-sm font-medium text-gray-500">Rango de edad</dt>
             <dd className="mt-1 text-sm text-gray-900">
-              {taller.edad_minima} - {taller.edad_maxima} años
+              {taller.TallerDefinido.edad_minima} - {taller.TallerDefinido.edad_maxima} años
             </dd>
           </div>
 
@@ -94,12 +95,12 @@ export function TallerDetails({ taller, onEdit }) {
             <dt className="text-sm font-medium text-gray-500">Objetivos</dt>
             <dd className="mt-1 text-sm text-gray-900">
               <ul className="list-disc pl-5 space-y-1">
-                {Array.isArray(taller.objetivos) ? (
-                  taller.objetivos.map((objetivo, index) => (
+                {Array.isArray(taller.TallerDefinido.objetivos) ? (
+                  taller.TallerDefinido.objetivos.map((objetivo, index) => (
                     <li key={index}>{objetivo}</li>
                   ))
                 ) : (
-                  <li>{taller.objetivos}</li>
+                  <li>{taller.TallerDefinido.objetivos}</li>
                 )}
               </ul>
             </dd>
@@ -107,7 +108,7 @@ export function TallerDetails({ taller, onEdit }) {
 
           <div className="sm:col-span-2">
             <dt className="text-sm font-medium text-gray-500">Requisitos</dt>
-            <dd className="mt-1 text-sm text-gray-900">{taller.requisitos}</dd>
+            <dd className="mt-1 text-sm text-gray-900">{taller.TallerDefinido.requisitos}</dd>
           </div>
         </dl>
       </div>

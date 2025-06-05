@@ -333,7 +333,7 @@ export function GestionTalleres() {
                 <div className="border-b border-gray-200">
                   <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
                     {[
-                      { name: "Activos", key: "activos", icon: Power },
+                      { name: "Activos", key: "activo", icon: Power },
                       { name: "Inactivos", key: "inactivos", icon: PowerOff },
                       { name: "Archivados", key: "archivados", icon: X },
                       {
@@ -432,7 +432,7 @@ export function GestionTalleres() {
                           >
                             <div className="p-5">
                               <h3 className="text-lg font-semibold text-gray-900 truncate">
-                                {taller.nombre}
+                                {taller.nombre_publico}
                               </h3>
                               <p className="mt-1 text-sm text-gray-500 line-clamp-2">
                                 {taller.descripcion}
@@ -442,17 +442,18 @@ export function GestionTalleres() {
                                   <BookOpen className="mr-2 h-4 w-4 text-emerald-500" />
                                   <span>
                                     Profesor:{" "}
-                                    {taller.Usuario?.nombre || taller.profesor_a_cargo || "No asignado"}
+                                    {taller.Usuario?.nombre + ' ' +taller.Usuario?.apellido || taller.profesor_a_cargo || "No asignado"}
                                   </span>
                                 </div>
                                 <div className="flex items-center text-sm text-gray-600">
                                   <Calendar className="mr-2 h-4 w-4 text-emerald-500" />
                                   <span>
                                     Período:{" "}
-                                    {new Date(taller.periodo).toLocaleDateString(
+                                    {taller.PeriodoAcademico?.nombre_periodo}
+                                    {/* {new Date(taller.periodo).toLocaleDateString(
                                       "es-ES",
                                       { year: "numeric", month: "long" }
-                                    )}
+                                    )} */}
                                   </span>
                                 </div>
                                 <div className="flex items-center text-sm text-gray-600">

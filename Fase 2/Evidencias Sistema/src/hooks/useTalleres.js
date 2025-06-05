@@ -11,11 +11,13 @@ export function useTalleres() {
       setLoading(true)
       const { data, error } = await supabase
         .from('TallerImpartido')
-        .select('*, Usuario(nombre)')
+        .select('*, Usuario(nombre,apellido),TallerDefinido(*),PeriodoAcademico(nombre_periodo)')
       
       if (error) throw error
       
       setTalleres(data)
+      console.log(data);
+      
     } catch (err) {
       setError(err.message)
     } finally {
