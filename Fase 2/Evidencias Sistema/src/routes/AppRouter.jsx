@@ -3,10 +3,11 @@ import Home from "../pages/Home"
 import Login from "../pages/Login"
 import CoordinatorDashboardPage from "../pages/CoordinatorDashboard"
 import StudentManagementPage from "../pages/StudentManagement"
-import { TalleresManagement } from '../pages/TalleresManagement'
+import { TalleresManagement } from "../pages/TalleresManagement"
 import ProfesoresManagementPage from "../pages/ProfesoresManagement"
 import ReportesManagementPage from "../pages/ReportesManagement"
-import DashboardProfesorPage from "../pages/DashboardProfesor";
+import DashboardProfesorPage from "../pages/DashboardProfesor"
+import MisTalleresPage from "../pages/MisTalleres"
 import ProtectedRoute from "../components/protected_route"
 
 export default function AppRouter() {
@@ -15,14 +16,68 @@ export default function AppRouter() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={ <ProtectedRoute> <CoordinatorDashboardPage /></ProtectedRoute>}/>
-        <Route path="/dashboard/alumnos" element={<ProtectedRoute> <StudentManagementPage /> </ProtectedRoute> } />
-        <Route path="/dashboard/talleres" element={<ProtectedRoute> <TalleresManagement /></ProtectedRoute>} />
-        <Route path="/dashboard/profesores" element={<ProtectedRoute> <ProfesoresManagementPage /></ProtectedRoute>}/>
-        <Route path="/dashboard/reportes" element={ <ProtectedRoute> <ReportesManagementPage /></ProtectedRoute>}/>
-        <Route path="/dashboardprofesor" element={<ProtectedRoute><DashboardProfesorPage /></ProtectedRoute>}/>
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              {" "}
+              <CoordinatorDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/alumnos"
+          element={
+            <ProtectedRoute>
+              {" "}
+              <StudentManagementPage />{" "}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/talleres"
+          element={
+            <ProtectedRoute>
+              {" "}
+              <TalleresManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/profesores"
+          element={
+            <ProtectedRoute>
+              {" "}
+              <ProfesoresManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/reportes"
+          element={
+            <ProtectedRoute>
+              {" "}
+              <ReportesManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboardprofesor"
+          element={
+            <ProtectedRoute>
+              <DashboardProfesorPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboardprofesor/talleres"
+          element={
+            <ProtectedRoute>
+              <MisTalleresPage />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </Router>
   )
-
 }
