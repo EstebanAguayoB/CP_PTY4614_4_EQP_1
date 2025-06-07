@@ -178,6 +178,25 @@ export function GestionTalleres() {
     setSelectedPreconfiguracionId(e.target.value)
   }
 
+  const handleApplyPreconfiguracionDirect = (id) => {
+    const preconfig = preconfiguraciones.find(
+      (p) => p.id_taller_definido === id
+    )
+    if (preconfig) {
+      setSelectedTaller({
+        id_taller_definido: preconfig.id_taller_definido,
+        nombre_publico: preconfig.nombre,
+        descripcion_publica: preconfig.descripcion,
+        id_periodo: "",
+        profesor_asignado: "",
+        estado: "activo",
+      })
+      setShowAddForm(true)
+      setError(null)
+    } else {
+      setError("Preconfiguración no encontrada.")
+    }
+  }
   const handleApplyPreconfiguracion = () => {
     if (!selectedPreconfiguracionId) {
       setError("Por favor selecciona una preconfiguración.")
@@ -204,9 +223,9 @@ export function GestionTalleres() {
 
   const handleEstadoChange = async (tallerId, currentEstado) => {
     const newEstado =
-  currentEstado === "activo"
-    ? "finalizado"
-    : "activo"
+      currentEstado === "activo"
+        ? "finalizado"
+        : "activo"
     if (
       !window.confirm(
         `¿Estás seguro de que quieres cambiar el estado a ${newEstado}?`
@@ -248,12 +267,12 @@ export function GestionTalleres() {
             .toLowerCase()
             .includes(term))
 
-       const matchesTab =
-  activeTab === "activos"
-    ? taller.estado === "activo"
-    : activeTab === "finalizados"
-      ? taller.estado === "finalizado"
-      : true
+        const matchesTab =
+          activeTab === "activos"
+            ? taller.estado === "activo"
+            : activeTab === "finalizados"
+              ? taller.estado === "finalizado"
+              : true
 
         const matchesPeriod = selectedPeriod
           ? taller.periodo &&
@@ -274,15 +293,15 @@ export function GestionTalleres() {
   }, [talleres])
 
   const getTallerCountByTab = (tab) => {
-  if (tab === "preconfiguraciones") return preconfiguraciones.length
-  return talleres.filter((t) =>
-    tab === "activos"
-      ? t.estado === "activo"
-      : tab === "finalizados"
-        ? t.estado === "finalizado"
-        : false
-  ).length
-}
+    if (tab === "preconfiguraciones") return preconfiguraciones.length
+    return talleres.filter((t) =>
+      tab === "activos"
+        ? t.estado === "activo"
+        : tab === "finalizados"
+          ? t.estado === "finalizado"
+          : false
+    ).length
+  }
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -348,16 +367,16 @@ export function GestionTalleres() {
                         key={tab.key}
                         onClick={() => handleTabChange(tab.key)}
                         className={`${activeTab === tab.key
-                            ? "border-emerald-500 text-emerald-600"
-                            : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                          ? "border-emerald-500 text-emerald-600"
+                          : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
                           } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
                       >
                         <tab.icon className="mr-2 h-5 w-5" />
                         {tab.name}
                         <span
                           className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${activeTab === tab.key
-                              ? "bg-emerald-100 text-emerald-800"
-                              : "bg-gray-100 text-gray-900"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-gray-100 text-gray-900"
                             }`}
                         >
                           {getTallerCountByTab(tab.key)}
@@ -480,8 +499,8 @@ export function GestionTalleres() {
                                   handleEstadoChange(taller.id_taller_impartido, taller.estado)
                                 }
                                 className={`flex-1 flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md ${taller.estado === "activo"
-                                    ? "text-orange-700 bg-orange-100 hover:bg-orange-200"
-                                    : "text-green-700 bg-green-100 hover:bg-green-200"
+                                  ? "text-orange-700 bg-orange-100 hover:bg-orange-200"
+                                  : "text-green-700 bg-green-100 hover:bg-green-200"
                                   } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors`}
                               >
                                 {taller.estado === "activo" ? (
@@ -608,12 +627,7 @@ export function GestionTalleres() {
                             </div>
                             <div className="bg-gray-50 px-5 py-3 flex space-x-3">
                               <button
-                                onClick={() => {
-                                  setSelectedPreconfiguracionId(
-                                    preconfig.id_taller_definido.toString()
-                                  )
-                                  handleApplyPreconfiguracion()
-                                }}
+                                onClick={() => handleApplyPreconfiguracionDirect(preconfig.id_taller_definido)}
                                 className="flex-1 flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-emerald-700 bg-emerald-100 hover:bg-emerald-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
                               >
                                 <Plus className="w-4 h-4 mr-2" />
