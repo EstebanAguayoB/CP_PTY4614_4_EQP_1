@@ -60,10 +60,16 @@ export function GestionTalleres() {
 
   useEffect(() => {
     async function getUser() {
-      const {
-        data: { user: supaUser },
-      } = await supabase.auth.getUser()
-      setUser(supaUser)
+      const { data: { user: supaUser } } = await supabase.auth.getUser()
+      if (supaUser) {
+        // Buscar el usuario en tu tabla Usuario usando el campo uid
+        const { data: usuarioDb } = await supabase
+          .from("Usuario")
+          .select("id_usuario")
+          .eq("uid", supaUser.id) 
+          .single()
+        setUser(usuarioDb ? { ...supaUser, id_usuario: usuarioDb.id_usuario } : null)
+      }
     }
     getUser()
 
@@ -859,16 +865,7 @@ export function GestionTalleres() {
                   Crear Nuevo Taller
                 </h2>
                 <TallerForm
-                  onClose={(success) => {
-                    if (success) {
-                      setShowAddForm(false)
-                      setShowEditForm(false)
-                      refreshTalleres()
-                    } else {
-                      setShowAddForm(false)
-                    }
-                    setError(null)
-                  }}
+                  onClose={handleTallerCreated}
                   userId={user?.id_usuario}
                 />
               </div>
