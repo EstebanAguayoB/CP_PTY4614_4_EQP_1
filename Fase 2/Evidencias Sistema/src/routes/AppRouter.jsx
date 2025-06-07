@@ -9,6 +9,7 @@ import ReportesManagementPage from "../pages/ReportesManagement"
 import DashboardProfesorPage from "../pages/DashboardProfesor"
 import MisTalleresPage from "../pages/MisTalleres"
 import AlumnosProfesorPage from "../pages/AlumnosProfesor"
+import EvidenciasProfesorPage from "../pages/EvidenciasProfesor"
 import ProtectedRoute from "../components/protected_route"
 
 export default function AppRouter() {
@@ -78,6 +79,14 @@ export default function AppRouter() {
           element={
             <ProtectedRoute>
               <AlumnosProfesorPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboardprofesor/evidencias"
+          element={
+            <ProtectedRoute>
+              <EvidenciasProfesorPage />
             </ProtectedRoute>
           }
         />
