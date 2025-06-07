@@ -8,6 +8,7 @@ import ProfesoresManagementPage from "../pages/ProfesoresManagement"
 import ReportesManagementPage from "../pages/ReportesManagement"
 import DashboardProfesorPage from "../pages/DashboardProfesor"
 import MisTalleresPage from "../pages/MisTalleres"
+import AlumnosProfesorPage from "../pages/AlumnosProfesor"
 import ProtectedRoute from "../components/protected_route"
 
 export default function AppRouter() {
@@ -20,7 +21,6 @@ export default function AppRouter() {
           path="/dashboard"
           element={
             <ProtectedRoute>
-              {" "}
               <CoordinatorDashboardPage />
             </ProtectedRoute>
           }
@@ -29,8 +29,7 @@ export default function AppRouter() {
           path="/dashboard/alumnos"
           element={
             <ProtectedRoute>
-              {" "}
-              <StudentManagementPage />{" "}
+              <StudentManagementPage />
             </ProtectedRoute>
           }
         />
@@ -38,7 +37,6 @@ export default function AppRouter() {
           path="/dashboard/talleres"
           element={
             <ProtectedRoute>
-              {" "}
               <TalleresManagement />
             </ProtectedRoute>
           }
@@ -47,7 +45,6 @@ export default function AppRouter() {
           path="/dashboard/profesores"
           element={
             <ProtectedRoute>
-              {" "}
               <ProfesoresManagementPage />
             </ProtectedRoute>
           }
@@ -56,7 +53,6 @@ export default function AppRouter() {
           path="/dashboard/reportes"
           element={
             <ProtectedRoute>
-              {" "}
               <ReportesManagementPage />
             </ProtectedRoute>
           }
@@ -74,6 +70,14 @@ export default function AppRouter() {
           element={
             <ProtectedRoute>
               <MisTalleresPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboardprofesor/alumnos"
+          element={
+            <ProtectedRoute>
+              <AlumnosProfesorPage />
             </ProtectedRoute>
           }
         />
