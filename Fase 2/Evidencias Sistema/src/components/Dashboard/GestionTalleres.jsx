@@ -57,6 +57,15 @@ export function GestionTalleres() {
 
   const [periodos, setPeriodos] = useState([])
   const [profesores, setProfesores] = useState([])
+  const [showPeriodoModal, setShowPeriodoModal] = useState(false)
+  const [periodoForm, setPeriodoForm] = useState({
+    nombre_periodo: "",
+    fecha_inicio: "",
+    fecha_fin: "",
+    estado: "ACTIVO"
+  })
+  const [periodoError, setPeriodoError] = useState(null)
+  const [periodoLoading, setPeriodoLoading] = useState(false)
 
   useEffect(() => {
     async function getUser() {
@@ -410,10 +419,15 @@ export function GestionTalleres() {
                   </div>
 
                   {activeTab !== "preconfiguraciones" && (
-                    <div className="w-full sm:w-auto">
-                      <label htmlFor="period-filter" className="sr-only">
-                        Filtrar por Período
-                      </label>
+                    <div className="w-full sm:w-auto flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowPeriodoModal(true)}
+                        className="inline-flex items-center px-1 py-0 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+                      >
+                        <Plus className="-ml-1 mr-2 h-5 w-5" />
+                        Nuevo Período
+                      </button>
                       <select
                         id="period-filter"
                         className={`block w-full pl-3 pr-10 py-2 text-base border ${selectedPeriod === ""
@@ -873,6 +887,107 @@ export function GestionTalleres() {
                   onClose={handleTallerCreated}
                   userId={user?.id_usuario}
                 />
+              </div>
+            )}
+
+            {showPeriodoModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+                <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+                  <h2 className="text-xl font-semibold mb-4">Nuevo Período Académico</h2>
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault()
+                      setPeriodoLoading(true)
+                      setPeriodoError(null)
+                      if (!periodoForm.nombre_periodo || !periodoForm.fecha_inicio || !periodoForm.fecha_fin || !periodoForm.estado) {
+                        setPeriodoError("Completa todos los campos.")
+                        setPeriodoLoading(false)
+                        return
+                      }
+                      try {
+                        const { error } = await supabase
+                          .from("PeriodoAcademico")
+                          .insert([periodoForm])
+                        if (error) throw error
+                        setShowPeriodoModal(false)
+                        setPeriodoForm({
+                          nombre_periodo: "",
+                          fecha_inicio: "",
+                          fecha_fin: "",
+                          estado: "ACTIVO"
+                        })
+                        // Recargar periodos
+                        const { data, error: err } = await supabase.from("PeriodoAcademico").select("*")
+                        if (!err) setPeriodos(data || [])
+                      } catch (err) {
+                        setPeriodoError(err.message)
+                      } finally {
+                        setPeriodoLoading(false)
+                      }
+                    }}
+                    className="space-y-4"
+                  >
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Nombre del período</label>
+                      <input
+                        type="text"
+                        className="w-full border rounded px-3 py-2"
+                        value={periodoForm.nombre_periodo}
+                        onChange={e => setPeriodoForm({ ...periodoForm, nombre_periodo: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Fecha inicio</label>
+                      <input
+                        type="date"
+                        className="w-full border rounded px-3 py-2"
+                        value={periodoForm.fecha_inicio}
+                        onChange={e => setPeriodoForm({ ...periodoForm, fecha_inicio: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Fecha fin</label>
+                      <input
+                        type="date"
+                        className="w-full border rounded px-3 py-2"
+                        value={periodoForm.fecha_fin}
+                        onChange={e => setPeriodoForm({ ...periodoForm, fecha_fin: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Estado</label>
+                      <select
+                        className="w-full border rounded px-3 py-2"
+                        value={periodoForm.estado}
+                        onChange={e => setPeriodoForm({ ...periodoForm, estado: e.target.value })}
+                        required
+                      >
+                        <option value="ACTIVO">ACTIVO</option>
+                        <option value="CERRADO">CERRADO</option>
+                      </select>
+                    </div>
+                    {periodoError && <div className="text-red-600">{periodoError}</div>}
+                    <div className="flex justify-end space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowPeriodoModal(false)}
+                        className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={periodoLoading}
+                        className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                      >
+                        {periodoLoading ? "Guardando..." : "Guardar"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
             )}
           </div>
