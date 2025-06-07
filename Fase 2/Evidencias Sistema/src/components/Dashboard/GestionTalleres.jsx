@@ -274,10 +274,9 @@ export function GestionTalleres() {
               ? taller.estado === "finalizado"
               : true
 
+        // Compara por nombre de período académico
         const matchesPeriod = selectedPeriod
-          ? taller.periodo &&
-          new Date(taller.periodo).getFullYear().toString() ===
-          selectedPeriod
+          ? taller.PeriodoAcademico?.nombre_periodo === selectedPeriod
           : true
 
         return matchesSearch && matchesTab && matchesPeriod
@@ -286,11 +285,9 @@ export function GestionTalleres() {
   }, [talleres, searchTerm, activeTab, selectedPeriod])
 
   const uniquePeriods = useMemo(() => {
-    const años = talleres
-      .filter((t) => t.periodo)
-      .map((t) => new Date(t.periodo).getFullYear().toString())
-    return [...new Set(años)].sort((a, b) => b - a)
-  }, [talleres])
+    // Extrae los nombres únicos de los períodos académicos de la lista de periodos cargados
+    return [...new Set(periodos.map((p) => p.nombre_periodo))].sort()
+  }, [periodos])
 
   const getTallerCountByTab = (tab) => {
     if (tab === "preconfiguraciones") return preconfiguraciones.length
@@ -408,7 +405,10 @@ export function GestionTalleres() {
                       </label>
                       <select
                         id="period-filter"
-                        className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm rounded-md"
+                        className={`block w-full pl-3 pr-10 py-2 text-base border ${selectedPeriod === ""
+                            ? "border-emerald-500 ring-2 ring-emerald-200"
+                            : "border-gray-300"
+                          } focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm rounded-md`}
                         value={selectedPeriod}
                         onChange={handlePeriodChange}
                       >
