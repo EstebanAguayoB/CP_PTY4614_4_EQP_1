@@ -306,6 +306,11 @@ export function GestionTalleres() {
     ).length
   }
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    navigate("/")
+  }
+
   return (
     <div className="flex h-screen bg-gray-100">
       <DashboardSidebar
@@ -313,7 +318,7 @@ export function GestionTalleres() {
         setSidebarOpen={setSidebarOpen}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <UserInfoBar setSidebarOpen={setSidebarOpen} user={user} />
+        <UserInfoBar user={user} onLogout={handleLogout} />
 
         <main className="flex-1 overflow-y-auto p-4">
           <div className="max-w-7xl mx-auto">
