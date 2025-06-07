@@ -58,7 +58,7 @@ const DashboardSidebar = ({ sidebarOpen, toggleSidebar, userRole = "Coordinador"
       roles: ["Coordinador", "Admin"],
     },
     {
-      name: "Reportes y Evidencias",
+      name: "Reportes Talleres",
       path: "/dashboard/reportes",
       icon: FileText,
       roles: ["Coordinador", "Profesor", "Admin"],

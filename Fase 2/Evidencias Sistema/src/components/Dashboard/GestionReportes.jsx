@@ -1,5 +1,22 @@
 import { useState, useEffect } from "react"
-import { Search, Download, FileText, Menu, BarChart3 } from "lucide-react"
+import {
+  Search,
+  Download,
+  FileText,
+  Menu,
+  BarChart3,
+  X,
+  Eye,
+  Calendar,
+  User,
+  Users,
+  TrendingUp,
+  CheckCircle,
+  Target,
+  UserCheck,
+  Star,
+  Award,
+} from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { useNavigate } from "react-router-dom"
 import DashboardSidebar from "../shared/DashboardSidebar"
@@ -10,6 +27,9 @@ export default function GestionReportes() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [user, setUser] = useState(null)
   const [selectedArea, setSelectedArea] = useState("todos")
+  const [previewReport, setPreviewReport] = useState(null)
+  const [showPreview, setShowPreview] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
   const navigate = useNavigate()
 
   // Obtener el usuario
@@ -39,6 +59,69 @@ export default function GestionReportes() {
       fecha: "20/04/2025",
       profesor: "Carlos Martínez",
       alumnos: 45,
+      contenido: {
+        resumen:
+          "Evaluación integral del progreso de los estudiantes en técnicas deportivas fundamentales y su rendimiento físico durante el segundo trimestre del año académico.",
+        metricas: {
+          avancePromedio: {
+            valor: 78.5,
+            descripcion: "Promedio de avance en nivel de competencias deportivas",
+            detalles: [
+              "Técnica de carrera: 82%",
+              "Resistencia cardiovascular: 75%",
+              "Coordinación motriz: 80%",
+              "Trabajo en equipo: 77%",
+            ],
+          },
+          evidenciasValidadas: {
+            valor: 92.3,
+            total: 156,
+            validadas: 144,
+            descripcion: "Porcentaje de evidencias de progreso validadas por el instructor",
+          },
+          seguimientoPromedio: {
+            valor: 3.2,
+            descripcion: "Número promedio de seguimientos individualizados por estudiante",
+            detalles: ["Evaluaciones técnicas: 2.1 por estudiante", "Seguimientos físicos: 1.1 por estudiante"],
+          },
+          retencion: {
+            valor: 88.9,
+            inicial: 45,
+            actual: 40,
+            descripcion: "Tasa de retención de estudiantes en el taller",
+          },
+          popularidad: {
+            valor: 95.7,
+            inscritos: 45,
+            capacidad: 47,
+            listaEspera: 12,
+            descripcion: "Nivel de demanda del taller basado en inscripciones",
+          },
+          finalizacion: {
+            valor: 85.4,
+            completados: 35,
+            total: 41,
+            descripcion: "Porcentaje de estudiantes que completaron satisfactoriamente el taller",
+          },
+        },
+        objetivos: [
+          "Mejorar la técnica de carrera y salto en un 15%",
+          "Desarrollar resistencia cardiovascular en todos los participantes",
+          "Fortalecer habilidades de trabajo en equipo y liderazgo deportivo",
+        ],
+        resultados: [
+          "85% de los estudiantes mejoraron su tiempo en carrera de 100m",
+          "Incremento del 20% en resistencia cardiovascular promedio",
+          "Mejora notable en coordinación y trabajo colaborativo en deportes de equipo",
+          "Reducción del 30% en lesiones menores durante la práctica",
+        ],
+        recomendaciones: [
+          "Continuar con entrenamientos progresivos de resistencia",
+          "Implementar más ejercicios de coordinación específicos",
+          "Reforzar técnicas de salto y velocidad",
+          "Incluir más actividades de team building deportivo",
+        ],
+      },
     },
     {
       id: 2,
@@ -47,6 +130,69 @@ export default function GestionReportes() {
       fecha: "19/04/2025",
       profesor: "María González",
       alumnos: 28,
+      contenido: {
+        resumen:
+          "Análisis comprehensivo del desarrollo creativo y técnico de los estudiantes en artes visuales, con énfasis en pintura, dibujo y composición artística.",
+        metricas: {
+          avancePromedio: {
+            valor: 82.1,
+            descripcion: "Promedio de avance en técnicas artísticas y expresión creativa",
+            detalles: [
+              "Técnicas de pintura: 85%",
+              "Composición visual: 79%",
+              "Uso del color: 84%",
+              "Creatividad original: 80%",
+            ],
+          },
+          evidenciasValidadas: {
+            valor: 96.4,
+            total: 84,
+            validadas: 81,
+            descripcion: "Porcentaje de obras y proyectos artísticos validados",
+          },
+          seguimientoPromedio: {
+            valor: 4.1,
+            descripcion: "Número promedio de revisiones y retroalimentaciones por estudiante",
+            detalles: ["Revisiones de técnica: 2.3 por estudiante", "Evaluaciones creativas: 1.8 por estudiante"],
+          },
+          retencion: {
+            valor: 92.9,
+            inicial: 28,
+            actual: 26,
+            descripcion: "Tasa de retención de estudiantes en el taller artístico",
+          },
+          popularidad: {
+            valor: 87.5,
+            inscritos: 28,
+            capacidad: 32,
+            listaEspera: 8,
+            descripcion: "Nivel de demanda del taller de artes visuales",
+          },
+          finalizacion: {
+            valor: 89.3,
+            completados: 25,
+            total: 28,
+            descripcion: "Porcentaje de estudiantes que completaron el portafolio artístico",
+          },
+        },
+        objetivos: [
+          "Dominar técnicas básicas de pintura al óleo y acrílico",
+          "Desarrollar un estilo personal y voz artística única",
+          "Mejorar la composición visual y teoría del color",
+        ],
+        resultados: [
+          "90% de estudiantes completaron proyectos de pintura avanzada",
+          "Mejora significativa del 25% en uso efectivo del color",
+          "Desarrollo exitoso de estilos personales únicos en el 78% de estudiantes",
+          "Creación de 156 obras artísticas de calidad expositiva",
+        ],
+        recomendaciones: [
+          "Explorar nuevas técnicas mixtas y experimentales",
+          "Organizar exposición semestral de trabajos estudiantiles",
+          "Introducir elementos de arte digital y nuevas tecnologías",
+          "Implementar intercambios con otros talleres artísticos",
+        ],
+      },
     },
     {
       id: 3,
@@ -55,6 +201,69 @@ export default function GestionReportes() {
       fecha: "18/04/2025",
       profesor: "Ana Rodríguez",
       alumnos: 32,
+      contenido: {
+        resumen:
+          "Evaluación detallada del progreso musical de los estudiantes en ritmo, melodía, armonía e interpretación instrumental durante el período académico.",
+        metricas: {
+          avancePromedio: {
+            valor: 75.8,
+            descripcion: "Promedio de avance en competencias musicales fundamentales",
+            detalles: [
+              "Precisión rítmica: 78%",
+              "Reconocimiento melódico: 74%",
+              "Interpretación instrumental: 76%",
+              "Teoría musical: 75%",
+            ],
+          },
+          evidenciasValidadas: {
+            valor: 88.7,
+            total: 128,
+            validadas: 113,
+            descripcion: "Porcentaje de interpretaciones y ejercicios musicales validados",
+          },
+          seguimientoPromedio: {
+            valor: 3.8,
+            descripcion: "Número promedio de evaluaciones musicales por estudiante",
+            detalles: ["Evaluaciones técnicas: 2.2 por estudiante", "Presentaciones grupales: 1.6 por estudiante"],
+          },
+          retencion: {
+            valor: 84.4,
+            inicial: 32,
+            actual: 27,
+            descripcion: "Tasa de retención en el taller musical",
+          },
+          popularidad: {
+            valor: 91.4,
+            inscritos: 32,
+            capacidad: 35,
+            listaEspera: 15,
+            descripcion: "Demanda del taller de desarrollo musical",
+          },
+          finalizacion: {
+            valor: 81.3,
+            completados: 26,
+            total: 32,
+            descripcion: "Porcentaje de estudiantes que completaron el programa musical",
+          },
+        },
+        objetivos: [
+          "Mejorar precisión rítmica y tempo en interpretaciones",
+          "Desarrollar oído musical y reconocimiento de intervalos",
+          "Perfeccionar interpretación instrumental individual y grupal",
+        ],
+        resultados: [
+          "78% de estudiantes mejoraron significativamente su precisión rítmica",
+          "Incremento notable del 22% en reconocimiento melódico y armónico",
+          "Mejora sustancial en interpretación de instrumentos de cuerda y viento",
+          "Realización exitosa de 3 conciertos estudiantiles",
+        ],
+        recomendaciones: [
+          "Continuar con ejercicios intensivos de solfeo y dictado musical",
+          "Implementar más práctica de conjunto y música de cámara",
+          "Introducir nuevos instrumentos y géneros musicales",
+          "Organizar masterclasses con músicos profesionales invitados",
+        ],
+      },
     },
     {
       id: 4,
@@ -63,6 +272,69 @@ export default function GestionReportes() {
       fecha: "17/04/2025",
       profesor: "Luis Sánchez",
       alumnos: 24,
+      contenido: {
+        resumen:
+          "Evaluación especializada del desarrollo creativo en composición artística, expresión personal y pensamiento crítico artístico de los estudiantes.",
+        metricas: {
+          avancePromedio: {
+            valor: 86.3,
+            descripcion: "Promedio de avance en creatividad y composición artística",
+            detalles: [
+              "Originalidad creativa: 88%",
+              "Composición espacial: 85%",
+              "Crítica artística: 84%",
+              "Experimentación: 89%",
+            ],
+          },
+          evidenciasValidadas: {
+            valor: 94.1,
+            total: 72,
+            validadas: 68,
+            descripcion: "Porcentaje de composiciones y proyectos creativos validados",
+          },
+          seguimientoPromedio: {
+            valor: 4.5,
+            descripcion: "Número promedio de revisiones creativas por estudiante",
+            detalles: ["Críticas constructivas: 2.7 por estudiante", "Sesiones de experimentación: 1.8 por estudiante"],
+          },
+          retencion: {
+            valor: 95.8,
+            inicial: 24,
+            actual: 23,
+            descripcion: "Tasa de retención en el taller de composición",
+          },
+          popularidad: {
+            valor: 80.0,
+            inscritos: 24,
+            capacidad: 30,
+            listaEspera: 5,
+            descripcion: "Demanda del taller de composición artística",
+          },
+          finalizacion: {
+            valor: 91.7,
+            completados: 22,
+            total: 24,
+            descripcion: "Porcentaje de estudiantes que completaron el portafolio creativo",
+          },
+        },
+        objetivos: [
+          "Fomentar creatividad original y pensamiento artístico innovador",
+          "Mejorar comprensión de composición espacial y visual",
+          "Desarrollar capacidades de crítica y análisis artístico",
+        ],
+        resultados: [
+          "Incremento del 30% en originalidad y calidad de trabajos creativos",
+          "Mejora significativa en comprensión de principios de composición",
+          "Desarrollo exitoso de pensamiento crítico artístico en el 85% de estudiantes",
+          "Creación de 68 obras experimentales de alto valor artístico",
+        ],
+        recomendaciones: [
+          "Continuar fomentando experimentación con nuevos materiales",
+          "Realizar más sesiones de crítica constructiva grupal",
+          "Explorar movimientos de arte contemporáneo y vanguardista",
+          "Establecer colaboraciones con galerías y espacios culturales locales",
+        ],
+      },
     },
     {
       id: 5,
@@ -71,6 +343,69 @@ export default function GestionReportes() {
       fecha: "16/04/2025",
       profesor: "Ana Rodríguez",
       alumnos: 32,
+      contenido: {
+        resumen:
+          "Seguimiento especializado del progreso en interpretación musical individual y grupal, con énfasis en expresividad y técnica interpretativa.",
+        metricas: {
+          avancePromedio: {
+            valor: 81.2,
+            descripcion: "Promedio de avance en interpretación y expresión musical",
+            detalles: [
+              "Técnica interpretativa: 83%",
+              "Expresividad musical: 80%",
+              "Música de conjunto: 82%",
+              "Presencia escénica: 79%",
+            ],
+          },
+          evidenciasValidadas: {
+            valor: 91.5,
+            total: 96,
+            validadas: 88,
+            descripcion: "Porcentaje de interpretaciones musicales validadas",
+          },
+          seguimientoPromedio: {
+            valor: 4.2,
+            descripcion: "Número promedio de evaluaciones interpretativas por estudiante",
+            detalles: ["Recitales individuales: 2.4 por estudiante", "Presentaciones grupales: 1.8 por estudiante"],
+          },
+          retencion: {
+            valor: 87.5,
+            inicial: 32,
+            actual: 28,
+            descripcion: "Tasa de retención en interpretación musical",
+          },
+          popularidad: {
+            valor: 93.3,
+            inscritos: 32,
+            capacidad: 35,
+            listaEspera: 18,
+            descripcion: "Demanda del taller de interpretación musical",
+          },
+          finalizacion: {
+            valor: 84.4,
+            completados: 27,
+            total: 32,
+            descripcion: "Porcentaje de estudiantes que completaron el programa interpretativo",
+          },
+        },
+        objetivos: [
+          "Mejorar técnica interpretativa individual en diversos instrumentos",
+          "Desarrollar habilidades avanzadas de música de conjunto",
+          "Perfeccionar expresión musical y presencia escénica",
+        ],
+        resultados: [
+          "85% de estudiantes mejoraron significativamente su interpretación individual",
+          "Excelente progreso en música de conjunto con 4 ensambles formados",
+          "Mayor expresividad musical evidenciada en presentaciones públicas",
+          "Realización exitosa de 2 recitales estudiantiles con alta asistencia",
+        ],
+        recomendaciones: [
+          "Continuar con programa intensivo de recitales individuales",
+          "Organizar más presentaciones grupales y colaboraciones",
+          "Explorar repertorio de diferentes géneros y períodos musicales",
+          "Implementar técnicas de manejo de ansiedad escénica",
+        ],
+      },
     },
     {
       id: 6,
@@ -79,6 +414,69 @@ export default function GestionReportes() {
       fecha: "15/04/2025",
       profesor: "Elena Torres",
       alumnos: 22,
+      contenido: {
+        resumen:
+          "Evaluación integral del desarrollo de habilidades teatrales, expresión corporal, vocal y construcción de personajes en estudiantes del taller.",
+        metricas: {
+          avancePromedio: {
+            valor: 79.4,
+            descripcion: "Promedio de avance en competencias teatrales y expresivas",
+            detalles: [
+              "Expresión corporal: 82%",
+              "Proyección vocal: 77%",
+              "Construcción de personajes: 80%",
+              "Confianza escénica: 78%",
+            ],
+          },
+          evidenciasValidadas: {
+            valor: 90.9,
+            total: 66,
+            validadas: 60,
+            descripcion: "Porcentaje de actuaciones y ejercicios teatrales validados",
+          },
+          seguimientoPromedio: {
+            valor: 3.9,
+            descripcion: "Número promedio de evaluaciones teatrales por estudiante",
+            detalles: ["Evaluaciones individuales: 2.1 por estudiante", "Presentaciones grupales: 1.8 por estudiante"],
+          },
+          retencion: {
+            valor: 90.9,
+            inicial: 22,
+            actual: 20,
+            descripcion: "Tasa de retención en el taller teatral",
+          },
+          popularidad: {
+            valor: 73.3,
+            inscritos: 22,
+            capacidad: 30,
+            listaEspera: 3,
+            descripcion: "Demanda del taller de habilidades teatrales",
+          },
+          finalizacion: {
+            valor: 86.4,
+            completados: 19,
+            total: 22,
+            descripcion: "Porcentaje de estudiantes que completaron el programa teatral",
+          },
+        },
+        objetivos: [
+          "Mejorar expresión corporal y conciencia espacial escénica",
+          "Desarrollar proyección vocal y dicción clara",
+          "Fomentar confianza escénica y construcción de personajes",
+        ],
+        resultados: [
+          "Notable mejora del 28% en expresión corporal y movimiento escénico",
+          "Incremento significativo en confianza escénica y presencia teatral",
+          "Mejor proyección vocal y claridad en diálogos teatrales",
+          "Montaje exitoso de 2 obras cortas con participación estudiantil completa",
+        ],
+        recomendaciones: [
+          "Continuar con ejercicios intensivos de improvisación teatral",
+          "Organizar montaje de obra teatral completa para fin de semestre",
+          "Trabajar más intensivamente en expresión facial y gestual",
+          "Incluir técnicas de relajación y concentración para actuación",
+        ],
+      },
     },
   ]
 
@@ -97,11 +495,194 @@ export default function GestionReportes() {
     return reportes.filter((reporte) => reporte.area === area).length
   }
 
-  const handleDownloadReport = (reporte) => {
-    // Simular descarga de reporte
-    console.log(`Descargando reporte: ${reporte.nombre}`)
-    // Aquí iría la lógica real de descarga
-    alert(`Descargando reporte: ${reporte.nombre}`)
+  const handlePreviewReport = (reporte) => {
+    setPreviewReport(reporte)
+    setShowPreview(true)
+  }
+
+  const handleDownloadReport = async (reporte) => {
+    setIsDownloading(true)
+
+    try {
+      // Crear el contenido HTML del reporte
+      const reportContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Reporte - ${reporte.nombre}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; color: #333; line-height: 1.6; }
+            .header { text-align: center; margin-bottom: 40px; border-bottom: 3px solid #10b981; padding-bottom: 20px; }
+            .title { font-size: 24px; font-weight: bold; color: #1f2937; margin-bottom: 10px; }
+            .subtitle { font-size: 16px; color: #6b7280; }
+            .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
+            .info-card { background: #f9fafb; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981; }
+            .info-label { font-size: 12px; color: #6b7280; text-transform: uppercase; }
+            .info-value { font-size: 16px; font-weight: bold; color: #1f2937; }
+            .section { margin-bottom: 30px; }
+            .section-title { font-size: 18px; font-weight: bold; color: #1f2937; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; }
+            .metrics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 20px; }
+            .metric-card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; }
+            .metric-title { font-size: 14px; font-weight: bold; color: #374151; margin-bottom: 10px; }
+            .metric-value { font-size: 32px; font-weight: bold; color: #10b981; margin-bottom: 5px; }
+            .metric-desc { font-size: 12px; color: #6b7280; }
+            .metric-details { margin-top: 10px; }
+            .metric-detail { font-size: 12px; color: #4b5563; margin-bottom: 3px; }
+            .list { margin-left: 20px; }
+            .list-item { margin-bottom: 8px; position: relative; }
+            .list-item::before { content: "•"; color: #10b981; font-weight: bold; position: absolute; left: -15px; }
+            .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="title">${reporte.nombre}</div>
+            <div class="subtitle">Reporte Detallado de Taller - ${reporte.area}</div>
+          </div>
+          
+          <div class="info-grid">
+            <div class="info-card">
+              <div class="info-label">Fecha de Generación</div>
+              <div class="info-value">${reporte.fecha}</div>
+            </div>
+            <div class="info-card">
+              <div class="info-label">Profesor Responsable</div>
+              <div class="info-value">${reporte.profesor}</div>
+            </div>
+            <div class="info-card">
+              <div class="info-label">Estudiantes Participantes</div>
+              <div class="info-value">${reporte.alumnos}</div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Resumen Ejecutivo</div>
+            <p>${reporte.contenido.resumen}</p>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Métricas de Rendimiento</div>
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <div class="metric-title">Avance Promedio de Nivel</div>
+                <div class="metric-value">${reporte.contenido.metricas.avancePromedio.valor}%</div>
+                <div class="metric-desc">${reporte.contenido.metricas.avancePromedio.descripcion}</div>
+                <div class="metric-details">
+                  ${reporte.contenido.metricas.avancePromedio.detalles.map((detalle) => `<div class="metric-detail">• ${detalle}</div>`).join("")}
+                </div>
+              </div>
+              
+              <div class="metric-card">
+                <div class="metric-title">Evidencias Validadas</div>
+                <div class="metric-value">${reporte.contenido.metricas.evidenciasValidadas.valor}%</div>
+                <div class="metric-desc">${reporte.contenido.metricas.evidenciasValidadas.descripcion}</div>
+                <div class="metric-details">
+                  <div class="metric-detail">• Total: ${reporte.contenido.metricas.evidenciasValidadas.total}</div>
+                  <div class="metric-detail">• Validadas: ${reporte.contenido.metricas.evidenciasValidadas.validadas}</div>
+                </div>
+              </div>
+              
+              <div class="metric-card">
+                <div class="metric-title">Seguimientos por Estudiante</div>
+                <div class="metric-value">${reporte.contenido.metricas.seguimientoPromedio.valor}</div>
+                <div class="metric-desc">${reporte.contenido.metricas.seguimientoPromedio.descripcion}</div>
+                <div class="metric-details">
+                  ${reporte.contenido.metricas.seguimientoPromedio.detalles.map((detalle) => `<div class="metric-detail">• ${detalle}</div>`).join("")}
+                </div>
+              </div>
+              
+              <div class="metric-card">
+                <div class="metric-title">Tasa de Retención</div>
+                <div class="metric-value">${reporte.contenido.metricas.retencion.valor}%</div>
+                <div class="metric-desc">${reporte.contenido.metricas.retencion.descripcion}</div>
+                <div class="metric-details">
+                  <div class="metric-detail">• Inicial: ${reporte.contenido.metricas.retencion.inicial} estudiantes</div>
+                  <div class="metric-detail">• Actual: ${reporte.contenido.metricas.retencion.actual} estudiantes</div>
+                </div>
+              </div>
+              
+              <div class="metric-card">
+                <div class="metric-title">Popularidad del Taller</div>
+                <div class="metric-value">${reporte.contenido.metricas.popularidad.valor}%</div>
+                <div class="metric-desc">${reporte.contenido.metricas.popularidad.descripcion}</div>
+                <div class="metric-details">
+                  <div class="metric-detail">• Inscritos: ${reporte.contenido.metricas.popularidad.inscritos}</div>
+                  <div class="metric-detail">• Capacidad: ${reporte.contenido.metricas.popularidad.capacidad}</div>
+                  <div class="metric-detail">• Lista de espera: ${reporte.contenido.metricas.popularidad.listaEspera}</div>
+                </div>
+              </div>
+              
+              <div class="metric-card">
+                <div class="metric-title">Tasa de Finalización</div>
+                <div class="metric-value">${reporte.contenido.metricas.finalizacion.valor}%</div>
+                <div class="metric-desc">${reporte.contenido.metricas.finalizacion.descripcion}</div>
+                <div class="metric-details">
+                  <div class="metric-detail">• Completados: ${reporte.contenido.metricas.finalizacion.completados}</div>
+                  <div class="metric-detail">• Total: ${reporte.contenido.metricas.finalizacion.total}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Objetivos del Período</div>
+            <div class="list">
+              ${reporte.contenido.objetivos.map((objetivo) => `<div class="list-item">${objetivo}</div>`).join("")}
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Resultados Obtenidos</div>
+            <div class="list">
+              ${reporte.contenido.resultados.map((resultado) => `<div class="list-item">${resultado}</div>`).join("")}
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Recomendaciones</div>
+            <div class="list">
+              ${reporte.contenido.recomendaciones.map((recomendacion) => `<div class="list-item">${recomendacion}</div>`).join("")}
+            </div>
+          </div>
+
+          <div class="footer">
+            <p>Reporte generado el ${reporte.fecha} | Sistema de Gestión de Talleres Educativos</p>
+            <p>Profesor: ${reporte.profesor} | Área: ${reporte.area}</p>
+          </div>
+        </body>
+        </html>
+      `
+
+      // Crear un blob con el contenido HTML
+      const blob = new Blob([reportContent], { type: "text/html" })
+      const url = URL.createObjectURL(blob)
+
+      // Crear un enlace temporal para descargar
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `Reporte_${reporte.nombre.replace(/\s+/g, "_")}_${reporte.fecha.replace(/\//g, "-")}.html`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      // Limpiar la URL del objeto
+      URL.revokeObjectURL(url)
+
+      // Mostrar mensaje de éxito
+      alert(`Reporte "${reporte.nombre}" descargado exitosamente como archivo HTML`)
+    } catch (error) {
+      console.error("Error al descargar el reporte:", error)
+      alert("Error al descargar el reporte. Por favor, intenta nuevamente.")
+    } finally {
+      setIsDownloading(false)
+      setShowPreview(false)
+    }
+  }
+
+  const closePreview = () => {
+    setShowPreview(false)
+    setPreviewReport(null)
   }
 
   const getAreaColor = (area) => {
@@ -117,6 +698,25 @@ export default function GestionReportes() {
     }
   }
 
+  const getMetricIcon = (type) => {
+    switch (type) {
+      case "avance":
+        return <TrendingUp className="w-5 h-5 text-emerald-600" />
+      case "evidencias":
+        return <CheckCircle className="w-5 h-5 text-blue-600" />
+      case "seguimiento":
+        return <Target className="w-5 h-5 text-purple-600" />
+      case "retencion":
+        return <UserCheck className="w-5 h-5 text-orange-600" />
+      case "popularidad":
+        return <Star className="w-5 h-5 text-yellow-600" />
+      case "finalizacion":
+        return <Award className="w-5 h-5 text-green-600" />
+      default:
+        return <BarChart3 className="w-5 h-5 text-gray-600" />
+    }
+  }
+
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/40">
       {/* Sidebar */}
@@ -125,6 +725,294 @@ export default function GestionReportes() {
       {/* Overlay para móvil */}
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" onClick={toggleSidebar}></div>
+      )}
+
+      {/* Modal de Previsualización */}
+      {showPreview && previewReport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden border border-gray-200">
+            {/* Header del Modal */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-500 to-teal-500">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                  <Eye className="w-5 h-5 text-white" />
+                </div>
+                <h2 className="text-xl font-bold text-white">Previsualización del Reporte Detallado</h2>
+              </div>
+              <button onClick={closePreview} className="p-2 hover:bg-white/20 rounded-lg transition-colors">
+                <X className="w-6 h-6 text-white" />
+              </button>
+            </div>
+
+            {/* Contenido del Modal */}
+            <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
+              <div className="p-8">
+                {/* Información del Reporte */}
+                <div className="mb-8">
+                  <h1 className="text-3xl font-bold text-gray-900 mb-4">{previewReport.nombre}</h1>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
+                      <Calendar className="w-5 h-5 text-gray-600" />
+                      <div>
+                        <p className="text-sm text-gray-600">Fecha</p>
+                        <p className="font-semibold text-gray-900">{previewReport.fecha}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
+                      <User className="w-5 h-5 text-gray-600" />
+                      <div>
+                        <p className="text-sm text-gray-600">Profesor</p>
+                        <p className="font-semibold text-gray-900">{previewReport.profesor}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
+                      <Users className="w-5 h-5 text-gray-600" />
+                      <div>
+                        <p className="text-sm text-gray-600">Estudiantes</p>
+                        <p className="font-semibold text-gray-900">{previewReport.alumnos}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mb-6">
+                    <span className={`px-3 py-1 text-sm font-medium rounded-full ${getAreaColor(previewReport.area)}`}>
+                      Área: {previewReport.area}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Resumen */}
+                <div className="mb-8">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Resumen Ejecutivo</h3>
+                  <p className="text-gray-700 leading-relaxed">{previewReport.contenido.resumen}</p>
+                </div>
+
+                {/* Métricas de Rendimiento */}
+                <div className="mb-8">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-6">Métricas de Rendimiento del Taller</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Avance Promedio */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                          {getMetricIcon("avance")}
+                          <h4 className="font-semibold text-gray-900">Avance Promedio</h4>
+                        </div>
+                        <span className="text-2xl font-bold text-emerald-600">
+                          {previewReport.contenido.metricas.avancePromedio.valor}%
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3">
+                        {previewReport.contenido.metricas.avancePromedio.descripcion}
+                      </p>
+                      <div className="space-y-1">
+                        {previewReport.contenido.metricas.avancePromedio.detalles.map((detalle, index) => (
+                          <div key={index} className="text-xs text-gray-500">
+                            • {detalle}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Evidencias Validadas */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                          {getMetricIcon("evidencias")}
+                          <h4 className="font-semibold text-gray-900">Evidencias Validadas</h4>
+                        </div>
+                        <span className="text-2xl font-bold text-blue-600">
+                          {previewReport.contenido.metricas.evidenciasValidadas.valor}%
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3">
+                        {previewReport.contenido.metricas.evidenciasValidadas.descripcion}
+                      </p>
+                      <div className="space-y-1">
+                        <div className="text-xs text-gray-500">
+                          • Total: {previewReport.contenido.metricas.evidenciasValidadas.total}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          • Validadas: {previewReport.contenido.metricas.evidenciasValidadas.validadas}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Seguimientos */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                          {getMetricIcon("seguimiento")}
+                          <h4 className="font-semibold text-gray-900">Seguimientos</h4>
+                        </div>
+                        <span className="text-2xl font-bold text-purple-600">
+                          {previewReport.contenido.metricas.seguimientoPromedio.valor}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3">
+                        {previewReport.contenido.metricas.seguimientoPromedio.descripcion}
+                      </p>
+                      <div className="space-y-1">
+                        {previewReport.contenido.metricas.seguimientoPromedio.detalles.map((detalle, index) => (
+                          <div key={index} className="text-xs text-gray-500">
+                            • {detalle}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Retención */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                          {getMetricIcon("retencion")}
+                          <h4 className="font-semibold text-gray-900">Tasa de Retención</h4>
+                        </div>
+                        <span className="text-2xl font-bold text-orange-600">
+                          {previewReport.contenido.metricas.retencion.valor}%
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3">
+                        {previewReport.contenido.metricas.retencion.descripcion}
+                      </p>
+                      <div className="space-y-1">
+                        <div className="text-xs text-gray-500">
+                          • Inicial: {previewReport.contenido.metricas.retencion.inicial} estudiantes
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          • Actual: {previewReport.contenido.metricas.retencion.actual} estudiantes
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Popularidad */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                          {getMetricIcon("popularidad")}
+                          <h4 className="font-semibold text-gray-900">Popularidad</h4>
+                        </div>
+                        <span className="text-2xl font-bold text-yellow-600">
+                          {previewReport.contenido.metricas.popularidad.valor}%
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3">
+                        {previewReport.contenido.metricas.popularidad.descripcion}
+                      </p>
+                      <div className="space-y-1">
+                        <div className="text-xs text-gray-500">
+                          • Inscritos: {previewReport.contenido.metricas.popularidad.inscritos}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          • Capacidad: {previewReport.contenido.metricas.popularidad.capacidad}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          • Lista de espera: {previewReport.contenido.metricas.popularidad.listaEspera}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Finalización */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                          {getMetricIcon("finalizacion")}
+                          <h4 className="font-semibold text-gray-900">Tasa de Finalización</h4>
+                        </div>
+                        <span className="text-2xl font-bold text-green-600">
+                          {previewReport.contenido.metricas.finalizacion.valor}%
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3">
+                        {previewReport.contenido.metricas.finalizacion.descripcion}
+                      </p>
+                      <div className="space-y-1">
+                        <div className="text-xs text-gray-500">
+                          • Completados: {previewReport.contenido.metricas.finalizacion.completados}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          • Total: {previewReport.contenido.metricas.finalizacion.total}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contenido del Reporte */}
+                <div className="space-y-8">
+                  {/* Objetivos */}
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-3">Objetivos del Período</h3>
+                    <ul className="space-y-2">
+                      {previewReport.contenido.objetivos.map((objetivo, index) => (
+                        <li key={index} className="flex items-start space-x-3">
+                          <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
+                          <span className="text-gray-700">{objetivo}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Resultados */}
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-3">Resultados Obtenidos</h3>
+                    <ul className="space-y-2">
+                      {previewReport.contenido.resultados.map((resultado, index) => (
+                        <li key={index} className="flex items-start space-x-3">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                          <span className="text-gray-700">{resultado}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Recomendaciones */}
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-3">Recomendaciones</h3>
+                    <ul className="space-y-2">
+                      {previewReport.contenido.metricas.recomendaciones?.map((recomendacion, index) => (
+                        <li key={index} className="flex items-start space-x-3">
+                          <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
+                          <span className="text-gray-700">{recomendacion}</span>
+                        </li>
+                      )) ||
+                        previewReport.contenido.recomendaciones.map((recomendacion, index) => (
+                          <li key={index} className="flex items-start space-x-3">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
+                            <span className="text-gray-700">{recomendacion}</span>
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer del Modal */}
+            <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
+              <p className="text-sm text-gray-600">Reporte generado el {previewReport.fecha}</p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={closePreview}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                  Cerrar
+                </button>
+                <button
+                  onClick={() => handleDownloadReport(previewReport)}
+                  disabled={isDownloading}
+                  className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {isDownloading ? "Descargando..." : "Descargar PDF"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Contenido principal */}
@@ -210,7 +1098,7 @@ export default function GestionReportes() {
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                   <div>
                     <h2 className="text-xl font-semibold text-gray-900">Reportes Generados</h2>
-                    <p className="text-gray-600">Gestiona y descarga los reportes del sistema</p>
+                    <p className="text-gray-600">Gestiona y descarga los reportes detallados del sistema</p>
                   </div>
                 </div>
 
@@ -285,10 +1173,10 @@ export default function GestionReportes() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <button
-                            onClick={() => handleDownloadReport(reporte)}
+                            onClick={() => handlePreviewReport(reporte)}
                             className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
                           >
-                            <Download className="w-4 h-4 mr-2" />
+                            <Eye className="w-4 h-4 mr-2" />
                             Descargar reporte
                           </button>
                         </td>
