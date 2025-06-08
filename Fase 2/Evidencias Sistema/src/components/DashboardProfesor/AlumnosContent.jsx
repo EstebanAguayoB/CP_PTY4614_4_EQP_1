@@ -16,37 +16,9 @@ export default function AlumnosContent() {
   const [deletingAlumno, setDeletingAlumno] = useState(null)
   const navigate = useNavigate()
 
-  // Datos simulados de base de datos
-  const participacionesDisponibles = [
-    { id: "P001", descripcion: "Participación Robótica 2025-1" },
-    { id: "P002", descripcion: "Participación Programación 2025-1" },
-    { id: "P003", descripcion: "Participación Diseño 3D 2025-1" },
-    { id: "P004", descripcion: "Participación Robótica 2025-2" },
-    { id: "P005", descripcion: "Participación Programación 2025-2" },
-  ]
-
-  const estudiantesDisponibles = [
-    { rut: "12.345.678-9", nombre: "Laura Martínez Silva" },
-    { rut: "98.765.432-1", nombre: "Carlos Sánchez López" },
-    { rut: "11.222.333-4", nombre: "Ana García Rodríguez" },
-    { rut: "55.666.777-8", nombre: "Miguel Torres Fernández" },
-    { rut: "33.444.555-6", nombre: "Sofía Rodríguez Morales" },
-    { rut: "77.888.999-0", nombre: "Diego Flores Castillo" },
-    { rut: "22.333.444-5", nombre: "Isabella Moreno Vega" },
-    { rut: "66.777.888-9", nombre: "Sebastián Vega Herrera" },
-  ]
-
-  const talleresDisponibles = [
-    { id: 1, nombre: "Robótica", codigo: "ROB-001" },
-    { id: 2, nombre: "Programación", codigo: "PROG-001" },
-    { id: 3, nombre: "Diseño 3D", codigo: "DIS3D-001" },
-    { id: 4, nombre: "Electrónica", codigo: "ELEC-001" },
-    { id: 5, nombre: "Inteligencia Artificial", codigo: "IA-001" },
-  ]
 
   // Estados para el formulario
   const [formData, setFormData] = useState({
-    idParticipacion: "",
     rutEstudiante: "",
     idTaller: "",
     nivelActual: "",
@@ -72,86 +44,102 @@ export default function AlumnosContent() {
     navigate("/")
   }
 
-  // Datos de los talleres del profesor
-  const misTalleres = [
-    { id: 1, nombre: "Robótica" },
-    { id: 2, nombre: "Programación" },
-    { id: 3, nombre: "Diseño 3D" },
-  ]
 
   // Datos de alumnos
-  const [alumnos, setAlumnos] = useState([
-    {
-      id: 1,
-      idParticipacion: "P001",
-      idEstudiante: "12.345.678-9",
-      nombre: "Laura Martínez",
-      emailApoderado: "laura.martinez@apoderado.edu",
-      idTallerImpartido: 1,
-      tallerNombre: "Robótica",
-      nivelActual: "Avanzado",
-      estado: "EN PROGRESO",
-      fechaInscripcion: "2025-04-20",
-      progreso: 77,
-    },
-    {
-      id: 2,
-      idParticipacion: "P002",
-      idEstudiante: "98.765.432-1",
-      nombre: "Carlos Sánchez",
-      emailApoderado: "carlos.sanchez@apoderado.edu",
-      idTallerImpartido: 1,
-      tallerNombre: "Robótica",
-      nivelActual: "Intermedio",
-      estado: "EN PROGRESO",
-      fechaInscripcion: "2025-04-19",
-      progreso: 77,
-    },
-    {
-      id: 3,
-      idParticipacion: "P003",
-      idEstudiante: "11.222.333-4",
-      nombre: "Ana García",
-      emailApoderado: "ana.garcia@apoderado.edu",
-      idTallerImpartido: 1,
-      tallerNombre: "Robótica",
-      nivelActual: "Básico",
-      estado: "INSCRITO",
-      fechaInscripcion: "2025-04-18",
-      progreso: 77,
-    },
-    {
-      id: 4,
-      idParticipacion: "P004",
-      idEstudiante: "55.666.777-8",
-      nombre: "Miguel Torres",
-      emailApoderado: "miguel.torres@apoderado.edu",
-      idTallerImpartido: 2,
-      tallerNombre: "Programación",
-      nivelActual: "Intermedio",
-      estado: "EN PROGRESO",
-      fechaInscripcion: "2025-04-17",
-      progreso: 77,
-    },
-    {
-      id: 5,
-      idParticipacion: "P005",
-      idEstudiante: "33.444.555-6",
-      nombre: "Sofía Rodríguez",
-      emailApoderado: "sofia.rodriguez@apoderado.edu",
-      idTallerImpartido: 3,
-      tallerNombre: "Diseño 3D",
-      nivelActual: "Avanzado",
-      estado: "FINALIZADO",
-      fechaInscripcion: "2025-04-16",
-      progreso: 100,
-    },
-  ])
+  const [alumnos, setAlumnos] = useState([])
+  const [misTalleres, setMisTalleres] = useState([])
+  const [estudiante, setEstudiante] = useState([])
+  const [Nivel, setNivel] = useState([])
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    const fetchAlumnos = async () => {
+      try {
+        let { data, error } = await supabase
+          .from("ParticipacionEstudiante").select(`*,Estudiante(*),TallerImpartido(*),Nivel(*)`)
+
+        if (error) {
+          setError(error)
+        } else {
+          setAlumnos(data)
+        }
+      } catch (err) {
+        setError(err)
+      }
+    }
+    const misTalleres = async () => {
+      try {
+        let { data, error } = await supabase
+          .from("TallerImpartido").select(`*`)
+
+        if (error) {
+          setError(error)
+        } else {
+          setMisTalleres(data)
+        }
+      } catch (err) {
+        setError(err)
+      }
+    }
+    const estudiante = async () => {
+      try {
+        // 1. Obtener todos los id_estudiante que ya están en ParticipacionEstudiante
+        let { data: participaciones, error: errorParticipaciones } = await supabase
+          .from("ParticipacionEstudiante")
+          .select("id_estudiante");
+
+        if (errorParticipaciones) {
+          setError(errorParticipaciones);
+          return;
+        }
+
+        // Extraer los ids en un array y convertir a string con paréntesis
+        const idsRegistrados = participaciones.map(p => p.id_estudiante);
+        const idsString = idsRegistrados.length > 0 ? `(${idsRegistrados.join(",")})` : "(null)";
+
+        // 2. Obtener los estudiantes que NO están en ese array
+        let { data, error } = await supabase
+          .from("Estudiante")
+          .select("*")
+          .not("id_estudiante", "in", idsString);
+
+        if (error) {
+          setError(error);
+        } else {
+          setEstudiante(data);
+        }
+      } catch (err) {
+        setError(err);
+      }
+    }
+     const Nivel = async () => {
+      try {
+        let { data, error } = await supabase
+          .from("Nivel").select(`*`)
+
+        if (error) {
+          setError(error)
+        } else {
+          setNivel(data)
+        }
+      } catch (err) {
+        setError(err)
+      }
+    }
+    fetchAlumnos()
+    misTalleres()
+    estudiante()
+    Nivel()
+  }, [])
+
+  console.log("alumnos:", alumnos)
+  console.log("estudiante:", estudiante)
+  console.log("Nivel:", Nivel)
+  console.log("Error:", error)
 
   const openAddModal = () => {
     setShowAddModal(true)
     setFormData({
-      idParticipacion: "",
       rutEstudiante: "",
       idTaller: "",
       nivelActual: "",
@@ -163,7 +151,6 @@ export default function AlumnosContent() {
   const closeAddModal = () => {
     setShowAddModal(false)
     setFormData({
-      idParticipacion: "",
       rutEstudiante: "",
       idTaller: "",
       nivelActual: "",
@@ -175,7 +162,6 @@ export default function AlumnosContent() {
   const openEditModal = (alumno) => {
     setEditingAlumno(alumno)
     setFormData({
-      idParticipacion: alumno.idParticipacion,
       rutEstudiante: alumno.idEstudiante,
       idTaller: alumno.idTallerImpartido.toString(),
       nivelActual: alumno.nivelActual,
@@ -189,7 +175,6 @@ export default function AlumnosContent() {
     setShowEditModal(false)
     setEditingAlumno(null)
     setFormData({
-      idParticipacion: "",
       rutEstudiante: "",
       idTaller: "",
       nivelActual: "",
@@ -216,12 +201,11 @@ export default function AlumnosContent() {
     }))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
     // Validar campos requeridos
     if (
-      !formData.idParticipacion ||
       !formData.rutEstudiante ||
       !formData.idTaller ||
       !formData.nivelActual ||
@@ -231,48 +215,47 @@ export default function AlumnosContent() {
       alert("Por favor, complete todos los campos")
       return
     }
-
+    console.log("Form Data:", formData);
+    
     // Encontrar datos relacionados
-    const estudiante = estudiantesDisponibles.find((e) => e.rut === formData.rutEstudiante)
-    const taller = talleresDisponibles.find((t) => t.id === Number.parseInt(formData.idTaller))
+    const estudiantes = estudiante.find((e) => e.rut === formData.rut)
+    const taller = misTalleres.find((t) => t.id === Number.parseInt(formData.idTaller))
 
     if (editingAlumno) {
       // Editar alumno existente
       const alumnosActualizados = alumnos.map((alumno) =>
         alumno.id === editingAlumno.id
           ? {
-              ...alumno,
-              idParticipacion: formData.idParticipacion,
-              idEstudiante: formData.rutEstudiante,
-              nombre: estudiante?.nombre || alumno.nombre,
-              idTallerImpartido: Number.parseInt(formData.idTaller),
-              tallerNombre: taller?.nombre || "",
-              nivelActual: formData.nivelActual,
-              estado: formData.estado,
-              fechaInscripcion: formData.fechaInscripcion,
-            }
+            ...alumno,
+            idEstudiante: formData.rutEstudiante,
+            nombre: estudiante?.nombre || alumno.nombre,
+            idTallerImpartido: Number.parseInt(formData.idTaller),
+            tallerNombre: taller?.nombre || "",
+            nivelActual: formData.nivelActual,
+            estado: formData.estado,
+            fechaInscripcion: formData.fechaInscripcion,
+          }
           : alumno,
       )
-      setAlumnos(alumnosActualizados)
+      // setAlumnos(alumnosActualizados)
       closeEditModal()
       alert("Alumno actualizado exitosamente")
     } else {
       // Crear nuevo alumno
       const nuevoAlumno = {
-        id: alumnos.length + 1,
-        idParticipacion: formData.idParticipacion,
-        idEstudiante: formData.rutEstudiante,
-        nombre: estudiante?.nombre || "",
-        emailApoderado: `${estudiante?.nombre.toLowerCase().replace(/\s+/g, ".")}@apoderado.edu`,
-        idTallerImpartido: Number.parseInt(formData.idTaller),
-        tallerNombre: taller?.nombre || "",
-        nivelActual: formData.nivelActual,
+        id_estudiante: formData.rutEstudiante,
+        id_taller_impartido: Number.parseInt(formData.idTaller),
+        nivel_actual: formData.nivelActual,
         estado: formData.estado,
-        fechaInscripcion: formData.fechaInscripcion,
-        progreso: 0,
+        fecha_inscripcion: formData.fechaInscripcion,
       }
-
-      setAlumnos([...alumnos, nuevoAlumno])
+      console.log("Nuevo Alumno:", nuevoAlumno);
+      
+      // Insertar nuevo alumno en la base de datos
+      const { error } = await supabase.from('ParticipacionEstudiante').insert([nuevoAlumno])
+      console.log("error", error);
+      
+      // setAlumnos([...alumnos, nuevoAlumno])
       closeAddModal()
       alert("Alumno registrado exitosamente")
     }
@@ -290,11 +273,23 @@ export default function AlumnosContent() {
   // Filtrar alumnos
   const alumnosFiltrados = alumnos.filter((alumno) => {
     const matchesSearch =
-      alumno.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      alumno.emailApoderado.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesTaller = selectedTaller === "" || alumno.idTallerImpartido === Number.parseInt(selectedTaller)
-    return matchesSearch && matchesTaller
-  })
+      alumno.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      alumno.emailApoderado?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesTaller =
+      selectedTaller === "" || alumno.TallerImpartido.id_taller_impartido === Number.parseInt(selectedTaller);
+
+    return matchesSearch && matchesTaller;
+  });
+
+  const estudiantesDisponibles = alumnos.filter((alumno) => {
+    const matchesSearch =
+      alumno.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      alumno.emailApoderado?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    return matchesSearch;
+  });
+  console.log();
 
   const getEstadoColor = (estado) => {
     switch (estado) {
@@ -425,8 +420,8 @@ export default function AlumnosContent() {
                 >
                   <option value="">Todos los talleres</option>
                   {misTalleres.map((taller) => (
-                    <option key={taller.id} value={taller.id}>
-                      {taller.nombre}
+                    <option key={taller.id_taller_impartido} value={taller.id_taller_impartido}>
+                      {taller.nombre_publico}
                     </option>
                   ))}
                 </select>
@@ -445,18 +440,18 @@ export default function AlumnosContent() {
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
               <div className="p-6 border-b border-gray-200">
                 <h2 className="text-xl font-semibold text-gray-900">Gestiona los alumnos de tus talleres</h2>
-                <p className="text-gray-600">Total de alumnos: {alumnosFiltrados.length}</p>
+                {/* <p className="text-gray-600">Total de alumnos: {alumnosFiltrados.length}</p> */}
               </div>
 
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         ID Participación
-                      </th>
+                      </th> */}
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        ID Estudiante
+                        RUT Estudiante
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Nombre
@@ -485,63 +480,60 @@ export default function AlumnosContent() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {alumnosFiltrados.map((alumno) => (
-                      <tr key={alumno.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {alumno.idParticipacion}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{alumno.idEstudiante}</td>
+                    {alumnos.map((alumnos) => (
+                      <tr key={alumnos.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{alumnos.Estudiante.rut}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="flex-shrink-0 h-10 w-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                              <span className="text-emerald-600 font-medium text-sm">{alumno.nombre.charAt(0)}</span>
+                              <span className="text-emerald-600 font-medium text-sm">{alumnos.Estudiante.nombre.charAt(0)}</span>
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{alumno.nombre}</div>
+                              <div className="text-sm font-medium text-gray-900">{alumnos.Estudiante.nombre} {alumnos.Estudiante.apellido}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{alumno.emailApoderado}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{alumno.tallerNombre}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{alumnos.Estudiante.correo_apoderado}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{alumnos.TallerImpartido.nombre_publico}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
-                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getNivelColor(alumno.nivelActual)}`}
+                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getNivelColor(alumnos.Nivel.descripcion)}`}
                           >
-                            {alumno.nivelActual}
+                            {alumnos.Nivel.descripcion}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
-                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getEstadoColor(alumno.estado)}`}
+                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getEstadoColor(alumnos.estado)}`}
                           >
-                            {alumno.estado}
+                            {alumnos.estado}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(alumno.fechaInscripcion)}
+                          {formatDate(alumnos.fecha_inscripcion)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
                               <div
                                 className="bg-emerald-500 h-2 rounded-full"
-                                style={{ width: `${alumno.progreso}%` }}
+                                style={{ width: `${alumnos.progreso}%` }}
                               ></div>
                             </div>
-                            <span className="text-sm text-gray-500">{alumno.progreso}%</span>
+                            <span className="text-sm text-gray-500">{alumnos.progreso}%</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
                             <button
-                              onClick={() => openEditModal(alumno)}
+                              onClick={() => openEditModal(alumnos)}
                               className="text-emerald-600 hover:text-emerald-900 p-1 rounded transition-colors"
                               title="Editar alumno"
                             >
                               <Edit className="h-4 w-4" />
                             </button>
                             <button
-                              onClick={() => openDeleteModal(alumno)}
+                              onClick={() => openDeleteModal(alumnos)}
                               className="text-red-600 hover:text-red-900 p-1 rounded transition-colors"
                               title="Eliminar alumno"
                             >
@@ -578,27 +570,6 @@ export default function AlumnosContent() {
             <form onSubmit={handleSubmit} className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label htmlFor="idParticipacion" className="block text-sm font-medium text-gray-700 mb-2">
-                    ID Participación *
-                  </label>
-                  <select
-                    id="idParticipacion"
-                    name="idParticipacion"
-                    value={formData.idParticipacion}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    required
-                  >
-                    <option value="">Seleccionar participación</option>
-                    {participacionesDisponibles.map((participacion) => (
-                      <option key={participacion.id} value={participacion.id}>
-                        {participacion.id} - {participacion.descripcion}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
                   <label htmlFor="rutEstudiante" className="block text-sm font-medium text-gray-700 mb-2">
                     RUT Estudiante *
                   </label>
@@ -611,8 +582,8 @@ export default function AlumnosContent() {
                     required
                   >
                     <option value="">Seleccionar estudiante</option>
-                    {estudiantesDisponibles.map((estudiante) => (
-                      <option key={estudiante.rut} value={estudiante.rut}>
+                    {estudiante.map((estudiante) => (
+                      <option key={estudiante.id_estudiante} value={estudiante.id_estudiante}>
                         {estudiante.rut} - {estudiante.nombre}
                       </option>
                     ))}
@@ -632,9 +603,9 @@ export default function AlumnosContent() {
                     required
                   >
                     <option value="">Seleccionar taller</option>
-                    {talleresDisponibles.map((taller) => (
-                      <option key={taller.id} value={taller.id}>
-                        {taller.codigo} - {taller.nombre}
+                    {misTalleres.map((taller) => (
+                      <option key={taller.id_taller_impartido} value={taller.id_taller_impartido}>
+                        {taller.id_taller_impartido} - {taller.nombre_publico}
                       </option>
                     ))}
                   </select>
@@ -653,9 +624,11 @@ export default function AlumnosContent() {
                     required
                   >
                     <option value="">Seleccionar nivel</option>
-                    <option value="Básico">Básico</option>
-                    <option value="Intermedio">Intermedio</option>
-                    <option value="Avanzado">Avanzado</option>
+                    {Nivel.map((nivel) => (
+                      <option key={nivel.id_nivel} value={nivel.id_nivel}>
+                        {nivel.id_nivel} - {nivel.descripcion}
+                      </option>
+                    ))}
                   </select>
                 </div>
 

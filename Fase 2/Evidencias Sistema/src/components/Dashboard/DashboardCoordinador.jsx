@@ -101,6 +101,7 @@ export default function DashboardCoordinador() {
   const [user, setUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [taller_impartido, setTaller_impartido] = useState([]);
+  const [profesores, setProfesores] = useState([]);
   const [error, setError] = useState(null)
   const navigate = useNavigate()
 
@@ -137,6 +138,24 @@ export default function DashboardCoordinador() {
   }, [navigate])
 
   // Efecto para cargar talleres
+  useEffect(() => {
+    const profesores = async () => {
+      try {
+        let { data, error } = await supabase.from("TallerImpartido").select("*, Usuario(nombre, apellido)");;
+        if (error) setError(error);
+        else setProfesores(data);
+      } catch (err) {
+        setError(err);
+      }
+    };
+    profesores();
+  }, []);
+
+  console.log('profesores:', profesores);
+  console.log('Error:', error);
+
+  //efecto para profesores
+    // Efecto para cargar talleres
   useEffect(() => {
     const taller_impartido = async () => {
       try {
