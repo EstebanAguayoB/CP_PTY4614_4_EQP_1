@@ -18,10 +18,12 @@ export default function AppRouter() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+
+        {/* Rutas para Coordinador */}
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["COORDINADOR"]}>
               <CoordinatorDashboardPage />
             </ProtectedRoute>
           }
@@ -29,7 +31,7 @@ export default function AppRouter() {
         <Route
           path="/dashboard/alumnos"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["COORDINADOR"]}>
               <StudentManagementPage />
             </ProtectedRoute>
           }
@@ -37,7 +39,7 @@ export default function AppRouter() {
         <Route
           path="/dashboard/talleres"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["COORDINADOR"]}>
               <TalleresManagement />
             </ProtectedRoute>
           }
@@ -45,7 +47,7 @@ export default function AppRouter() {
         <Route
           path="/dashboard/profesores"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["COORDINADOR"]}>
               <ProfesoresManagementPage />
             </ProtectedRoute>
           }
@@ -53,15 +55,17 @@ export default function AppRouter() {
         <Route
           path="/dashboard/reportes"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["COORDINADOR"]}>
               <ReportesManagementPage />
             </ProtectedRoute>
           }
         />
+
+        {/* Rutas para Profesor */}
         <Route
           path="/dashboardprofesor"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["PROFESOR"]}>
               <DashboardProfesorPage />
             </ProtectedRoute>
           }
@@ -69,7 +73,7 @@ export default function AppRouter() {
         <Route
           path="/dashboardprofesor/talleres"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["PROFESOR"]}>
               <MisTalleresPage />
             </ProtectedRoute>
           }
@@ -77,7 +81,7 @@ export default function AppRouter() {
         <Route
           path="/dashboardprofesor/alumnos"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["PROFESOR"]}>
               <AlumnosProfesorPage />
             </ProtectedRoute>
           }
@@ -85,7 +89,7 @@ export default function AppRouter() {
         <Route
           path="/dashboardprofesor/evidencias"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["PROFESOR"]}>
               <EvidenciasProfesorPage />
             </ProtectedRoute>
           }

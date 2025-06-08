@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { BookOpen } from "lucide-react"
@@ -33,10 +35,46 @@ export default function LoginForm() {
         position: "top-right",
       })
     } else {
-      toast.success("Inicio de sesión exitoso. Redirigiendo...", {
+      // Obtener información del usuario para determinar el rol
+      const { data: userData, error: userError } = await supabase
+        .from("Usuario")
+        .select("rol, estado, nombre")
+        .eq("correo", formData.email)
+        .single()
+
+      if (userError || !userData) {
+        toast.error("Error al obtener información del usuario.", {
+          position: "top-right",
+        })
+        return
+      }
+
+      // Verificar si el usuario está activo
+      if (userData.estado !== "ACTIVO") {
+        toast.error("Tu cuenta está inactiva. Contacta al administrador.", {
+          position: "top-right",
+        })
+        await supabase.auth.signOut()
+        return
+      }
+
+      toast.success(`Bienvenido ${userData.nombre}. Redirigiendo...`, {
         position: "top-right",
       })
-      setTimeout(() => navigate("/dashboard"), 1500)
+
+      // Redirigir según el rol del usuario
+      setTimeout(() => {
+        if (userData.rol === "COORDINADOR") {
+          navigate("/dashboard")
+        } else if (userData.rol === "PROFESOR") {
+          navigate("/dashboardprofesor")
+        } else {
+          toast.error("Rol de usuario no reconocido.", {
+            position: "top-right",
+          })
+          supabase.auth.signOut()
+        }
+      }, 1500)
     }
   }
 
