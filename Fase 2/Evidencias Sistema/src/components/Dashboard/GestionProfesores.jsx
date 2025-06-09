@@ -219,7 +219,17 @@ export default function GestionProfesores() {
   }
 
   // Opciones para el formulario (puedes obtenerlas dinámicamente si lo deseas)
-  const especialidades = ["Robótica", "Arte", "Música", "Deportes", "Ciencias", "Literatura"]
+  const especialidades = [
+    "Lenguaje y Comunicación",
+    "Matemática",
+    "Ciencias Naturales",
+    "Historia, Geografía y Ciencias Sociales",
+    "Educación Tecnológica",
+    "Educación Artística",
+    "Educación Física y Salud",
+    "Idiomas Extranjeros",
+    "Orientación y Convivencia Escolar"
+  ]
 
   if (showAddForm) {
     return (
@@ -312,7 +322,7 @@ export default function GestionProfesores() {
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     >
-                      <option value="">Área de especialidad</option>
+                      <option value="" disabled hidden>Área de especialidad</option>
                       {especialidades.map((especialidad) => (
                         <option key={especialidad} value={especialidad}>
                           {especialidad}
@@ -328,7 +338,7 @@ export default function GestionProfesores() {
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     >
-                      <option value="">Asignar a taller</option>
+                      <option value="" disabled hidden>Asignar a taller</option>
                       {talleresDisponibles.map((taller) => (
                         <option key={taller.id_taller_impartido} value={taller.id_taller_impartido}>
                           {taller.nombre_publico}
