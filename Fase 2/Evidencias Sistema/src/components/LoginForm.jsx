@@ -1,10 +1,9 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { BookOpen } from "lucide-react"
+import { BookOpen, Eye, EyeOff } from "lucide-react"
 import { supabase } from "../../lib/supabase"
-import { toast } from "react-toastify"
+import { toast, ToastContainer } from "react-toastify"
+import "react-toastify/dist/ReactToastify.css"
 
 export default function LoginForm() {
   const navigate = useNavigate()
@@ -13,6 +12,20 @@ export default function LoginForm() {
     password: "",
     rememberMe: false,
   })
+  const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+
+  // Cargar credenciales guardadas al iniciar
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("rememberedEmail")
+    if (savedEmail) {
+      setFormData((prev) => ({
+        ...prev,
+        email: savedEmail,
+        rememberMe: true,
+      }))
+    }
+  }, [])
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -22,44 +35,301 @@ export default function LoginForm() {
     }))
   }
 
+  // Función para validar el formulario antes del envío
+  const validateForm = () => {
+    // Verificar campos vacíos
+    if (!formData.email.trim()) {
+      toast.error("Por favor ingresa tu correo electrónico", {
+        position: "top-center",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      })
+      return false
+    }
+
+    if (!formData.password.trim()) {
+      toast.error("Por favor ingresa tu contraseña", {
+        position: "top-center",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      })
+      return false
+    }
+
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email)) {
+      toast.error("Por favor ingresa un correo electrónico válido", {
+        position: "top-center",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      })
+      return false
+    }
+
+    // Validar longitud mínima de contraseña
+    if (formData.password.length < 6) {
+      toast.error("La contraseña debe tener al menos 6 caracteres", {
+        position: "top-center",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      })
+      return false
+    }
+
+    return true
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: formData.email,
-      password: formData.password,
-    })
+    // Validar formulario antes de proceder
+    if (!validateForm()) {
+      return
+    }
 
-    if (error) {
-      toast.error("Credenciales incorrectas. Intenta de nuevo.", {
-        position: "top-right",
+    setIsLoading(true)
+
+    try {
+      // Verificar conexión a internet
+      if (!navigator.onLine) {
+        toast.error("No hay conexión a internet. Verifica tu conexión e intenta nuevamente.", {
+          position: "top-center",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        })
+        setIsLoading(false)
+        return
+      }
+
+      // Mostrar toast de carga
+      const loadingToast = toast.loading("Verificando credenciales...", {
+        position: "top-center",
       })
-    } else {
+
+      // Intentar autenticación con timeout
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Tiempo de espera agotado")), 15000),
+      )
+
+      const authPromise = supabase.auth.signInWithPassword({
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+      })
+
+      const { data, error } = await Promise.race([authPromise, timeoutPromise])
+
+      // Cerrar toast de carga
+      toast.dismiss(loadingToast)
+
+      if (error) {
+        let errorMessage = "Error al iniciar sesión. Intenta nuevamente."
+
+        // Manejar diferentes tipos de errores de autenticación
+        if (
+          error.message.includes("Invalid login credentials") ||
+          error.message.includes("invalid_credentials") ||
+          error.message.includes("Invalid email or password")
+        ) {
+          // Verificar si el email existe en la base de datos
+          try {
+            const { data: userExists, error: checkError } = await supabase
+              .from("Usuario")
+              .select("correo")
+              .eq("correo", formData.email.trim().toLowerCase())
+              .single()
+
+            if (checkError) {
+              if (checkError.code === "PGRST116") {
+                // No se encontró el usuario
+                errorMessage = "No existe una cuenta con este correo electrónico."
+              } else {
+                // Error al consultar la base de datos
+                errorMessage = "Contraseña inexistente."
+              }
+            } else if (userExists) {
+              // El usuario existe, por lo tanto la contraseña es incorrecta
+              errorMessage = "Contraseña inexistente."
+            } else {
+              // Caso de respaldo
+              errorMessage = "No existe una cuenta con este correo electrónico."
+            }
+          } catch (checkError) {
+            console.error("Error al verificar usuario:", checkError)
+            // Si hay un error en la verificación, usar mensaje específico
+            errorMessage = "Contraseña inexistente."
+          }
+        } else if (error.message.includes("Email not confirmed")) {
+          errorMessage = "Tu cuenta no ha sido confirmada. Revisa tu correo electrónico."
+        } else if (error.message.includes("Too many requests") || error.message.includes("rate_limit")) {
+          errorMessage = "Demasiados intentos fallidos. Espera unos minutos antes de intentar nuevamente."
+        } else if (error.message.includes("User not found")) {
+          errorMessage = "No existe una cuenta con este correo electrónico."
+        } else if (error.message.includes("Account locked") || error.message.includes("account_disabled")) {
+          errorMessage = "Tu cuenta ha sido bloqueada. Contacta al administrador."
+        } else if (error.message.includes("signup_disabled")) {
+          errorMessage = "El registro está deshabilitado. Contacta al administrador."
+        } else if (error.status >= 500) {
+          errorMessage = "Error en el servidor. Intenta más tarde."
+        } else if (
+          error.message.includes("network") ||
+          error.message.includes("fetch") ||
+          error.message.includes("NetworkError")
+        ) {
+          errorMessage = "Error de conexión. Verifica tu red e intenta nuevamente."
+        } else if (error.message.includes("timeout")) {
+          errorMessage = "La solicitud ha tardado demasiado. Intenta nuevamente."
+        }
+
+        toast.error(errorMessage, {
+          position: "top-center",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        })
+
+        // Limpiar contraseña en caso de error
+        setFormData((prev) => ({
+          ...prev,
+          password: "",
+        }))
+
+        setIsLoading(false)
+        return
+      }
+
+      // Si la autenticación fue exitosa, verificar información del usuario
+      toast.success("Autenticación exitosa. Verificando permisos...", {
+        position: "top-center",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      })
+
       // Obtener información del usuario para determinar el rol
       const { data: userData, error: userError } = await supabase
         .from("Usuario")
-        .select("rol, estado, nombre")
-        .eq("correo", formData.email)
+        .select("rol, estado, nombre, apellido")
+        .eq("correo", formData.email.trim().toLowerCase())
         .single()
 
-      if (userError || !userData) {
-        toast.error("Error al obtener información del usuario.", {
-          position: "top-right",
+      if (userError) {
+        let userErrorMessage = "Error al obtener información del usuario."
+
+        if (userError.code === "PGRST116") {
+          userErrorMessage = "Usuario no encontrado en el sistema. Contacta al administrador."
+        } else if (userError.message.includes("network")) {
+          userErrorMessage = "Error de conexión al verificar usuario. Intenta nuevamente."
+        }
+
+        toast.error(userErrorMessage, {
+          position: "top-center",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
         })
+
+        await supabase.auth.signOut()
+        setIsLoading(false)
+        return
+      }
+
+      if (!userData) {
+        toast.error("No se encontró información del usuario en el sistema. Contacta al administrador.", {
+          position: "top-center",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        })
+
+        await supabase.auth.signOut()
+        setIsLoading(false)
         return
       }
 
       // Verificar si el usuario está activo
       if (userData.estado !== "ACTIVO") {
-        toast.error("Tu cuenta está inactiva. Contacta al administrador.", {
-          position: "top-right",
+        let statusMessage = "Tu cuenta no está activa. Contacta al administrador."
+
+        if (userData.estado === "INACTIVO") {
+          statusMessage = "Tu cuenta está inactiva. Contacta al administrador para reactivarla."
+        } else if (userData.estado === "SUSPENDIDO") {
+          statusMessage = "Tu cuenta ha sido suspendida. Contacta al administrador."
+        } else if (userData.estado === "PENDIENTE") {
+          statusMessage = "Tu cuenta está pendiente de aprobación. Contacta al administrador."
+        }
+
+        toast.error(statusMessage, {
+          position: "top-center",
+          autoClose: 6000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
         })
+
         await supabase.auth.signOut()
+        setIsLoading(false)
         return
       }
 
-      toast.success(`Bienvenido ${userData.nombre}. Redirigiendo...`, {
-        position: "top-right",
+      // Verificar rol válido
+      if (!userData.rol || !["COORDINADOR", "PROFESOR"].includes(userData.rol)) {
+        toast.error("Rol de usuario no reconocido o no autorizado para acceder al sistema.", {
+          position: "top-center",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        })
+
+        await supabase.auth.signOut()
+        setIsLoading(false)
+        return
+      }
+
+      // Guardar email si "Recuérdame" está marcado
+      if (formData.rememberMe) {
+        localStorage.setItem("rememberedEmail", formData.email.trim().toLowerCase())
+      } else {
+        localStorage.removeItem("rememberedEmail")
+      }
+
+      // Éxito completo
+      const userName =
+        userData.nombre && userData.apellido
+          ? `${userData.nombre} ${userData.apellido}`
+          : userData.nombre || formData.email.split("@")[0]
+
+      // Limpiar formulario
+      setFormData({
+        email: "",
+        password: "",
+        rememberMe: formData.rememberMe,
       })
 
       // Redirigir según el rol del usuario
@@ -68,18 +338,40 @@ export default function LoginForm() {
           navigate("/dashboard")
         } else if (userData.rol === "PROFESOR") {
           navigate("/dashboardprofesor")
-        } else {
-          toast.error("Rol de usuario no reconocido.", {
-            position: "top-right",
-          })
-          supabase.auth.signOut()
         }
       }, 1500)
+    } catch (error) {
+      console.error("Error durante el login:", error)
+
+      let catchErrorMessage = "Error inesperado. Por favor, intenta nuevamente."
+
+      if (error.message === "Tiempo de espera agotado") {
+        catchErrorMessage = "La solicitud ha tardado demasiado. Verifica tu conexión e intenta nuevamente."
+      } else if (error.message?.includes("fetch failed") || error.message?.includes("network")) {
+        catchErrorMessage = "Error de conexión. Verifica tu red e intenta nuevamente."
+      } else if (error.message?.includes("Failed to fetch") || error.message?.includes("NetworkError")) {
+        catchErrorMessage = "No se pudo conectar con el servidor. Intenta más tarde."
+      }
+
+      toast.error(catchErrorMessage, {
+        position: "top-center",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      })
+    } finally {
+      setIsLoading(false)
     }
   }
 
   const handleBackToHome = () => {
     navigate("/")
+  }
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword)
   }
 
   useEffect(() => {
@@ -137,7 +429,7 @@ export default function LoginForm() {
       {/* Formulario */}
       <div className="max-w-md w-full bg-gradient-to-r from-emerald-600 to-teal-500 rounded-xl shadow-2xl overflow-hidden p-8 space-y-8 animate-slideInFromLeft relative z-10 backdrop-blur-sm">
         <h2 className="text-center text-4xl font-extrabold text-white animate-appear">Bienvenido</h2>
-        <p className="text-center text-gray-200 animate-appear-delayed">Inicia sesion con tus credenciales</p>
+        <p className="text-center text-gray-200 animate-appear-delayed">Inicia sesión con tus credenciales</p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="relative">
@@ -159,6 +451,7 @@ export default function LoginForm() {
               type="email"
               value={formData.email}
               onChange={handleInputChange}
+              disabled={isLoading}
             />
             <label
               className="absolute left-0 -top-3.5 text-gray-500 text-sm transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-2 peer-focus:-top-3.5 peer-focus:text-emerald-400 peer-focus:text-sm"
@@ -184,9 +477,10 @@ export default function LoginForm() {
               required
               id="password"
               name="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={formData.password}
               onChange={handleInputChange}
+              disabled={isLoading}
             />
             <label
               className="absolute left-0 -top-3.5 text-gray-500 text-sm transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-2 peer-focus:-top-3.5 peer-focus:text-emerald-400 peer-focus:text-sm"
@@ -194,6 +488,14 @@ export default function LoginForm() {
             >
               Contraseña
             </label>
+            <button
+              type="button"
+              onClick={togglePasswordVisibility}
+              className="absolute right-0 top-2 text-gray-300 hover:text-white"
+              tabIndex={-1}
+            >
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
           </div>
 
           <div className="flex items-center justify-between">
@@ -204,12 +506,14 @@ export default function LoginForm() {
                 name="rememberMe"
                 checked={formData.rememberMe}
                 onChange={handleInputChange}
+                disabled={isLoading}
               />
-              <span className="ml-2">Recuerdame</span>
+              <span className="ml-2">Recuérdame</span>
             </label>
             <button
               type="button"
-              className="text-sm text-emerald-200 hover:underline"
+              className="text-sm text-emerald-200 hover:underline disabled:opacity-50"
+              disabled={isLoading}
               onClick={() =>
                 window.open(
                   "https://mail.google.com/mail/?view=cm&to=skilltrack@educacion.cl&su=Restablecer%20contraseña",
@@ -223,16 +527,37 @@ export default function LoginForm() {
 
           <button
             type="submit"
-            className="w-full rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-75 transition-colors duration-200"
+            disabled={isLoading}
+            className="w-full rounded-md bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-75 transition-colors duration-200 flex items-center justify-center"
           >
-            Iniciar
+            {isLoading ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Iniciando sesión...
+              </>
+            ) : (
+              "Iniciar Sesión"
+            )}
           </button>
         </form>
 
         <div className="text-center text-gray-300">
-          {"No tienes una cuenta? "}
+          {"¿No tienes una cuenta? "}
           <button
-            className="text-emerald-300 hover:underline"
+            className="text-emerald-300 hover:underline disabled:opacity-50"
+            disabled={isLoading}
             onClick={() =>
               window.open(
                 "https://mail.google.com/mail/?view=cm&to=skilltrack@educacion.cl&su=Solicitud%20para%20crear%20cuenta%20en%20sistema",
@@ -240,17 +565,40 @@ export default function LoginForm() {
               )
             }
           >
-            Contacta aqui
+            Contacta aquí
           </button>
         </div>
 
         {/* Botón para volver al inicio */}
         <div className="text-center">
-          <button onClick={handleBackToHome} className="text-sm text-gray-300 hover:text-white transition-colors">
+          <button
+            onClick={handleBackToHome}
+            disabled={isLoading}
+            className="text-sm text-gray-300 hover:text-white transition-colors disabled:opacity-50"
+          >
             ← Volver al inicio
           </button>
         </div>
       </div>
+      {/* ToastContainer para las notificaciones */}
+      <ToastContainer
+        position="top-center"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+        limit={3}
+        toastClassName="backdrop-blur-lg"
+        style={{
+          fontSize: "14px",
+          fontWeight: "500",
+        }}
+      />
     </div>
   )
 }
