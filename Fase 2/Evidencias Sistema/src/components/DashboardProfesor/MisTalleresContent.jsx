@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect } from "react"
 import { BookOpen, Users, Upload, Menu, FileText, X, Check } from "lucide-react"
 import { useNavigate } from "react-router-dom"
@@ -15,16 +17,151 @@ export default function MisTalleresContent() {
   const [selectedAlumno, setSelectedAlumno] = useState(null)
   const [evidenciaText, setEvidenciaText] = useState("")
   const [reporteGenerado, setReporteGenerado] = useState(false)
+  const [misTalleres, setMisTalleres] = useState([])
+  const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
   useEffect(() => {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser()
-      if (data.user) setUser(data.user)
-      else navigate("/")
+      if (data.user) {
+        setUser(data.user)
+        await fetchMisTalleres(data.user.email)
+      } else {
+        navigate("/")
+      }
     }
     getUser()
   }, [navigate])
+
+  const fetchMisTalleres = async (userEmail) => {
+    try {
+      setLoading(true)
+
+      // Primero obtenemos el id_usuario del profesor logueado
+      const { data: usuarioData, error: usuarioError } = await supabase
+        .from("Usuario")
+        .select("id_usuario")
+        .eq("correo", userEmail)
+        .eq("rol", "PROFESOR")
+        .single()
+
+      if (usuarioError) {
+        console.error("Error fetching usuario:", usuarioError)
+        return
+      }
+
+      const profesorId = usuarioData.id_usuario
+
+      // Obtenemos los talleres impartidos por este profesor
+      const { data: talleresImpartidos, error: talleresError } = await supabase
+        .from("TallerImpartido")
+        .select(`id_taller_impartido,nombre_publico,descripcion_publica,estado,
+          TallerDefinido (id_taller_definido,nombre,descripcion,objetivos,requisitos,niveles_totales,nivel_minimo,edad_minima,edad_maxima )`)
+        .eq("profesor_asignado", profesorId)
+
+      if (talleresError) {
+        console.error("Error fetching talleres impartidos:", talleresError)
+        return
+      }
+
+      // Para cada taller, obtenemos información adicional
+      const talleresConInfo = await Promise.all(
+        talleresImpartidos.map(async (taller) => {
+          // Obtener niveles del taller
+          const { data: niveles } = await supabase
+            .from("Nivel")
+            .select("*")
+            .eq("id_taller_definido", taller.TallerDefinido.id_taller_definido)
+            .order("numero_nivel")
+
+          // Obtener participaciones de estudiantes
+          const { data: participaciones } = await supabase
+            .from("ParticipacionEstudiante")
+            .select(`id_participacion,estado,nivel_actual,
+              Estudiante (id_estudiante,nombre,apellido,correo_apoderado),
+              Nivel (numero_nivel,descripcion)`)
+            .eq("id_taller_impartido", taller.id_taller_impartido)
+
+          // Obtener evidencias pendientes
+          const { data: evidenciasPendientes } = await supabase
+            .from("Evidencia")
+            .select("id_evidencia")
+            .in("id_participacion", participaciones?.map((p) => p.id_participacion) || [])
+            .eq("validada_por_profesor", 0)
+
+          // Procesar alumnos
+          const alumnos =
+            participaciones?.map((participacion) => {
+              const estudiante = participacion.Estudiante
+              const nivelActual = participacion.Nivel
+
+              // Calcular progreso basado en el nivel actual vs niveles totales
+              const progresoCalculado = nivelActual
+                ? Math.round((nivelActual.numero_nivel / taller.TallerDefinido.niveles_totales) * 100)
+                : 0
+
+              return {
+                id: estudiante.id_estudiante,
+                nombre: `${estudiante.nombre} ${estudiante.apellido}`,
+                nivel: getNivelLabel(nivelActual?.numero_nivel || 1),
+                progreso: progresoCalculado,
+                email: estudiante.correo_apoderado,
+              }
+            }) || []
+
+          // Calcular distribución por niveles
+          const distribucionNiveles = {
+            basico: alumnos.filter((a) => a.nivel === "Básico").length,
+            intermedio: alumnos.filter((a) => a.nivel === "Intermedio").length,
+            avanzado: alumnos.filter((a) => a.nivel === "Avanzado").length,
+          }
+
+          // Calcular progreso promedio del taller
+          const progresoPromedio =
+            alumnos.length > 0
+              ? Math.round(alumnos.reduce((sum, alumno) => sum + alumno.progreso, 0) / alumnos.length)
+              : 0
+
+          return {
+            id: taller.id_taller_impartido,
+            nombre: taller.nombre_publico || taller.TallerDefinido.nombre,
+            descripcion: taller.descripcion_publica || taller.TallerDefinido.descripcion,
+            niveles: getNivelesLabels(taller.TallerDefinido.niveles_totales),
+            totalAlumnos: alumnos.length,
+            evidenciasPendientes: evidenciasPendientes?.length || 0,
+            estado: taller.estado === "activo" ? "activo" : "inactivo",
+            distribucionNiveles,
+            progreso: progresoPromedio,
+            proximasActividades: [], // Esto se puede implementar más adelante
+            alumnos,
+          }
+        }),
+      )
+
+      setMisTalleres(talleresConInfo)
+    } catch (error) {
+      console.error("Error fetching mis talleres:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Función auxiliar para obtener etiquetas de niveles
+  const getNivelLabel = (numeroNivel) => {
+    if (numeroNivel === 1) return "Básico"
+    if (numeroNivel === 2) return "Intermedio"
+    return "Avanzado"
+  }
+
+  // Función auxiliar para obtener array de niveles
+  const getNivelesLabels = (nivelesTotal) => {
+    const labels = []
+    if (nivelesTotal >= 1) labels.push("Básico")
+    if (nivelesTotal >= 2) labels.push("Intermedio")
+    if (nivelesTotal >= 3) labels.push("Avanzado")
+    return labels
+  }
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen)
@@ -34,98 +171,6 @@ export default function MisTalleresContent() {
     await supabase.auth.signOut()
     navigate("/")
   }
-
-  const misTalleres = [
-    {
-      id: 1,
-      nombre: "Robótica",
-      descripcion: "Taller de robótica para todas las edades",
-      niveles: ["Básico", "Intermedio", "Avanzado"],
-      totalAlumnos: 32,
-      evidenciasPendientes: 8,
-      estado: "Activo",
-      distribucionNiveles: {
-        basico: 15,
-        intermedio: 10,
-        avanzado: 7,
-      },
-      progreso: 75,
-      proximasActividades: [
-        {
-          nombre: "Competencia interna",
-          fecha: "30/04/2025",
-        },
-        {
-          nombre: "Evaluación de nivel",
-          fecha: "15/05/2025",
-        },
-      ],
-      alumnos: [
-        { id: 1, nombre: "Laura Martínez", nivel: "Avanzado", progreso: 77, email: "laura.martinez@apoderado.ed" },
-        { id: 2, nombre: "Carlos Sánchez", nivel: "Intermedio", progreso: 77, email: "carlos.sanchez@apoderado.edu" },
-        { id: 3, nombre: "Ana García", nivel: "Básico", progreso: 77, email: "ana.garcia@apoderado.edu" },
-        { id: 4, nombre: "Miguel Torres", nivel: "Intermedio", progreso: 77, email: "miguel.torres@apoderado.ed" },
-        { id: 5, nombre: "Sofía Rodríguez", nivel: "Avanzado", progreso: 77, email: "sofia.rodriguez@apoderado.edu" },
-      ],
-    },
-    {
-      id: 2,
-      nombre: "Programación",
-      descripcion: "Taller de programación básica y avanzada",
-      niveles: ["Básico", "Intermedio"],
-      totalAlumnos: 28,
-      evidenciasPendientes: 5,
-      estado: "Activo",
-      distribucionNiveles: {
-        basico: 18,
-        intermedio: 10,
-        avanzado: 0,
-      },
-      progreso: 60,
-      proximasActividades: [
-        {
-          nombre: "Hackathon escolar",
-          fecha: "10/05/2025",
-        },
-      ],
-      alumnos: [
-        { id: 6, nombre: "Pedro López", nivel: "Intermedio", progreso: 77, email: "pedro.lopez@apoderado.edu" },
-        { id: 7, nombre: "María Fernández", nivel: "Básico", progreso: 65, email: "maria.fernandez@apoderado.edu" },
-        { id: 8, nombre: "Diego Ramírez", nivel: "Básico", progreso: 70, email: "diego.ramirez@apoderado.edu" },
-        { id: 9, nombre: "Isabella Moreno", nivel: "Intermedio", progreso: 82, email: "isabella.moreno@apoderado.edu" },
-        { id: 10, nombre: "Sebastián Vega", nivel: "Básico", progreso: 68, email: "sebastian.vega@apoderado.edu" },
-      ],
-    },
-    {
-      id: 3,
-      nombre: "Diseño 3D",
-      descripcion: "Taller de modelado y diseño en 3D",
-      niveles: ["Intermedio", "Avanzado"],
-      totalAlumnos: 15,
-      evidenciasPendientes: 3,
-      estado: "Inactivo",
-      distribucionNiveles: {
-        basico: 0,
-        intermedio: 8,
-        avanzado: 7,
-      },
-      progreso: 45,
-      proximasActividades: [],
-      alumnos: [
-        { id: 11, nombre: "Javier Morales", nivel: "Intermedio", progreso: 45, email: "javier.morales@apoderado.edu" },
-        {
-          id: 12,
-          nombre: "Valentina Castro",
-          nivel: "Avanzado",
-          progreso: 50,
-          email: "valentina.castro@apoderado.edu",
-        },
-        { id: 13, nombre: "Andrés Silva", nivel: "Intermedio", progreso: 42, email: "andres.silva@apoderado.edu" },
-        { id: 14, nombre: "Camila Herrera", nivel: "Avanzado", progreso: 55, email: "camila.herrera@apoderado.edu" },
-        { id: 15, nombre: "Nicolás Peña", nivel: "Intermedio", progreso: 38, email: "nicolas.pena@apoderado.edu" },
-      ],
-    },
-  ]
 
   const openAlumnosModal = (taller) => {
     setSelectedTaller(taller)
@@ -161,14 +206,41 @@ export default function MisTalleresContent() {
     setReporteGenerado(false)
   }
 
-  const handleSubmitEvidencia = () => {
-    // Aquí iría la lógica para guardar la evidencia en la base de datos
-    console.log("Evidencia guardada para:", selectedAlumno, "del taller:", selectedTaller.nombre)
-    console.log("Texto de evidencia:", evidenciaText)
+  const handleSubmitEvidencia = async () => {
+    try {
+      // Obtener la participación del alumno seleccionado
+      const { data: participacion } = await supabase
+        .from("ParticipacionEstudiante")
+        .select("id_participacion")
+        .eq("id_estudiante", selectedAlumno.id)
+        .eq("id_taller_impartido", selectedTaller.id)
+        .single()
 
-    // Simulamos éxito
-    alert(`Evidencia guardada con éxito para ${selectedAlumno.nombre}`)
-    closeEvidenciaModal()
+      if (participacion) {
+        // Insertar la evidencia
+        const { error } = await supabase.from("Evidencia").insert({
+          id_participacion: participacion.id_participacion,
+          semana: Math.ceil(Date.now() / (7 * 24 * 60 * 60 * 1000)), // Semana actual aproximada
+          descripcion: evidenciaText,
+          fecha_envio: new Date().toISOString(),
+          validada_por_profesor: 1,
+          observaciones: `Evidencia registrada por el profesor para ${selectedAlumno.nombre}`,
+        })
+
+        if (error) {
+          console.error("Error guardando evidencia:", error)
+          alert("Error al guardar la evidencia")
+        } else {
+          alert(`Evidencia guardada con éxito para ${selectedAlumno.nombre}`)
+          // Refrescar los datos
+          await fetchMisTalleres(user.email)
+          closeEvidenciaModal()
+        }
+      }
+    } catch (error) {
+      console.error("Error:", error)
+      alert("Error al guardar la evidencia")
+    }
   }
 
   const handleGenerarReporte = () => {
@@ -186,6 +258,20 @@ export default function MisTalleresContent() {
     console.log("Descargando reporte para el taller:", selectedTaller.nombre)
     alert(`Reporte de ${selectedTaller.nombre} descargado con éxito`)
     closeReporteModal()
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/40">
+        <DashboardProfeSidebar sidebarOpen={sidebarOpen} toggleSidebar={toggleSidebar} userRole="Profesor" />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Cargando talleres...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -295,7 +381,7 @@ export default function MisTalleresContent() {
                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                     }`}
                   >
-                    Activos ({misTalleres.filter((taller) => taller.estado === "Activo").length})
+                    Activos ({misTalleres.filter((taller) => taller.estado === "activo").length})
                   </button>
                   <button
                     onClick={() => setActiveTab("inactivos")}
@@ -305,7 +391,7 @@ export default function MisTalleresContent() {
                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                     }`}
                   >
-                    Inactivos ({misTalleres.filter((taller) => taller.estado === "Inactivo").length})
+                    Inactivos ({misTalleres.filter((taller) => taller.estado === "inactivo").length})
                   </button>
                 </nav>
               </div>
@@ -315,7 +401,7 @@ export default function MisTalleresContent() {
             {activeTab === "activos" && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {misTalleres
-                  .filter((taller) => taller.estado === "Activo")
+                  .filter((taller) => taller.estado === "activo")
                   .map((taller) => (
                     <div key={taller.id} className="bg-white rounded-xl shadow-md overflow-hidden">
                       <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50">
@@ -401,10 +487,10 @@ export default function MisTalleresContent() {
 
             {activeTab === "inactivos" && (
               <>
-                {misTalleres.filter((taller) => taller.estado === "Inactivo").length > 0 ? (
+                {misTalleres.filter((taller) => taller.estado === "inactivo").length > 0 ? (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {misTalleres
-                      .filter((taller) => taller.estado === "Inactivo")
+                      .filter((taller) => taller.estado === "inactivo")
                       .map((taller) => (
                         <div key={taller.id} className="bg-white rounded-xl shadow-md overflow-hidden opacity-75">
                           <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
@@ -788,9 +874,3 @@ export default function MisTalleresContent() {
     </div>
   )
 }
-
-
-
-
-
-
