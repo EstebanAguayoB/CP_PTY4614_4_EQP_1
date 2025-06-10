@@ -41,24 +41,55 @@ export default function GestionEstudiante() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    const alumnos = async () => {
+    const fetchAlumnos = async () => {
       try {
-        let { data, error } = await supabase.from("Estudiante").select("*")
+        let { data, error } = await supabase
+          .from("Estudiante")
+          .select(`
+            id_estudiante,
+            nombre,
+            apellido,
+            correo_apoderado,
+            estado,
+            ParticipacionEstudiante:ParticipacionEstudiante(
+              id_taller_impartido,
+              nivel_actual,
+              estado,
+              TallerImpartido(
+                nombre_publico
+              ),
+              Nivel(
+                numero_nivel
+              )
+            )
+          `)
         if (error) setError(error)
         else setAlumnos(data)
       } catch (err) {
         setError(err)
       }
     }
-    alumnos()
+    fetchAlumnos()
   }, [])
 
   console.log("alumnos:", alumnos)
   console.log("Error:", error)
 
-  const filteredAlumnos = alumnos.filter((alumno) =>
+  // Procesa los datos para la tabla
+  const alumnosProcesados = alumnos.map(alumno => {
+    // Toma la primera participación activa o la más reciente
+    const participacion = alumno.ParticipacionEstudiante?.find(p => p.estado === "EN_PROGRESO" || p.estado === "INSCRITO") || alumno.ParticipacionEstudiante?.[0];
+    return {
+      ...alumno,
+      taller: participacion?.TallerImpartido?.nombre_publico || "No asignado",
+      nivel: participacion?.Nivel?.numero_nivel ? `Nivel ${participacion.Nivel.numero_nivel}` : "No asignado",
+      estado: participacion?.estado || "No asignado"
+    }
+  })
+
+  const filteredAlumnos = alumnosProcesados.filter((alumno) =>
     alumno.nombre?.toLowerCase()?.includes(searchTerm?.toLowerCase()) ||
-    alumno.email?.toLowerCase()?.includes(searchTerm?.toLowerCase()) ||
+    alumno.apellido?.toLowerCase()?.includes(searchTerm?.toLowerCase()) ||
     alumno.taller?.toLowerCase()?.includes(searchTerm?.toLowerCase())
   )
 
@@ -293,12 +324,12 @@ export default function GestionEstudiante() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">
-                            {alumno.taller || "No asignado"}
+                            {alumno.taller}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                            {alumno.nivel || "No asignado"}
+                            {alumno.nivel}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
