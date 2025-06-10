@@ -771,11 +771,17 @@ export function GestionTalleres() {
                       required
                     >
                       <option value="">Selecciona un profesor</option>
-                      {profesores.map((prof) => (
-                        <option key={prof.id_usuario} value={prof.id_usuario}>
-                          {prof.nombre} {prof.apellido}
-                        </option>
-                      ))}
+                      {profesores
+                        .filter(prof => {
+                          if (!selectedTaller?.nivel_minimo) return true
+                          const orden = { BASICA: 1, MEDIA: 2 }
+                          return orden[prof.ProfesorDetalle.nivel_educativo] >= orden[selectedTaller.nivel_minimo]
+                        })
+                        .map((prof) => (
+                          <option key={prof.id_usuario} value={prof.id_usuario}>
+                            {prof.nombre} {prof.apellido}
+                          </option>
+                        ))}
                     </select>
                   </div>
                   <button
@@ -865,11 +871,20 @@ export function GestionTalleres() {
                       required
                     >
                       <option value="">Selecciona un profesor</option>
-                      {profesores.map(prof => (
-                        <option key={prof.id_usuario} value={prof.id_usuario}>
-                          {prof.nombre} {prof.apellido}
-                        </option>
-                      ))}
+                      {profesores
+                        .filter(prof => {
+                          // Suponiendo que tienes el nivel educativo mínimo del taller en selectedTaller.nivel_minimo
+                          // y el nivel educativo del profesor en prof.ProfesorDetalle.nivel_educativo
+                          if (!selectedTaller?.nivel_minimo) return true
+                          // Puedes definir un orden para comparar niveles
+                          const orden = { BASICA: 1, MEDIA: 2 }
+                          return orden[prof.ProfesorDetalle.nivel_educativo] >= orden[selectedTaller.nivel_minimo]
+                        })
+                        .map(prof => (
+                          <option key={prof.id_usuario} value={prof.id_usuario}>
+                            {prof.nombre} {prof.apellido}
+                          </option>
+                        ))}
                     </select>
                   </div>
                   <button

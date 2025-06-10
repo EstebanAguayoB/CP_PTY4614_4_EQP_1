@@ -10,6 +10,11 @@ export default function GestionEstudiante() {
   const [searchTerm, setSearchTerm] = useState("")
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [user, setUser] = useState(null)
+  const [form, setForm] = useState({
+    nombre: "",
+    apellido: "",
+    correo_apoderado: "",
+  })
   const navigate = useNavigate()
 
   // Añadir useEffect para obtener el usuario
@@ -56,6 +61,23 @@ export default function GestionEstudiante() {
     alumno.email?.toLowerCase()?.includes(searchTerm?.toLowerCase()) ||
     alumno.taller?.toLowerCase()?.includes(searchTerm?.toLowerCase())
   )
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value })
+  }
+
+  const handleAddAlumno = async (e) => {
+    e.preventDefault()
+    // Validación básica
+    if (!form.nombre || !form.apellido || !form.correo_apoderado) return
+    const { error } = await supabase.from("Estudiante").insert([form])
+    if (!error) {
+      setShowAddForm(false)
+      // Recargar alumnos si lo necesitas
+    } else {
+      alert("Error al registrar alumno")
+    }
+  }
 
   if (showAddForm) {
     return (
@@ -106,13 +128,30 @@ export default function GestionEstudiante() {
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Añadir Nuevo Alumno</h2>
                 <p className="text-gray-600 mb-8">Completa la información para registrar un nuevo alumno</p>
 
-                <form className="space-y-6">
+                <form className="space-y-6" onSubmit={handleAddAlumno}>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
                     <input
                       type="text"
+                      name="nombre"
+                      value={form.nombre}
+                      onChange={handleChange}
                       placeholder="Nombre completo"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Apellido</label>
+                    <input
+                      type="text"
+                      name="apellido"
+                      value={form.apellido}
+                      onChange={handleChange}
+                      placeholder="Apellido"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      required
                     />
                   </div>
 
@@ -120,32 +159,13 @@ export default function GestionEstudiante() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Email Tutor</label>
                     <input
                       type="email"
+                      name="correo_apoderado"
+                      value={form.correo_apoderado}
+                      onChange={handleChange}
                       placeholder="Correo@institucion.edu"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      required
                     />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Taller</label>
-                    <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
-                      <option>Seleccionar taller</option>
-                      <option>Robótica</option>
-                      <option>Deportes</option>
-                      <option>Música</option>
-                      <option>Fotografía</option>
-                      <option>Pintura</option>
-                      <option>Teatro</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Nivel</label>
-                    <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
-                      <option>Seleccionar nivel</option>
-                      <option>Básico</option>
-                      <option>Intermedio</option>
-                      <option>Avanzado</option>
-                    </select>
                   </div>
 
                   <div className="flex space-x-4 pt-6">
@@ -272,11 +292,13 @@ export default function GestionEstudiante() {
                           <div className="text-sm text-gray-500">{alumno.correo_apoderado}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{alumno.taller}</div>
+                          <div className="text-sm text-gray-900">
+                            {alumno.taller || "No asignado"}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                            {alumno.nivel}
+                            {alumno.nivel || "No asignado"}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">

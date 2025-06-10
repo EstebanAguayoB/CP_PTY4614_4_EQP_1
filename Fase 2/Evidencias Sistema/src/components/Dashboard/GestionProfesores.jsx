@@ -230,6 +230,35 @@ export default function GestionProfesores() {
   // Guardar cambios de edición
   const handleEditSave = async () => {
     setEditLoading(true)
+    // 1. Obtener talleres activos que imparte el profesor
+    const { data: talleres, error: errorTalleres } = await supabase
+      .from("TallerImpartido")
+      .select(`
+        id_taller_impartido,
+        nombre_publico,
+        TallerDefinido(nivel_minimo)
+      `)
+      .eq("profesor_asignado", editForm.id)
+      .eq("estado", "activo")
+
+    if (errorTalleres) {
+      setEditLoading(false)
+      alert("Error al validar talleres: " + errorTalleres.message)
+      return
+    }
+
+    // 2. Validar compatibilidad de nivel educativo
+    const orden = { BASICA: 1, MEDIA: 2 }
+    const incompatible = talleres?.some(
+      t => orden[editForm.nivel_educativo] < orden[t.TallerDefinido.nivel_minimo]
+    )
+    if (incompatible) {
+      setEditLoading(false)
+      alert("No puedes cambiar el nivel educativo porque el profesor imparte talleres de un nivel superior.")
+      return
+    }
+
+    // 3. Si todo bien, actualizar
     const { error } = await supabase
       .from("ProfesorDetalle")
       .update({
