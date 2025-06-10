@@ -130,7 +130,8 @@ export function GestionTalleres() {
     if (success) {
       setShowAddForm(false)
       setShowEditForm(false)
-      await refreshTalleres()
+      await refreshTalleres();
+      localStorage.setItem("profesoresNeedsRefresh", Date.now());
     } else {
       setShowAddForm(false)
       setShowEditForm(false)
@@ -149,7 +150,8 @@ export function GestionTalleres() {
   const handleTallerUpdated = async (success) => {
     if (success) {
       setShowEditForm(false)
-      await refreshTalleres()
+      await refreshTalleres();
+      localStorage.setItem("profesoresNeedsRefresh", Date.now());
     } else {
       setShowEditForm(false)
     }
@@ -171,7 +173,8 @@ export function GestionTalleres() {
     setSelectedTaller(null)
     setSelectedPreconfiguracionId("")
     setError(null)
-    refreshTalleres()
+    refreshTalleres();
+    localStorage.setItem("profesoresNeedsRefresh", Date.now());
   }
 
   const handleTabChange = (tab) => {
@@ -706,6 +709,7 @@ export function GestionTalleres() {
                       setSelectedProfesorId("")
                       setError(null)
                       await refreshTalleres()
+                      localStorage.setItem("profesoresNeedsRefresh", Date.now());
                     } catch (err) {
                       setError("Error al crear el taller: " + err.message)
                     }
@@ -808,6 +812,7 @@ export function GestionTalleres() {
                       setSelectedTaller(null)
                       setError(null)
                       await refreshTalleres()
+                      localStorage.setItem("profesoresNeedsRefresh", Date.now());
                     } catch (err) {
                       setError("Error al actualizar el taller: " + err.message)
                     }
