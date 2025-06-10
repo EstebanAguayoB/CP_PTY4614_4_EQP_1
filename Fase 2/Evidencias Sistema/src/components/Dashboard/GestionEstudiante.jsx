@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react"
-import { Search, UserPlus, Edit, ToggleRight, ArrowLeft, Menu, GraduationCap } from "lucide-react"
+import { Search, UserPlus, Edit, ArrowLeft, Menu, GraduationCap, Trash2 } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { useNavigate } from "react-router-dom"
 import DashboardSidebar from "../shared/DashboardSidebar"
-import UserInfoBar from "../shared/UserInfoBar" 
+import UserInfoBar from "../shared/UserInfoBar"
 
 export default function GestionEstudiante() {
   const [showAddForm, setShowAddForm] = useState(false)
@@ -15,6 +15,15 @@ export default function GestionEstudiante() {
     apellido: "",
     correo_apoderado: "",
   })
+
+  // Estados para edición
+  const [editingStudent, setEditingStudent] = useState(null)
+  const [editForm, setEditForm] = useState({
+    nombre: "",
+    apellido: "",
+    correo_apoderado: "",
+  })
+
   const navigate = useNavigate()
 
   // Añadir useEffect para obtener el usuario
@@ -40,35 +49,34 @@ export default function GestionEstudiante() {
   const [alumnos, setAlumnos] = useState([])
   const [error, setError] = useState(null)
 
-  useEffect(() => {
-    const fetchAlumnos = async () => {
-      try {
-        let { data, error } = await supabase
-          .from("Estudiante")
-          .select(`
-            id_estudiante,
-            nombre,
-            apellido,
-            correo_apoderado,
+  const fetchAlumnos = async () => {
+    try {
+      const { data, error } = await supabase.from("Estudiante").select(`
+          id_estudiante,
+          nombre,
+          apellido,
+          correo_apoderado,
+          estado,
+          ParticipacionEstudiante:ParticipacionEstudiante(
+            id_taller_impartido,
+            nivel_actual,
             estado,
-            ParticipacionEstudiante:ParticipacionEstudiante(
-              id_taller_impartido,
-              nivel_actual,
-              estado,
-              TallerImpartido(
-                nombre_publico
-              ),
-              Nivel(
-                numero_nivel
-              )
+            TallerImpartido(
+              nombre_publico
+            ),
+            Nivel(
+              numero_nivel
             )
-          `)
-        if (error) setError(error)
-        else setAlumnos(data)
-      } catch (err) {
-        setError(err)
-      }
+          )
+        `)
+      if (error) setError(error)
+      else setAlumnos(data)
+    } catch (err) {
+      setError(err)
     }
+  }
+
+  useEffect(() => {
     fetchAlumnos()
   }, [])
 
@@ -76,22 +84,97 @@ export default function GestionEstudiante() {
   console.log("Error:", error)
 
   // Procesa los datos para la tabla
-  const alumnosProcesados = alumnos.map(alumno => {
+  const alumnosProcesados = alumnos.map((alumno) => {
     // Toma la primera participación activa o la más reciente
-    const participacion = alumno.ParticipacionEstudiante?.find(p => p.estado === "EN_PROGRESO" || p.estado === "INSCRITO") || alumno.ParticipacionEstudiante?.[0];
+    const participacion =
+      alumno.ParticipacionEstudiante?.find((p) => p.estado === "EN_PROGRESO" || p.estado === "INSCRITO") ||
+      alumno.ParticipacionEstudiante?.[0]
     return {
       ...alumno,
       taller: participacion?.TallerImpartido?.nombre_publico || "No asignado",
       nivel: participacion?.Nivel?.numero_nivel ? `Nivel ${participacion.Nivel.numero_nivel}` : "No asignado",
-      estado: participacion?.estado || "No asignado"
+      estado: participacion?.estado || "No asignado",
+      progreso: Math.floor(Math.random() * 100), // Progreso simulado
     }
   })
 
-  const filteredAlumnos = alumnosProcesados.filter((alumno) =>
-    alumno.nombre?.toLowerCase()?.includes(searchTerm?.toLowerCase()) ||
-    alumno.apellido?.toLowerCase()?.includes(searchTerm?.toLowerCase()) ||
-    alumno.taller?.toLowerCase()?.includes(searchTerm?.toLowerCase())
+  const filteredAlumnos = alumnosProcesados.filter(
+    (alumno) =>
+      alumno.nombre?.toLowerCase()?.includes(searchTerm?.toLowerCase()) ||
+      alumno.apellido?.toLowerCase()?.includes(searchTerm?.toLowerCase()) ||
+      alumno.taller?.toLowerCase()?.includes(searchTerm?.toLowerCase()),
   )
+
+  // Funciones de edición
+  const handleEditStudent = (alumno) => {
+    setEditingStudent(alumno.id_estudiante)
+    setEditForm({
+      nombre: alumno.nombre || "",
+      apellido: alumno.apellido || "",
+      correo_apoderado: alumno.correo_apoderado || "",
+    })
+  }
+
+  const handleSaveEdit = async () => {
+    try {
+      const { error } = await supabase.from("Estudiante").update(editForm).eq("id_estudiante", editingStudent)
+
+      if (error) {
+        console.error("Error updating student:", error)
+        return
+      }
+
+      // Refresh the students list
+      await fetchAlumnos()
+      setEditingStudent(null)
+    } catch (err) {
+      console.error("Error:", err)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditingStudent(null)
+    setEditForm({
+      nombre: "",
+      apellido: "",
+      correo_apoderado: "",
+    })
+  }
+
+  // Función para eliminar estudiante
+  const handleDeleteStudent = async (studentId) => {
+    if (
+      window.confirm(
+        "¿Estás seguro de que quieres eliminar este estudiante? Esta acción eliminará también sus participaciones y no se puede deshacer.",
+      )
+    ) {
+      try {
+        // Primero eliminar las participaciones
+        const { error: errorParticipaciones } = await supabase
+          .from("ParticipacionEstudiante")
+          .delete()
+          .eq("id_estudiante", studentId)
+
+        if (errorParticipaciones) {
+          console.error("Error deleting participations:", errorParticipaciones)
+          return
+        }
+
+        // Luego eliminar el estudiante
+        const { error: errorEstudiante } = await supabase.from("Estudiante").delete().eq("id_estudiante", studentId)
+
+        if (errorEstudiante) {
+          console.error("Error deleting student:", errorEstudiante)
+          return
+        }
+
+        // Refresh the students list
+        await fetchAlumnos()
+      } catch (err) {
+        console.error("Error:", err)
+      }
+    }
+  }
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -104,7 +187,7 @@ export default function GestionEstudiante() {
     const { error } = await supabase.from("Estudiante").insert([form])
     if (!error) {
       setShowAddForm(false)
-      // Recargar alumnos si lo necesitas
+      await fetchAlumnos() // Recargar alumnos
     } else {
       alert("Error al registrar alumno")
     }
@@ -315,17 +398,43 @@ export default function GestionEstudiante() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredAlumnos.map((alumno) => (
-                      <tr key={alumno.id} className="hover:bg-gray-50 transition-colors">
+                      <tr key={alumno.id_estudiante} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{alumno.nombre} {alumno.apellido}</div>
+                          {editingStudent === alumno.id_estudiante ? (
+                            <div className="flex space-x-2">
+                              <input
+                                type="text"
+                                value={editForm.nombre}
+                                onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
+                                className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 w-20"
+                              />
+                              <input
+                                type="text"
+                                value={editForm.apellido}
+                                onChange={(e) => setEditForm({ ...editForm, apellido: e.target.value })}
+                                className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 w-20"
+                              />
+                            </div>
+                          ) : (
+                            <div className="text-sm font-medium text-gray-900">
+                              {alumno.nombre} {alumno.apellido}
+                            </div>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">{alumno.correo_apoderado}</div>
+                          {editingStudent === alumno.id_estudiante ? (
+                            <input
+                              type="email"
+                              value={editForm.correo_apoderado}
+                              onChange={(e) => setEditForm({ ...editForm, correo_apoderado: e.target.value })}
+                              className="text-sm text-gray-500 border border-gray-300 rounded px-2 py-1 w-full"
+                            />
+                          ) : (
+                            <div className="text-sm text-gray-500">{alumno.correo_apoderado}</div>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {alumno.taller}
-                          </div>
+                          <div className="text-sm text-gray-900">{alumno.taller}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
@@ -349,14 +458,39 @@ export default function GestionEstudiante() {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex space-x-2">
-                            <button className="text-emerald-600 hover:text-emerald-900 transition-colors">
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button className="text-gray-600 hover:text-gray-900 transition-colors">
-                              <ToggleRight className="w-4 h-4" />
-                            </button>
-                          </div>
+                          {editingStudent === alumno.id_estudiante ? (
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={handleSaveEdit}
+                                className="text-emerald-600 hover:text-emerald-900 transition-colors px-2 py-1 border border-emerald-600 rounded text-xs"
+                              >
+                                Guardar
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                className="text-gray-600 hover:text-gray-900 transition-colors px-2 py-1 border border-gray-600 rounded text-xs"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleEditStudent(alumno)}
+                                className="text-emerald-600 hover:text-emerald-900 transition-colors p-1 rounded hover:bg-emerald-50"
+                                title="Editar estudiante"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteStudent(alumno.id_estudiante)}
+                                className="text-red-600 hover:text-red-900 transition-colors p-1 rounded hover:bg-red-50"
+                                title="Eliminar estudiante"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}
