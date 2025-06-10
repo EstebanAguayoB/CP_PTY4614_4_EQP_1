@@ -1,7 +1,5 @@
-"use client"
-
-import { useState, useEffect } from "react"
-import { Search, UserPlus, Edit, ToggleRight, ArrowLeft, Menu, UserCheck, Eye } from "lucide-react"
+import { useState, useEffect, useCallback } from "react"
+import { Search, UserPlus, Edit, ToggleRight, ArrowLeft, Menu, UserCheck } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { useNavigate } from "react-router-dom"
 import DashboardSidebar from "../shared/DashboardSidebar"
@@ -26,6 +24,10 @@ export default function GestionProfesores() {
   const [formSuccess, setFormSuccess] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [talleresDisponibles, setTalleresDisponibles] = useState([])
+  const [reloadFlag, setReloadFlag] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editForm, setEditForm] = useState({ id: null, especialidad: "", nivel_educativo: "" })
+  const [editLoading, setEditLoading] = useState(false)
   const navigate = useNavigate()
 
   // Obtener el usuario
@@ -45,74 +47,70 @@ export default function GestionProfesores() {
     navigate("/")
   }
 
-  // Obtener profesores y talleres asignados (sin join a ParticipacionEstudiante)
-  useEffect(() => {
-    const fetchProfesores = async () => {
-      const { data, error } = await supabase
-        .from("ProfesorDetalle")
-        .select(`
-          id_usuario,
-          especialidad,
-          activo,
-          Usuario:Usuario!inner(id_usuario, nombre, apellido, correo),
-          Asignaciones:AsignacionProfesor!inner(
-            id_taller_impartido,
-            estado_asignacion,
-            Taller:TallerImpartido(nombre_publico)
-          )
-        `)
-        .eq("Asignaciones.estado_asignacion", "ACTIVA")
+  // Refrescar profesores (extrae la función para poder llamarla)
+  const fetchProfesores = useCallback(async () => {
+    // 1. Trae todos los profesores
+    const { data: profesoresData, error: errorProfesores } = await supabase
+      .from("ProfesorDetalle")
+      .select(`
+        id_usuario,
+        especialidad,
+        nivel_educativo,
+        activo,
+        Usuario:Usuario!inner(id_usuario, nombre, apellido, correo)
+      `)
 
-      if (error) {
-        setError(error.message)
-      } else {
-        // Para cada taller asignado, obtener la cantidad de alumnos
-        const profesoresProcesados = await Promise.all(
-          data.map(async (profesor) => {
-            const nombreCompleto = `${profesor.Usuario?.nombre || ""} ${profesor.Usuario?.apellido || ""}`
-            const estado = profesor.activo ? "Activo" : "Inactivo"
-            // Talleres asignados
-            const talleres = await Promise.all(
-              (profesor.Asignaciones || []).map(async (asignacion) => {
-                let cantidadAlumnos = 0
-                if (asignacion.id_taller_impartido) {
-                  const { count } = await supabase
-                    .from("ParticipacionEstudiante")
-                    .select("id_participacion", { count: "exact", head: true })
-                    .eq("id_taller_impartido", asignacion.id_taller_impartido)
-                    .eq("estado", "INSCRITO")
-                  cantidadAlumnos = count || 0
-                }
-                return {
-                  nombreTaller: asignacion.Taller?.nombre_publico || "Sin nombre",
-                  cantidadAlumnos,
-                }
-              }),
-            )
-            return {
-              id: profesor.id_usuario,
-              nombre: nombreCompleto,
-              correo: profesor.Usuario?.correo || "",
-              especialidad: profesor.especialidad,
-              talleres,
-              estado,
-            }
-          }),
-        )
-        setProfesores(profesoresProcesados)
-      }
+    if (errorProfesores) {
+      setError(errorProfesores.message)
+      return
     }
+
+    const profesoresProcesados = profesoresData.map((profesor) => ({
+      id: profesor.id_usuario,
+      nombre: `${profesor.Usuario?.nombre || ""} ${profesor.Usuario?.apellido || ""}`,
+      correo: profesor.Usuario?.correo || "",
+      especialidad: profesor.especialidad,
+      nivel_educativo: profesor.nivel_educativo,
+      estado: profesor.activo ? "Activo" : "No Activo",
+    }))
+    setProfesores(profesoresProcesados)
+  }, [])
+
+  // useEffect para cargar profesores normalmente
+  useEffect(() => {
     fetchProfesores()
+  }, [fetchProfesores, reloadFlag])
+
+  // useEffect para refrescar al volver a la ruta
+  useEffect(() => {
+    const handlePopState = () => {
+      setReloadFlag(flag => !flag) // Cambia el flag para forzar el refresco
+    }
+    window.addEventListener("popstate", handlePopState)
+    return () => window.removeEventListener("popstate", handlePopState)
   }, [])
 
   // Cargar talleres disponibles desde la base
   useEffect(() => {
     const fetchTalleres = async () => {
-      const { data, error } = await supabase.from("TallerImpartido").select("id_taller_impartido, nombre_publico")
+      const { data, error } = await supabase
+        .from("TallerImpartido")
+        .select("id_taller_impartido, nombre_publico")
       if (!error) setTalleresDisponibles(data)
     }
     fetchTalleres()
   }, [])
+
+  // useEffect para refrescar profesores cuando cambia la marca en localStorage
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key === "profesoresNeedsRefresh") {
+        fetchProfesores();
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [fetchProfesores]);
 
   // Filtro de búsqueda
   const filteredProfesores = profesores.filter(
@@ -120,7 +118,7 @@ export default function GestionProfesores() {
       prof.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       prof.correo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       prof.especialidad?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      prof.talleres.some((t) => t.nombreTaller.toLowerCase().includes(searchTerm.toLowerCase())),
+      prof.talleres.some(t => t.nombreTaller.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
   // Manejar cambios en el formulario
@@ -130,23 +128,19 @@ export default function GestionProfesores() {
 
   // Manejar envío del formulario
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setFormError("")
-    setFormSuccess("")
-    setIsSubmitting(true)
+    e.preventDefault();
+    setFormError("");
+    setFormSuccess("");
+    setIsSubmitting(true);
 
     // Validación básica
     if (!form.nombre || !form.apellido || !form.correo || !form.especialidad || !form.taller || !form.contrasena) {
-      setFormError("Completa todos los campos.")
-      setIsSubmitting(false)
-      return
+      setFormError("Completa todos los campos.");
+      setIsSubmitting(false);
+      return;
     }
 
     try {
-      // Guardar la sesión actual del coordinador
-      const { data: currentSession } = await supabase.auth.getSession()
-      const currentUser = currentSession?.session?.user
-
       // 1. Registrar usuario en auth.users (Supabase Auth)
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: form.correo,
@@ -155,69 +149,59 @@ export default function GestionProfesores() {
           data: {
             nombre: form.nombre,
             apellido: form.apellido,
-            rol: "PROFESOR",
-          },
-        },
-      })
+            rol: "PROFESOR"
+          }
+        }
+      });
 
-      if (signUpError) throw new Error("Error al crear usuario en autenticación: " + signUpError.message)
+      if (signUpError) throw new Error("Error al crear usuario en autenticación: " + signUpError.message);
 
       // El id del usuario en auth.users
-      const uid = signUpData.user?.id
-      if (!uid) throw new Error("No se pudo obtener el ID del usuario autenticado.")
+      const uid = signUpData.user?.id;
+      if (!uid) throw new Error("No se pudo obtener el ID del usuario autenticado.");
 
-      // 2. Restaurar la sesión del coordinador inmediatamente
-      if (currentUser) {
-        await supabase.auth.setSession({
-          access_token: currentSession.session.access_token,
-          refresh_token: currentSession.session.refresh_token,
-        })
-      }
-
-      // 3. Insertar en la tabla Usuario usando el uid de auth.users
+      // 2. Insertar en la tabla Usuario usando el uid de auth.users
       const { data: usuario, error: errorUsuario } = await supabase
         .from("Usuario")
-        .insert([
-          {
-            uid: uid,
-            nombre: form.nombre,
-            apellido: form.apellido,
-            correo: form.correo,
-            contrasena: form.contrasena, // Aquí se guarda la contraseña ingresada
-            rol: "PROFESOR",
-            estado: "ACTIVO",
-          },
-        ])
+        .insert([{
+          uid: uid,
+          nombre: form.nombre,
+          apellido: form.apellido,
+          correo: form.correo,
+          contrasena: form.contrasena, // Aquí se guarda la contraseña ingresada
+          rol: "PROFESOR",
+          estado: "ACTIVO"
+        }])
         .select()
-        .single()
+        .single();
 
-      if (errorUsuario) throw new Error("Error al crear usuario en la base de datos: " + errorUsuario.message)
+      if (errorUsuario) throw new Error("Error al crear usuario en la base de datos: " + errorUsuario.message);
 
-      // 4. Crear detalle de profesor
-      const { error: errorDetalle } = await supabase.from("ProfesorDetalle").insert([
-        {
+      // 3. Crear detalle de profesor
+      const { error: errorDetalle } = await supabase
+        .from("ProfesorDetalle")
+        .insert([{
           id_usuario: usuario.id_usuario,
           especialidad: form.especialidad,
           nivel_educativo: "BASICA",
-          activo: true,
-        },
-      ])
+          activo: true
+        }]);
 
-      if (errorDetalle) throw new Error("Error al crear detalle de profesor: " + errorDetalle.message)
+      if (errorDetalle) throw new Error("Error al crear detalle de profesor: " + errorDetalle.message);
 
-      // 5. Asignar taller
-      const { error: errorAsignacion } = await supabase.from("AsignacionProfesor").insert([
-        {
+
+      const { error: errorAsignacion } = await supabase
+        .from("AsignacionProfesor")
+        .insert([{
           id_usuario: usuario.id_usuario,
-          id_taller_impartido: Number.parseInt(form.taller),
+          id_taller_impartido: parseInt(form.taller),
           rol: "RESPONSABLE",
-          estado_asignacion: "ACTIVA",
-        },
-      ])
+          estado_asignacion: "ACTIVA"
+        }]);
 
-      if (errorAsignacion) throw new Error("Error al asignar taller: " + errorAsignacion.message)
+      if (errorAsignacion) throw new Error("Error al asignar taller: " + errorAsignacion.message);
 
-      setFormSuccess("¡Profesor registrado exitosamente!")
+      setFormSuccess("¡Profesor registrado exitosamente!");
       setForm({
         nombre: "",
         apellido: "",
@@ -225,14 +209,52 @@ export default function GestionProfesores() {
         especialidad: "",
         taller: "",
         contrasena: "",
-      })
+      });
 
-      // Recargar la lista de profesores
-      window.location.reload()
     } catch (err) {
-      setFormError(err.message)
+      setFormError(err.message);
     }
-    setIsSubmitting(false)
+    setIsSubmitting(false);
+  }
+
+  // Abrir modal de edición
+  const handleEdit = (prof) => {
+    setEditForm({
+      id: prof.id,
+      especialidad: prof.especialidad,
+      nivel_educativo: prof.nivel_educativo,
+    })
+    setEditModalOpen(true)
+  }
+
+  // Guardar cambios de edición
+  const handleEditSave = async () => {
+    setEditLoading(true)
+    const { error } = await supabase
+      .from("ProfesorDetalle")
+      .update({
+        especialidad: editForm.especialidad,
+        nivel_educativo: editForm.nivel_educativo,
+      })
+      .eq("id_usuario", editForm.id)
+    setEditLoading(false)
+    if (!error) {
+      setEditModalOpen(false)
+      fetchProfesores()
+    } else {
+      alert("Error al actualizar: " + error.message)
+    }
+  }
+
+  // Cambiar estado activo/no activo
+  const handleToggleEstado = async (prof) => {
+    const nuevoEstado = prof.estado === "Activo" ? false : true
+    const { error } = await supabase
+      .from("ProfesorDetalle")
+      .update({ activo: nuevoEstado })
+      .eq("id_usuario", prof.id)
+    if (!error) fetchProfesores()
+    else alert("Error al cambiar estado: " + error.message)
   }
 
   // Opciones para el formulario (puedes obtenerlas dinámicamente si lo deseas)
@@ -245,8 +267,9 @@ export default function GestionProfesores() {
     "Educación Artística",
     "Educación Física y Salud",
     "Idiomas Extranjeros",
-    "Orientación y Convivencia Escolar",
+    "Orientación y Convivencia Escolar"
   ]
+  const nivelesEducativos = ["BASICA", "MEDIA"]
 
   if (showAddForm) {
     return (
@@ -339,9 +362,7 @@ export default function GestionProfesores() {
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     >
-                      <option value="" disabled hidden>
-                        Área de especialidad
-                      </option>
+                      <option value="" disabled hidden>Área de especialidad</option>
                       {especialidades.map((especialidad) => (
                         <option key={especialidad} value={especialidad}>
                           {especialidad}
@@ -357,9 +378,7 @@ export default function GestionProfesores() {
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     >
-                      <option value="" disabled hidden>
-                        Asignar a taller
-                      </option>
+                      <option value="" disabled hidden>Asignar a taller</option>
                       {talleresDisponibles.map((taller) => (
                         <option key={taller.id_taller_impartido} value={taller.id_taller_impartido}>
                           {taller.nombre_publico}
@@ -484,7 +503,7 @@ export default function GestionProfesores() {
                         Especialidad
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Talleres Asignados
+                        Nivel Educativo
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Estado
@@ -516,37 +535,28 @@ export default function GestionProfesores() {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <ul className="list-disc list-inside space-y-1">
-                            {prof.talleres.length === 0 && <li className="text-gray-500 text-xs">Sin talleres</li>}
-                            {prof.talleres.map((taller) => (
-                              <li key={taller.nombreTaller} className="text-xs">
-                                {taller.nombreTaller}{" "}
-                                <span className="text-gray-500">({taller.cantidadAlumnos} alumnos)</span>
-                              </li>
-                            ))}
-                          </ul>
+                          <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                            {prof.nivel_educativo}
+                          </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 py-1 text-xs font-medium rounded-full ${prof.estado === "Activo" ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-800"}`}
-                          >
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${prof.estado === "Activo" ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-800"}`}>
                             {prof.estado}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
                             <button
-                              className="text-emerald-600 hover:text-emerald-900 transition-colors"
-                              title="Ver perfil"
+                              className="text-blue-600 hover:text-blue-900 transition-colors"
+                              title="Editar"
+                              onClick={() => handleEdit(prof)}
                             >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button className="text-blue-600 hover:text-blue-900 transition-colors" title="Editar">
                               <Edit className="w-4 h-4" />
                             </button>
                             <button
                               className="text-gray-600 hover:text-gray-900 transition-colors"
                               title="Cambiar estado"
+                              onClick={() => handleToggleEstado(prof)}
                             >
                               <ToggleRight className="w-4 h-4" />
                             </button>
@@ -564,11 +574,66 @@ export default function GestionProfesores() {
                   <p className="text-gray-500">Intenta ajustar tu búsqueda o añadir un nuevo profesor.</p>
                 </div>
               )}
-              {error && <div className="text-center py-4 text-red-600">Error al cargar profesores: {error}</div>}
+              {error && (
+                <div className="text-center py-4 text-red-600">
+                  Error al cargar profesores: {error}
+                </div>
+              )}
             </div>
           </div>
         </main>
       </div>
+
+      {/* Modal de edición */}
+      {editModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg max-w-md mx-auto p-6 z-50 relative">
+            <h2 className="text-lg font-bold mb-4">Editar Profesor</h2>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Especialidad</label>
+              <select
+                className="w-full border px-3 py-2 rounded"
+                value={editForm.especialidad}
+                onChange={e => setEditForm({ ...editForm, especialidad: e.target.value })}
+              >
+                <option value="" disabled>Selecciona especialidad</option>
+                {especialidades.map(e => (
+                  <option key={e} value={e}>{e}</option>
+                ))}
+              </select>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nivel Educativo</label>
+              <select
+                className="w-full border px-3 py-2 rounded"
+                value={editForm.nivel_educativo}
+                onChange={e => setEditForm({ ...editForm, nivel_educativo: e.target.value })}
+              >
+                <option value="" disabled>Selecciona nivel</option>
+                {nivelesEducativos.map(n => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <button
+                className="px-4 py-2 bg-gray-200 rounded"
+                onClick={() => setEditModalOpen(false)}
+                disabled={editLoading}
+              >
+                Cancelar
+              </button>
+              <button
+                className="px-4 py-2 bg-emerald-600 text-white rounded"
+                onClick={handleEditSave}
+                disabled={editLoading}
+              >
+                {editLoading ? "Guardando..." : "Guardar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
