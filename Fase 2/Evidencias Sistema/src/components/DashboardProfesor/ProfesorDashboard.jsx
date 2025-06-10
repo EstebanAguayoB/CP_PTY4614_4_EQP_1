@@ -15,6 +15,8 @@ export default function DashboardProfesor() {
   const [misTalleres, setMisTalleres] = useState([])
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
+  const [alumnosDestacados, setAlumnosDestacados] = useState([])
+  const [actividadReciente, setActividadReciente] = useState([])
 
   useEffect(() => {
     const getUser = async () => {
@@ -199,10 +201,225 @@ export default function DashboardProfesor() {
       )
 
       setMisTalleres(talleresConDetalles)
+
+      // Obtener alumnos destacados y actividad reciente
+      const [destacados, actividad] = await Promise.all([
+        obtenerAlumnosDestacados(email),
+        obtenerActividadReciente(email),
+      ])
+
+      setAlumnosDestacados(destacados)
+      setActividadReciente(actividad)
     } catch (error) {
       console.error("Error obteniendo talleres del profesor:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const obtenerAlumnosDestacados = async (profesorEmail) => {
+    try {
+      // Obtener el id del usuario profesor
+      const { data: usuario, error: errorUsuario } = await supabase
+        .from("Usuario")
+        .select("id_usuario")
+        .eq("correo", profesorEmail)
+        .eq("rol", "PROFESOR")
+        .single()
+
+      if (errorUsuario || !usuario) {
+        console.error("Error obteniendo usuario:", errorUsuario)
+        return []
+      }
+
+      // Obtener talleres del profesor
+      const { data: talleresProfesor, error: errorTalleres } = await supabase
+        .from("TallerImpartido")
+        .select("id_taller_impartido, nombre_publico")
+        .eq("profesor_asignado", usuario.id_usuario)
+        .eq("estado", "activo")
+
+      if (errorTalleres || !talleresProfesor || talleresProfesor.length === 0) {
+        return []
+      }
+
+      const tallerIds = talleresProfesor.map((t) => t.id_taller_impartido)
+
+      // Obtener participaciones de estudiantes en los talleres del profesor
+      const { data: participaciones, error: errorParticipaciones } = await supabase
+        .from("ParticipacionEstudiante")
+        .select(`
+          id_participacion,
+          estado,
+          nivel_actual,
+          id_taller_impartido,
+          Estudiante (
+            id_estudiante,
+            nombre,
+            apellido,
+            estado
+          ),
+          Nivel (
+            numero_nivel,
+            descripcion
+          )
+        `)
+        .in("id_taller_impartido", tallerIds)
+        .in("estado", ["EN_PROGRESO", "FINALIZADO"])
+
+      if (errorParticipaciones || !participaciones) {
+        return []
+      }
+
+      // Obtener evidencias recientes para calcular progreso
+      const participacionIds = participaciones.map((p) => p.id_participacion)
+
+      const { data: evidencias, error: errorEvidencias } = await supabase
+        .from("Evidencia")
+        .select("id_participacion, validada_por_profesor, fecha_envio")
+        .in("id_participacion", participacionIds)
+        .gte("fecha_envio", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()) // Últimos 30 días
+
+      // Calcular progreso por estudiante
+      const estudiantesConProgreso = participaciones.map((participacion) => {
+        const evidenciasEstudiante =
+          evidencias?.filter((e) => e.id_participacion === participacion.id_participacion) || []
+        const evidenciasValidadas = evidenciasEstudiante.filter((e) => e.validada_por_profesor === 1)
+
+        // Calcular progreso basado en evidencias validadas y nivel actual
+        let progreso = 0
+        if (evidenciasEstudiante.length > 0) {
+          progreso = Math.round((evidenciasValidadas.length / evidenciasEstudiante.length) * 100)
+          // Ajustar progreso basado en el nivel actual
+          if (participacion.Nivel?.numero_nivel === 2) progreso = Math.min(progreso + 10, 100)
+          if (participacion.Nivel?.numero_nivel >= 3) progreso = Math.min(progreso + 20, 100)
+        }
+
+        const tallerAsociado = talleresProfesor.find((t) => t.id_taller_impartido === participacion.id_taller_impartido)
+
+        let nivelTexto = "Básico"
+        if (participacion.Nivel?.numero_nivel === 2) nivelTexto = "Intermedio"
+        else if (participacion.Nivel?.numero_nivel >= 3) nivelTexto = "Avanzado"
+
+        return {
+          id: participacion.Estudiante.id_estudiante,
+          nombre: `${participacion.Estudiante.nombre} ${participacion.Estudiante.apellido}`,
+          taller: tallerAsociado?.nombre_publico || "Taller",
+          nivel: nivelTexto,
+          progreso: progreso,
+          evidenciasRecientes: evidenciasEstudiante.length,
+        }
+      })
+
+      // Filtrar y ordenar por progreso, tomar los top 3
+      const alumnosDestacados = estudiantesConProgreso
+        .filter((estudiante) => estudiante.progreso >= 70) // Solo estudiantes con buen progreso
+        .sort((a, b) => b.progreso - a.progreso)
+        .slice(0, 3)
+
+      return alumnosDestacados
+    } catch (error) {
+      console.error("Error obteniendo alumnos destacados:", error)
+      return []
+    }
+  }
+
+  const obtenerActividadReciente = async (profesorEmail) => {
+    try {
+      // Obtener el id del usuario profesor
+      const { data: usuario, error: errorUsuario } = await supabase
+        .from("Usuario")
+        .select("id_usuario")
+        .eq("correo", profesorEmail)
+        .eq("rol", "PROFESOR")
+        .single()
+
+      if (errorUsuario || !usuario) {
+        return []
+      }
+
+      // Obtener talleres del profesor
+      const { data: talleresProfesor, error: errorTalleres } = await supabase
+        .from("TallerImpartido")
+        .select("id_taller_impartido, nombre_publico")
+        .eq("profesor_asignado", usuario.id_usuario)
+        .eq("estado", "activo")
+
+      if (errorTalleres || !talleresProfesor) {
+        return []
+      }
+
+      const tallerIds = talleresProfesor.map((t) => t.id_taller_impartido)
+
+      // Obtener logs de acciones relacionadas con el profesor y sus talleres
+      const { data: logs, error: errorLogs } = await supabase
+        .from("LogAccion")
+        .select("*")
+        .or(`id_usuario.eq.${usuario.id_usuario},detalle.ilike.%${tallerIds.join("%,detalle.ilike.%")}%`)
+        .order("fecha_hora", { ascending: false })
+        .limit(5)
+
+      if (errorLogs || !logs) {
+        return []
+      }
+
+      // Formatear actividades
+      const actividades = logs.map((log, index) => {
+        const tiempoTranscurrido = calcularTiempoTranscurrido(log.fecha_hora)
+
+        let accionFormateada = log.accion
+        const usuario = "Sistema"
+
+        // Personalizar mensaje según el tipo de acción
+        if (log.accion.includes("CREATE")) {
+          accionFormateada = `Nueva ${log.detalle || "actividad creada"}`
+        } else if (log.accion.includes("UPDATE")) {
+          accionFormateada = `Actualización: ${log.detalle || "información actualizada"}`
+        } else if (log.accion.includes("SEND")) {
+          accionFormateada = `Envío: ${log.detalle || "contenido enviado"}`
+        } else {
+          accionFormateada = log.detalle || log.accion
+        }
+
+        // Determinar el taller asociado
+        const tallerAsociado = talleresProfesor.find(
+          (t) => log.detalle?.includes(t.id_taller_impartido.toString()) || log.detalle?.includes(t.nombre_publico),
+        )
+
+        return {
+          id: log.id_log,
+          accion: accionFormateada,
+          tiempo: tiempoTranscurrido,
+          usuario: log.id_usuario === usuario.id_usuario ? "Tú" : usuario,
+          taller: tallerAsociado?.nombre_publico || "Sistema",
+        }
+      })
+
+      return actividades
+    } catch (error) {
+      console.error("Error obteniendo actividad reciente:", error)
+      return []
+    }
+  }
+
+  const calcularTiempoTranscurrido = (fechaHora) => {
+    const ahora = new Date()
+    const fecha = new Date(fechaHora)
+    const diferencia = ahora - fecha
+
+    const minutos = Math.floor(diferencia / (1000 * 60))
+    const horas = Math.floor(diferencia / (1000 * 60 * 60))
+    const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24))
+
+    if (minutos < 60) {
+      return `Hace ${minutos} minutos`
+    } else if (horas < 24) {
+      return `Hace ${horas} horas`
+    } else if (dias < 7) {
+      return `Hace ${dias} días`
+    } else {
+      const semanas = Math.floor(dias / 7)
+      return `Hace ${semanas} semana${semanas > 1 ? "s" : ""}`
     }
   }
 
@@ -221,68 +438,6 @@ export default function DashboardProfesor() {
     misTalleres.length > 0
       ? Math.round(misTalleres.reduce((sum, taller) => sum + taller.progreso, 0) / misTalleres.length)
       : 0
-
-  const alumnosDestacados = [
-    {
-      id: 1,
-      nombre: "Laura Martínez",
-      taller: misTalleres[0]?.nombre || "Taller",
-      nivel: "Avanzado",
-      progreso: 95,
-    },
-    {
-      id: 2,
-      nombre: "Carlos Sánchez",
-      taller: misTalleres[1]?.nombre || "Taller",
-      nivel: "Intermedio",
-      progreso: 88,
-    },
-    {
-      id: 3,
-      nombre: "Ana García",
-      taller: misTalleres[2]?.nombre || "Taller",
-      nivel: "Avanzado",
-      progreso: 92,
-    },
-  ]
-
-  const actividadReciente = [
-    {
-      id: 1,
-      accion: "Evidencia subida: Proyecto de robot seguidor de línea",
-      tiempo: "Hace 2 horas",
-      usuario: "Tú",
-      taller: misTalleres[0]?.nombre || "Taller",
-    },
-    {
-      id: 2,
-      accion: "Laura Martínez avanzó a nivel Avanzado",
-      tiempo: "Hace 1 día",
-      usuario: "Sistema",
-      taller: misTalleres[0]?.nombre || "Taller",
-    },
-    {
-      id: 3,
-      accion: "Nuevo alumno registrado: Diego Flores",
-      tiempo: "Hace 2 días",
-      usuario: "Coordinador",
-      taller: misTalleres[1]?.nombre || "Taller",
-    },
-    {
-      id: 4,
-      accion: "Reporte semanal enviado a apoderados",
-      tiempo: "Hace 5 días",
-      usuario: "Sistema",
-      taller: "Todos",
-    },
-    {
-      id: 5,
-      accion: "Solicitud de recursos aprobada: Kit de Arduino",
-      tiempo: "Hace 1 semana",
-      usuario: "Coordinador",
-      taller: misTalleres[0]?.nombre || "Taller",
-    },
-  ]
 
   const openDetallesModal = (taller) => {
     setSelectedTaller(taller)

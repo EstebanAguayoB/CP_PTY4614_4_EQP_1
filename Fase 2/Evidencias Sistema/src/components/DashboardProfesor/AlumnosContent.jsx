@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect } from "react"
 import { Users, Plus, Search, Edit, Trash2, Menu, X, Check } from "lucide-react"
 import { useNavigate } from "react-router-dom"
@@ -7,6 +9,7 @@ import DashboardProfeSidebar from "../shared/DashboardProfeSidebar"
 export default function AlumnosContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [user, setUser] = useState(null)
+  const [profesorId, setProfesorId] = useState(null) // Nuevo estado para el ID del profesor
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -15,7 +18,6 @@ export default function AlumnosContent() {
   const [editingAlumno, setEditingAlumno] = useState(null)
   const [deletingAlumno, setDeletingAlumno] = useState(null)
   const navigate = useNavigate()
-
 
   // Estados para el formulario
   const [formData, setFormData] = useState({
@@ -29,8 +31,21 @@ export default function AlumnosContent() {
   useEffect(() => {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser()
-      if (data.user) setUser(data.user)
-      else navigate("/")
+      if (data.user) {
+        setUser(data.user)
+        // Obtener el ID del profesor desde la tabla Usuario
+        const { data: userData, error } = await supabase
+          .from("Usuario")
+          .select("id_usuario")
+          .eq("correo", data.user.email)
+          .single()
+
+        if (userData && !error) {
+          setProfesorId(userData.id_usuario)
+        }
+      } else {
+        navigate("/")
+      }
     }
     getUser()
   }, [navigate])
@@ -44,7 +59,6 @@ export default function AlumnosContent() {
     navigate("/")
   }
 
-
   // Datos de alumnos
   const [alumnos, setAlumnos] = useState([])
   const [misTalleres, setMisTalleres] = useState([])
@@ -53,10 +67,20 @@ export default function AlumnosContent() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
+    if (!profesorId) return // No ejecutar si no tenemos el ID del profesor
+
     const fetchAlumnos = async () => {
       try {
-        let { data, error } = await supabase
-          .from("ParticipacionEstudiante").select(`*,Estudiante(*),TallerImpartido(*),Nivel(*)`)
+        // Filtrar alumnos solo de los talleres del profesor actual
+        const { data, error } = await supabase
+          .from("ParticipacionEstudiante")
+          .select(`
+            *,
+            Estudiante(*),
+            TallerImpartido!inner(*),
+            Nivel(*)
+          `)
+          .eq("TallerImpartido.profesor_asignado", profesorId)
 
         if (error) {
           setError(error)
@@ -67,10 +91,11 @@ export default function AlumnosContent() {
         setError(err)
       }
     }
+
     const misTalleres = async () => {
       try {
-        let { data, error } = await supabase
-          .from("TallerImpartido").select(`*`)
+        // Filtrar talleres solo del profesor actual
+        const { data, error } = await supabase.from("TallerImpartido").select(`*`).eq("profesor_asignado", profesorId)
 
         if (error) {
           setError(error)
@@ -81,41 +106,55 @@ export default function AlumnosContent() {
         setError(err)
       }
     }
+
     const estudiante = async () => {
       try {
         // 1. Obtener todos los id_estudiante que ya están en ParticipacionEstudiante
-        let { data: participaciones, error: errorParticipaciones } = await supabase
+        // pero solo de los talleres del profesor actual
+        const { data: participaciones, error: errorParticipaciones } = await supabase
           .from("ParticipacionEstudiante")
-          .select("id_estudiante");
+          .select(`
+            id_estudiante,
+            TallerImpartido!inner(profesor_asignado)
+          `)
+          .eq("TallerImpartido.profesor_asignado", profesorId)
 
         if (errorParticipaciones) {
-          setError(errorParticipaciones);
-          return;
+          setError(errorParticipaciones)
+          return
         }
 
-        // Extraer los ids en un array y convertir a string con paréntesis
-        const idsRegistrados = participaciones.map(p => p.id_estudiante);
-        const idsString = idsRegistrados.length > 0 ? `(${idsRegistrados.join(",")})` : "(null)";
+        // Extraer los ids en un array
+        const idsRegistrados = participaciones.map((p) => p.id_estudiante)
 
         // 2. Obtener los estudiantes que NO están en ese array
-        let { data, error } = await supabase
+        const { data, error } = await supabase
           .from("Estudiante")
           .select("*")
-          .not("id_estudiante", "in", idsString);
+          .not("id_estudiante", "in", `(${idsRegistrados.length > 0 ? idsRegistrados.join(",") : "null"})`)
 
         if (error) {
-          setError(error);
+          setError(error)
         } else {
-          setEstudiante(data);
+          setEstudiante(data)
         }
       } catch (err) {
-        setError(err);
+        setError(err)
       }
     }
-     const Nivel = async () => {
+
+    const Nivel = async () => {
       try {
-        let { data, error } = await supabase
-          .from("Nivel").select(`*`)
+        // Filtrar niveles solo de los talleres del profesor actual
+        const { data, error } = await supabase
+          .from("Nivel")
+          .select(`
+            *,
+            TallerDefinido!inner(
+              TallerImpartido!inner(profesor_asignado)
+            )
+          `)
+          .eq("TallerDefinido.TallerImpartido.profesor_asignado", profesorId)
 
         if (error) {
           setError(error)
@@ -126,16 +165,18 @@ export default function AlumnosContent() {
         setError(err)
       }
     }
+
     fetchAlumnos()
     misTalleres()
     estudiante()
     Nivel()
-  }, [])
+  }, [profesorId]) // Dependencia del profesorId
 
   console.log("alumnos:", alumnos)
   console.log("estudiante:", estudiante)
   console.log("Nivel:", Nivel)
   console.log("Error:", error)
+  console.log("Profesor ID:", profesorId)
 
   const openAddModal = () => {
     setShowAddModal(true)
@@ -162,11 +203,11 @@ export default function AlumnosContent() {
   const openEditModal = (alumno) => {
     setEditingAlumno(alumno)
     setFormData({
-      rutEstudiante: alumno.idEstudiante,
-      idTaller: alumno.idTallerImpartido.toString(),
-      nivelActual: alumno.nivelActual,
+      rutEstudiante: alumno.id_estudiante,
+      idTaller: alumno.id_taller_impartido.toString(),
+      nivelActual: alumno.nivel_actual,
       estado: alumno.estado,
-      fechaInscripcion: alumno.fechaInscripcion,
+      fechaInscripcion: alumno.fecha_inscripcion,
     })
     setShowEditModal(true)
   }
@@ -215,87 +256,103 @@ export default function AlumnosContent() {
       alert("Por favor, complete todos los campos")
       return
     }
-    console.log("Form Data:", formData);
-    
+
+    // Verificar que el taller pertenece al profesor actual
+    const tallerSeleccionado = misTalleres.find((t) => t.id_taller_impartido === Number.parseInt(formData.idTaller))
+    if (!tallerSeleccionado || tallerSeleccionado.profesor_asignado !== profesorId) {
+      alert("No tienes permisos para asignar estudiantes a este taller")
+      return
+    }
+
+    console.log("Form Data:", formData)
+
     // Encontrar datos relacionados
-    const estudiantes = estudiante.find((e) => e.rut === formData.rut)
-    const taller = misTalleres.find((t) => t.id === Number.parseInt(formData.idTaller))
+    const estudianteSeleccionado = estudiante.find((e) => e.id_estudiante === Number.parseInt(formData.rutEstudiante))
+    const taller = misTalleres.find((t) => t.id_taller_impartido === Number.parseInt(formData.idTaller))
 
     if (editingAlumno) {
       // Editar alumno existente
-      const alumnosActualizados = alumnos.map((alumno) =>
-        alumno.id === editingAlumno.id
-          ? {
-            ...alumno,
-            idEstudiante: formData.rutEstudiante,
-            nombre: estudiante?.nombre || alumno.nombre,
-            idTallerImpartido: Number.parseInt(formData.idTaller),
-            tallerNombre: taller?.nombre || "",
-            nivelActual: formData.nivelActual,
-            estado: formData.estado,
-            fechaInscripcion: formData.fechaInscripcion,
-          }
-          : alumno,
-      )
-      // setAlumnos(alumnosActualizados)
-      closeEditModal()
-      alert("Alumno actualizado exitosamente")
+      const { error } = await supabase
+        .from("ParticipacionEstudiante")
+        .update({
+          id_estudiante: Number.parseInt(formData.rutEstudiante),
+          id_taller_impartido: Number.parseInt(formData.idTaller),
+          nivel_actual: Number.parseInt(formData.nivelActual),
+          estado: formData.estado,
+          fecha_inscripcion: formData.fechaInscripcion,
+        })
+        .eq("id_participacion", editingAlumno.id_participacion)
+
+      if (error) {
+        console.log("Error al actualizar:", error)
+        alert("Error al actualizar el alumno")
+      } else {
+        // Recargar datos
+        window.location.reload()
+        closeEditModal()
+        alert("Alumno actualizado exitosamente")
+      }
     } else {
       // Crear nuevo alumno
       const nuevoAlumno = {
-        id_estudiante: formData.rutEstudiante,
+        id_estudiante: Number.parseInt(formData.rutEstudiante),
         id_taller_impartido: Number.parseInt(formData.idTaller),
-        nivel_actual: formData.nivelActual,
+        nivel_actual: Number.parseInt(formData.nivelActual),
         estado: formData.estado,
         fecha_inscripcion: formData.fechaInscripcion,
       }
-      console.log("Nuevo Alumno:", nuevoAlumno);
-      
+      console.log("Nuevo Alumno:", nuevoAlumno)
+
       // Insertar nuevo alumno en la base de datos
-      const { error } = await supabase.from('ParticipacionEstudiante').insert([nuevoAlumno])
-      console.log("error", error);
-      
-      // setAlumnos([...alumnos, nuevoAlumno])
-      closeAddModal()
-      alert("Alumno registrado exitosamente")
+      const { error } = await supabase.from("ParticipacionEstudiante").insert([nuevoAlumno])
+      console.log("error", error)
+
+      if (error) {
+        alert("Error al registrar el alumno")
+      } else {
+        // Recargar datos
+        window.location.reload()
+        closeAddModal()
+        alert("Alumno registrado exitosamente")
+      }
     }
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deletingAlumno) {
-      const alumnosActualizados = alumnos.filter((alumno) => alumno.id !== deletingAlumno.id)
-      setAlumnos(alumnosActualizados)
-      closeDeleteModal()
-      alert("Alumno eliminado exitosamente")
+      const { error } = await supabase
+        .from("ParticipacionEstudiante")
+        .delete()
+        .eq("id_participacion", deletingAlumno.id_participacion)
+
+      if (error) {
+        alert("Error al eliminar el alumno")
+      } else {
+        // Recargar datos
+        window.location.reload()
+        closeDeleteModal()
+        alert("Alumno eliminado exitosamente")
+      }
     }
   }
 
   // Filtrar alumnos
   const alumnosFiltrados = alumnos.filter((alumno) => {
     const matchesSearch =
-      alumno.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      alumno.emailApoderado?.toLowerCase().includes(searchTerm.toLowerCase());
+      alumno.Estudiante?.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      alumno.Estudiante?.correo_apoderado?.toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesTaller =
-      selectedTaller === "" || alumno.TallerImpartido.id_taller_impartido === Number.parseInt(selectedTaller);
+      selectedTaller === "" || alumno.TallerImpartido.id_taller_impartido === Number.parseInt(selectedTaller)
 
-    return matchesSearch && matchesTaller;
-  });
-
-  const estudiantesDisponibles = alumnos.filter((alumno) => {
-    const matchesSearch =
-      alumno.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      alumno.emailApoderado?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    return matchesSearch;
-  });
-  console.log();
+    return matchesSearch && matchesTaller
+  })
 
   const getEstadoColor = (estado) => {
     switch (estado) {
       case "INSCRITO":
         return "bg-blue-100 text-blue-800"
-      case "EN PROGRESO":
+      case "EN_PROGRESO":
         return "bg-green-100 text-green-800"
       case "FINALIZADO":
         return "bg-gray-100 text-gray-800"
@@ -324,6 +381,18 @@ export default function AlumnosContent() {
     return date.toLocaleDateString("es-CL")
   }
 
+  // Mostrar loading mientras se obtiene el profesor ID
+  if (!profesorId) {
+    return (
+      <div className="flex h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/40 items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-emerald-500"></div>
+          <p className="mt-4 text-gray-600">Cargando información del profesor...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/40">
       {/* Sidebar */}
@@ -350,7 +419,7 @@ export default function AlumnosContent() {
               <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
                 <Users className="w-5 h-5 text-white" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">Alumnos</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Mis Alumnos</h1>
             </div>
 
             <div className="flex items-center space-x-4">
@@ -367,7 +436,7 @@ export default function AlumnosContent() {
                 {user && user.email.charAt(0).toUpperCase()}
               </div>
               <div className="ml-3">
-                <p className="text-sm font-medium text-gray-900">Usuario</p>
+                <p className="text-sm font-medium text-gray-900">Profesor</p>
                 {user && <p className="text-sm text-gray-600">{user.email}</p>}
               </div>
             </div>
@@ -418,7 +487,7 @@ export default function AlumnosContent() {
                   onChange={(e) => setSelectedTaller(e.target.value)}
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 >
-                  <option value="">Todos los talleres</option>
+                  <option value="">Todos mis talleres</option>
                   {misTalleres.map((taller) => (
                     <option key={taller.id_taller_impartido} value={taller.id_taller_impartido}>
                       {taller.nombre_publico}
@@ -440,16 +509,13 @@ export default function AlumnosContent() {
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
               <div className="p-6 border-b border-gray-200">
                 <h2 className="text-xl font-semibold text-gray-900">Gestiona los alumnos de tus talleres</h2>
-                {/* <p className="text-gray-600">Total de alumnos: {alumnosFiltrados.length}</p> */}
+                <p className="text-gray-600">Total de alumnos: {alumnosFiltrados.length}</p>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        ID Participación
-                      </th> */}
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         RUT Estudiante
                       </th>
@@ -472,68 +538,62 @@ export default function AlumnosContent() {
                         Fecha Inscripción
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Progreso
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Acciones
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {alumnos.map((alumnos) => (
-                      <tr key={alumnos.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{alumnos.Estudiante.rut}</td>
+                    {alumnosFiltrados.map((alumno) => (
+                      <tr key={alumno.id_participacion} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{alumno.Estudiante?.rut}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="flex-shrink-0 h-10 w-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                              <span className="text-emerald-600 font-medium text-sm">{alumnos.Estudiante.nombre.charAt(0)}</span>
+                              <span className="text-emerald-600 font-medium text-sm">
+                                {alumno.Estudiante?.nombre?.charAt(0) || "N"}
+                              </span>
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{alumnos.Estudiante.nombre} {alumnos.Estudiante.apellido}</div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {alumno.Estudiante?.nombre} {alumno.Estudiante?.apellido}
+                              </div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{alumnos.Estudiante.correo_apoderado}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{alumnos.TallerImpartido.nombre_publico}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {alumno.Estudiante?.correo_apoderado}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {alumno.TallerImpartido?.nombre_publico}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
-                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getNivelColor(alumnos.Nivel.descripcion)}`}
+                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getNivelColor(alumno.Nivel?.descripcion)}`}
                           >
-                            {alumnos.Nivel.descripcion}
+                            {alumno.Nivel?.descripcion || "N/A"}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
-                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getEstadoColor(alumnos.estado)}`}
+                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getEstadoColor(alumno.estado)}`}
                           >
-                            {alumnos.estado}
+                            {alumno.estado}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(alumnos.fecha_inscripcion)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                              <div
-                                className="bg-emerald-500 h-2 rounded-full"
-                                style={{ width: `${alumnos.progreso}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm text-gray-500">{alumnos.progreso}%</span>
-                          </div>
+                          {formatDate(alumno.fecha_inscripcion)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
                             <button
-                              onClick={() => openEditModal(alumnos)}
+                              onClick={() => openEditModal(alumno)}
                               className="text-emerald-600 hover:text-emerald-900 p-1 rounded transition-colors"
                               title="Editar alumno"
                             >
                               <Edit className="h-4 w-4" />
                             </button>
                             <button
-                              onClick={() => openDeleteModal(alumnos)}
+                              onClick={() => openDeleteModal(alumno)}
                               className="text-red-600 hover:text-red-900 p-1 rounded transition-colors"
                               title="Eliminar alumno"
                             >
@@ -571,7 +631,7 @@ export default function AlumnosContent() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="rutEstudiante" className="block text-sm font-medium text-gray-700 mb-2">
-                    RUT Estudiante *
+                    Estudiante *
                   </label>
                   <select
                     id="rutEstudiante"
@@ -582,9 +642,9 @@ export default function AlumnosContent() {
                     required
                   >
                     <option value="">Seleccionar estudiante</option>
-                    {estudiante.map((estudiante) => (
-                      <option key={estudiante.id_estudiante} value={estudiante.id_estudiante}>
-                        {estudiante.rut} - {estudiante.nombre}
+                    {estudiante.map((est) => (
+                      <option key={est.id_estudiante} value={est.id_estudiante}>
+                        {est.rut} - {est.nombre} {est.apellido}
                       </option>
                     ))}
                   </select>
@@ -592,7 +652,7 @@ export default function AlumnosContent() {
 
                 <div>
                   <label htmlFor="idTaller" className="block text-sm font-medium text-gray-700 mb-2">
-                    Taller *
+                    Mis Talleres *
                   </label>
                   <select
                     id="idTaller"
@@ -605,7 +665,7 @@ export default function AlumnosContent() {
                     <option value="">Seleccionar taller</option>
                     {misTalleres.map((taller) => (
                       <option key={taller.id_taller_impartido} value={taller.id_taller_impartido}>
-                        {taller.id_taller_impartido} - {taller.nombre_publico}
+                        {taller.nombre_publico}
                       </option>
                     ))}
                   </select>
@@ -626,7 +686,7 @@ export default function AlumnosContent() {
                     <option value="">Seleccionar nivel</option>
                     {Nivel.map((nivel) => (
                       <option key={nivel.id_nivel} value={nivel.id_nivel}>
-                        {nivel.id_nivel} - {nivel.descripcion}
+                        Nivel {nivel.numero_nivel} - {nivel.descripcion}
                       </option>
                     ))}
                   </select>
@@ -646,13 +706,13 @@ export default function AlumnosContent() {
                   >
                     <option value="">Seleccionar estado</option>
                     <option value="INSCRITO">INSCRITO</option>
-                    <option value="EN PROGRESO">EN PROGRESO</option>
+                    <option value="EN_PROGRESO">EN PROGRESO</option>
                     <option value="FINALIZADO">FINALIZADO</option>
                     <option value="RETIRADO">RETIRADO</option>
                   </select>
                 </div>
 
-                <div>
+                <div className="md:col-span-2">
                   <label htmlFor="fechaInscripcion" className="block text-sm font-medium text-gray-700 mb-2">
                     Fecha de Inscripción *
                   </label>
@@ -700,7 +760,10 @@ export default function AlumnosContent() {
             <div className="p-6">
               <p className="text-gray-600 mb-4">
                 ¿Estás seguro de que deseas eliminar al alumno{" "}
-                <span className="font-semibold text-gray-900">{deletingAlumno.nombre}</span>?
+                <span className="font-semibold text-gray-900">
+                  {deletingAlumno.Estudiante?.nombre} {deletingAlumno.Estudiante?.apellido}
+                </span>
+                ?
               </p>
               <p className="text-sm text-red-600">Esta acción no se puede deshacer.</p>
             </div>

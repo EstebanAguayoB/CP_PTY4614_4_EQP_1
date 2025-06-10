@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect } from "react"
 import { Search, UserPlus, Edit, ToggleRight, ArrowLeft, Menu, UserCheck, Eye } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
@@ -59,42 +61,44 @@ export default function GestionProfesores() {
             Taller:TallerImpartido(nombre_publico)
           )
         `)
-        .eq('Asignaciones.estado_asignacion', 'ACTIVA')
+        .eq("Asignaciones.estado_asignacion", "ACTIVA")
 
       if (error) {
         setError(error.message)
       } else {
         // Para cada taller asignado, obtener la cantidad de alumnos
-        const profesoresProcesados = await Promise.all(data.map(async profesor => {
-          const nombreCompleto = `${profesor.Usuario?.nombre || ""} ${profesor.Usuario?.apellido || ""}`
-          const estado = profesor.activo ? "Activo" : "Inactivo"
-          // Talleres asignados
-          const talleres = await Promise.all(
-            (profesor.Asignaciones || []).map(async asignacion => {
-              let cantidadAlumnos = 0
-              if (asignacion.id_taller_impartido) {
-                const { count } = await supabase
-                  .from("ParticipacionEstudiante")
-                  .select("id_participacion", { count: "exact", head: true })
-                  .eq("id_taller_impartido", asignacion.id_taller_impartido)
-                  .eq("estado", "INSCRITO")
-                cantidadAlumnos = count || 0
-              }
-              return {
-                nombreTaller: asignacion.Taller?.nombre_publico || "Sin nombre",
-                cantidadAlumnos
-              }
-            })
-          )
-          return {
-            id: profesor.id_usuario,
-            nombre: nombreCompleto,
-            correo: profesor.Usuario?.correo || "",
-            especialidad: profesor.especialidad,
-            talleres,
-            estado,
-          }
-        }))
+        const profesoresProcesados = await Promise.all(
+          data.map(async (profesor) => {
+            const nombreCompleto = `${profesor.Usuario?.nombre || ""} ${profesor.Usuario?.apellido || ""}`
+            const estado = profesor.activo ? "Activo" : "Inactivo"
+            // Talleres asignados
+            const talleres = await Promise.all(
+              (profesor.Asignaciones || []).map(async (asignacion) => {
+                let cantidadAlumnos = 0
+                if (asignacion.id_taller_impartido) {
+                  const { count } = await supabase
+                    .from("ParticipacionEstudiante")
+                    .select("id_participacion", { count: "exact", head: true })
+                    .eq("id_taller_impartido", asignacion.id_taller_impartido)
+                    .eq("estado", "INSCRITO")
+                  cantidadAlumnos = count || 0
+                }
+                return {
+                  nombreTaller: asignacion.Taller?.nombre_publico || "Sin nombre",
+                  cantidadAlumnos,
+                }
+              }),
+            )
+            return {
+              id: profesor.id_usuario,
+              nombre: nombreCompleto,
+              correo: profesor.Usuario?.correo || "",
+              especialidad: profesor.especialidad,
+              talleres,
+              estado,
+            }
+          }),
+        )
         setProfesores(profesoresProcesados)
       }
     }
@@ -104,9 +108,7 @@ export default function GestionProfesores() {
   // Cargar talleres disponibles desde la base
   useEffect(() => {
     const fetchTalleres = async () => {
-      const { data, error } = await supabase
-        .from("TallerImpartido")
-        .select("id_taller_impartido, nombre_publico")
+      const { data, error } = await supabase.from("TallerImpartido").select("id_taller_impartido, nombre_publico")
       if (!error) setTalleresDisponibles(data)
     }
     fetchTalleres()
@@ -118,7 +120,7 @@ export default function GestionProfesores() {
       prof.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       prof.correo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       prof.especialidad?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      prof.talleres.some(t => t.nombreTaller.toLowerCase().includes(searchTerm.toLowerCase()))
+      prof.talleres.some((t) => t.nombreTaller.toLowerCase().includes(searchTerm.toLowerCase())),
   )
 
   // Manejar cambios en el formulario
@@ -128,19 +130,23 @@ export default function GestionProfesores() {
 
   // Manejar envío del formulario
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setFormError("");
-    setFormSuccess("");
-    setIsSubmitting(true);
+    e.preventDefault()
+    setFormError("")
+    setFormSuccess("")
+    setIsSubmitting(true)
 
     // Validación básica
     if (!form.nombre || !form.apellido || !form.correo || !form.especialidad || !form.taller || !form.contrasena) {
-      setFormError("Completa todos los campos.");
-      setIsSubmitting(false);
-      return;
+      setFormError("Completa todos los campos.")
+      setIsSubmitting(false)
+      return
     }
 
     try {
+      // Guardar la sesión actual del coordinador
+      const { data: currentSession } = await supabase.auth.getSession()
+      const currentUser = currentSession?.session?.user
+
       // 1. Registrar usuario en auth.users (Supabase Auth)
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: form.correo,
@@ -149,59 +155,69 @@ export default function GestionProfesores() {
           data: {
             nombre: form.nombre,
             apellido: form.apellido,
-            rol: "PROFESOR"
-          }
-        }
-      });
+            rol: "PROFESOR",
+          },
+        },
+      })
 
-      if (signUpError) throw new Error("Error al crear usuario en autenticación: " + signUpError.message);
+      if (signUpError) throw new Error("Error al crear usuario en autenticación: " + signUpError.message)
 
       // El id del usuario en auth.users
-      const uid = signUpData.user?.id;
-      if (!uid) throw new Error("No se pudo obtener el ID del usuario autenticado.");
+      const uid = signUpData.user?.id
+      if (!uid) throw new Error("No se pudo obtener el ID del usuario autenticado.")
 
-      // 2. Insertar en la tabla Usuario usando el uid de auth.users
+      // 2. Restaurar la sesión del coordinador inmediatamente
+      if (currentUser) {
+        await supabase.auth.setSession({
+          access_token: currentSession.session.access_token,
+          refresh_token: currentSession.session.refresh_token,
+        })
+      }
+
+      // 3. Insertar en la tabla Usuario usando el uid de auth.users
       const { data: usuario, error: errorUsuario } = await supabase
         .from("Usuario")
-        .insert([{
-          uid: uid,
-          nombre: form.nombre,
-          apellido: form.apellido,
-          correo: form.correo,
-          contrasena: form.contrasena, // Aquí se guarda la contraseña ingresada
-          rol: "PROFESOR",
-          estado: "ACTIVO"
-        }])
+        .insert([
+          {
+            uid: uid,
+            nombre: form.nombre,
+            apellido: form.apellido,
+            correo: form.correo,
+            contrasena: form.contrasena, // Aquí se guarda la contraseña ingresada
+            rol: "PROFESOR",
+            estado: "ACTIVO",
+          },
+        ])
         .select()
-        .single();
+        .single()
 
-      if (errorUsuario) throw new Error("Error al crear usuario en la base de datos: " + errorUsuario.message);
+      if (errorUsuario) throw new Error("Error al crear usuario en la base de datos: " + errorUsuario.message)
 
-      // 3. Crear detalle de profesor
-      const { error: errorDetalle } = await supabase
-        .from("ProfesorDetalle")
-        .insert([{
+      // 4. Crear detalle de profesor
+      const { error: errorDetalle } = await supabase.from("ProfesorDetalle").insert([
+        {
           id_usuario: usuario.id_usuario,
           especialidad: form.especialidad,
           nivel_educativo: "BASICA",
-          activo: true
-        }]);
+          activo: true,
+        },
+      ])
 
-      if (errorDetalle) throw new Error("Error al crear detalle de profesor: " + errorDetalle.message);
+      if (errorDetalle) throw new Error("Error al crear detalle de profesor: " + errorDetalle.message)
 
-      // 4. Asignar taller
-      const { error: errorAsignacion } = await supabase
-        .from("AsignacionProfesor")
-        .insert([{
+      // 5. Asignar taller
+      const { error: errorAsignacion } = await supabase.from("AsignacionProfesor").insert([
+        {
           id_usuario: usuario.id_usuario,
-          id_taller_impartido: parseInt(form.taller),
+          id_taller_impartido: Number.parseInt(form.taller),
           rol: "RESPONSABLE",
-          estado_asignacion: "ACTIVA"
-        }]);
+          estado_asignacion: "ACTIVA",
+        },
+      ])
 
-      if (errorAsignacion) throw new Error("Error al asignar taller: " + errorAsignacion.message);
+      if (errorAsignacion) throw new Error("Error al asignar taller: " + errorAsignacion.message)
 
-      setFormSuccess("¡Profesor registrado exitosamente!");
+      setFormSuccess("¡Profesor registrado exitosamente!")
       setForm({
         nombre: "",
         apellido: "",
@@ -209,13 +225,14 @@ export default function GestionProfesores() {
         especialidad: "",
         taller: "",
         contrasena: "",
-      });
-      // Opcional: recargar la lista de profesores
-      // fetchProfesores();
+      })
+
+      // Recargar la lista de profesores
+      window.location.reload()
     } catch (err) {
-      setFormError(err.message);
+      setFormError(err.message)
     }
-    setIsSubmitting(false);
+    setIsSubmitting(false)
   }
 
   // Opciones para el formulario (puedes obtenerlas dinámicamente si lo deseas)
@@ -228,7 +245,7 @@ export default function GestionProfesores() {
     "Educación Artística",
     "Educación Física y Salud",
     "Idiomas Extranjeros",
-    "Orientación y Convivencia Escolar"
+    "Orientación y Convivencia Escolar",
   ]
 
   if (showAddForm) {
@@ -322,7 +339,9 @@ export default function GestionProfesores() {
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     >
-                      <option value="" disabled hidden>Área de especialidad</option>
+                      <option value="" disabled hidden>
+                        Área de especialidad
+                      </option>
                       {especialidades.map((especialidad) => (
                         <option key={especialidad} value={especialidad}>
                           {especialidad}
@@ -338,7 +357,9 @@ export default function GestionProfesores() {
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     >
-                      <option value="" disabled hidden>Asignar a taller</option>
+                      <option value="" disabled hidden>
+                        Asignar a taller
+                      </option>
                       {talleresDisponibles.map((taller) => (
                         <option key={taller.id_taller_impartido} value={taller.id_taller_impartido}>
                           {taller.nombre_publico}
@@ -496,18 +517,19 @@ export default function GestionProfesores() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <ul className="list-disc list-inside space-y-1">
-                            {prof.talleres.length === 0 && (
-                              <li className="text-gray-500 text-xs">Sin talleres</li>
-                            )}
-                            {prof.talleres.map(taller => (
+                            {prof.talleres.length === 0 && <li className="text-gray-500 text-xs">Sin talleres</li>}
+                            {prof.talleres.map((taller) => (
                               <li key={taller.nombreTaller} className="text-xs">
-                                {taller.nombreTaller} <span className="text-gray-500">({taller.cantidadAlumnos} alumnos)</span>
+                                {taller.nombreTaller}{" "}
+                                <span className="text-gray-500">({taller.cantidadAlumnos} alumnos)</span>
                               </li>
                             ))}
                           </ul>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${prof.estado === "Activo" ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-800"}`}>
+                          <span
+                            className={`px-2 py-1 text-xs font-medium rounded-full ${prof.estado === "Activo" ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-800"}`}
+                          >
                             {prof.estado}
                           </span>
                         </td>
@@ -542,11 +564,7 @@ export default function GestionProfesores() {
                   <p className="text-gray-500">Intenta ajustar tu búsqueda o añadir un nuevo profesor.</p>
                 </div>
               )}
-              {error && (
-                <div className="text-center py-4 text-red-600">
-                  Error al cargar profesores: {error}
-                </div>
-              )}
+              {error && <div className="text-center py-4 text-red-600">Error al cargar profesores: {error}</div>}
             </div>
           </div>
         </main>
