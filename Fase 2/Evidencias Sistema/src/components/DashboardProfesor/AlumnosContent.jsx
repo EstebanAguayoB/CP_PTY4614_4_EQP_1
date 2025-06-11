@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import { Users, Plus, Search, Edit, Trash2, Menu, X, Check } from "lucide-react"
 import { useNavigate } from "react-router-dom"
@@ -64,7 +62,18 @@ export default function AlumnosContent() {
   const [misTalleres, setMisTalleres] = useState([])
   const [estudiante, setEstudiante] = useState([])
   const [Nivel, setNivel] = useState([])
+  const [nivelesDisponibles, setNivelesDisponibles] = useState([])
   const [error, setError] = useState(null)
+
+  // Función para obtener niveles del taller seleccionado
+  const getNivelesPorTaller = (idTallerImpartido) => {
+    if (!idTallerImpartido) return []
+
+    const tallerSeleccionado = misTalleres.find((t) => t.id_taller_impartido === Number.parseInt(idTallerImpartido))
+    if (!tallerSeleccionado) return []
+
+    return Nivel.filter((nivel) => nivel.id_taller_definido === tallerSeleccionado.id_taller_definido)
+  }
 
   useEffect(() => {
     if (!profesorId) return // No ejecutar si no tenemos el ID del profesor
@@ -109,8 +118,7 @@ export default function AlumnosContent() {
 
     const estudiante = async () => {
       try {
-        // 1. Obtener todos los id_estudiante que ya están en ParticipacionEstudiante
-        // pero solo de los talleres del profesor actual
+        // Obtener todos los estudiantes que ya están participando en talleres del profesor actual
         const { data: participaciones, error: errorParticipaciones } = await supabase
           .from("ParticipacionEstudiante")
           .select(`
@@ -124,14 +132,17 @@ export default function AlumnosContent() {
           return
         }
 
-        // Extraer los ids en un array
+        // Extraer los IDs de estudiantes ya registrados
         const idsRegistrados = participaciones.map((p) => p.id_estudiante)
 
-        // 2. Obtener los estudiantes que NO están en ese array
-        const { data, error } = await supabase
-          .from("Estudiante")
-          .select("*")
-          .not("id_estudiante", "in", `(${idsRegistrados.length > 0 ? idsRegistrados.join(",") : "null"})`)
+        // Obtener estudiantes que NO están en esa lista
+        let query = supabase.from("Estudiante").select("*").eq("estado", "ACTIVO") // Solo estudiantes activos
+
+        if (idsRegistrados.length > 0) {
+          query = query.not("id_estudiante", "in", `(${idsRegistrados.join(",")})`)
+        }
+
+        const { data, error } = await query.order("nombre", { ascending: true })
 
         if (error) {
           setError(error)
@@ -145,16 +156,30 @@ export default function AlumnosContent() {
 
     const Nivel = async () => {
       try {
-        // Filtrar niveles solo de los talleres del profesor actual
+        // Obtener los IDs de los talleres definidos que están siendo impartidos por el profesor actual
+        const { data: talleresImpartidos, error: errorTalleres } = await supabase
+          .from("TallerImpartido")
+          .select("id_taller_definido")
+          .eq("profesor_asignado", profesorId)
+
+        if (errorTalleres) {
+          setError(errorTalleres)
+          return
+        }
+
+        const idsTalleresDefinidos = talleresImpartidos.map((t) => t.id_taller_definido)
+
+        if (idsTalleresDefinidos.length === 0) {
+          setNivel([])
+          return
+        }
+
+        // Obtener los niveles de esos talleres definidos
         const { data, error } = await supabase
           .from("Nivel")
-          .select(`
-            *,
-            TallerDefinido!inner(
-              TallerImpartido!inner(profesor_asignado)
-            )
-          `)
-          .eq("TallerDefinido.TallerImpartido.profesor_asignado", profesorId)
+          .select("*")
+          .in("id_taller_definido", idsTalleresDefinidos)
+          .order("numero_nivel", { ascending: true })
 
         if (error) {
           setError(error)
@@ -171,6 +196,17 @@ export default function AlumnosContent() {
     estudiante()
     Nivel()
   }, [profesorId]) // Dependencia del profesorId
+
+  // Actualizar niveles disponibles cuando cambie el taller seleccionado
+  useEffect(() => {
+    const nivelesDelTaller = getNivelesPorTaller(formData.idTaller)
+    setNivelesDisponibles(nivelesDelTaller)
+
+    // Si el nivel actual ya no está disponible, resetear
+    if (formData.nivelActual && !nivelesDelTaller.find((n) => n.id_nivel === Number.parseInt(formData.nivelActual))) {
+      setFormData((prev) => ({ ...prev, nivelActual: "" }))
+    }
+  }, [formData.idTaller, Nivel, misTalleres])
 
   console.log("alumnos:", alumnos)
   console.log("estudiante:", estudiante)
@@ -254,6 +290,25 @@ export default function AlumnosContent() {
       !formData.fechaInscripcion
     ) {
       alert("Por favor, complete todos los campos")
+      return
+    }
+
+    // Verificar que el estudiante no esté ya registrado en este taller
+    const estudianteYaRegistrado = alumnos.find(
+      (a) =>
+        a.id_estudiante === Number.parseInt(formData.rutEstudiante) &&
+        a.id_taller_impartido === Number.parseInt(formData.idTaller),
+    )
+
+    if (estudianteYaRegistrado && !editingAlumno) {
+      alert("Este estudiante ya está registrado en el taller seleccionado")
+      return
+    }
+
+    // Verificar que el nivel pertenece al taller seleccionado
+    const nivelValido = nivelesDisponibles.find((n) => n.id_nivel === Number.parseInt(formData.nivelActual))
+    if (!nivelValido) {
+      alert("El nivel seleccionado no pertenece al taller elegido")
       return
     }
 
@@ -684,7 +739,7 @@ export default function AlumnosContent() {
                     required
                   >
                     <option value="">Seleccionar nivel</option>
-                    {Nivel.map((nivel) => (
+                    {nivelesDisponibles.map((nivel) => (
                       <option key={nivel.id_nivel} value={nivel.id_nivel}>
                         Nivel {nivel.numero_nivel} - {nivel.descripcion}
                       </option>
