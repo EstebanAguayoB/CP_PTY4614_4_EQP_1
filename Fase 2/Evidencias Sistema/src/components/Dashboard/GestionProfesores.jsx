@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
-import { Search, UserPlus, Edit, ArrowLeft, Menu, UserCheck, Trash2 } from "lucide-react"
+import { Search, UserPlus, Edit, ArrowLeft, Menu, UserCheck, Trash2, ToggleRight } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { useNavigate } from "react-router-dom"
 import DashboardSidebar from "../shared/DashboardSidebar"
@@ -687,39 +687,22 @@ export default function GestionProfesores() {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          {editingProfesor === prof.id ? (
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={handleSaveEdit}
-                                className="text-emerald-600 hover:text-emerald-900 transition-colors px-2 py-1 border border-emerald-600 rounded text-xs"
-                              >
-                                Guardar
-                              </button>
-                              <button
-                                onClick={handleCancelEdit}
-                                className="text-gray-600 hover:text-gray-900 transition-colors px-2 py-1 border border-gray-600 rounded text-xs"
-                              >
-                                Cancelar
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => handleEditProfesor(prof)}
-                                className="text-emerald-600 hover:text-emerald-900 transition-colors p-1 rounded hover:bg-emerald-50"
-                                title="Editar profesor"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteProfesor(prof.id)}
-                                className="text-red-600 hover:text-red-900 transition-colors p-1 rounded hover:bg-red-50"
-                                title="Eliminar profesor"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          )}
+                          <div className="flex space-x-2">
+                            <button
+                              className="text-blue-600 hover:text-blue-900 transition-colors"
+                              title="Editar"
+                              onClick={() => handleEditProfesor(prof)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              className="text-gray-600 hover:text-gray-900 transition-colors"
+                              title="Cambiar estado"
+                              onClick={() => handleToggleEstado(prof)}
+                            >
+                              <ToggleRight className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
