@@ -57,45 +57,6 @@ const PROFESORES = [
   },
 ]
 
-const ACTIVIDAD_RECIENTE = [
-  {
-    id: 1,
-    accion: "Juan Pérez creó un nuevo taller: Introducción a React",
-    tiempo: "Hace 10 minutos",
-    usuario: "Juan Pérez",
-  },
-  {
-    id: 2,
-    accion: "María Gómez actualizó el taller: Taller de Angular",
-    tiempo: "Hace 30 minutos",
-    usuario: "María Gómez",
-  },
-  {
-    id: 3,
-    accion: "Luis Rodríguez eliminó un taller: Taller de Django",
-    tiempo: "Hace 1 hora",
-    usuario: "Luis Rodríguez",
-  },
-  {
-    id: 4,
-    accion: "Ana Martínez creó un nuevo taller: Fundamentos de Java",
-    tiempo: "Hace 2 horas",
-    usuario: "Ana Martínez",
-  },
-  {
-    id: 5,
-    accion: "Carlos Fernández actualizó el taller: Taller de C#",
-    tiempo: "Hace 3 horas",
-    usuario: "Carlos Fernández",
-  },
-  {
-    id: 6,
-    accion: "Laura López creó un nuevo taller: Desarrollo de Apps iOS",
-    tiempo: "Hace 4 horas",
-    usuario: "Laura López",
-  },
-]
-
 export default function DashboardCoordinador() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [user, setUser] = useState(null)
@@ -103,6 +64,7 @@ export default function DashboardCoordinador() {
   const [taller_impartido, setTaller_impartido] = useState([]);
   const [profesores, setProfesores] = useState([]);
   const [profesoresActivos, setProfesoresActivos] = useState([])
+  const [actividadReciente, setActividadReciente] = useState([])
   const [error, setError] = useState(null)
   const navigate = useNavigate()
 
@@ -212,6 +174,44 @@ export default function DashboardCoordinador() {
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen)
+  }
+
+  useEffect(() => {
+    const fetchActividadReciente = async () => {
+      const { data, error } = await supabase
+        .from("LogAccion")
+        .select(`
+          id_log,
+          accion,
+          fecha_hora,
+          detalle,
+          Usuario:Usuario(id_usuario, nombre, apellido)
+        `)
+        .order("fecha_hora", { ascending: false })
+        .limit(10)
+      if (!error && data) {
+        setActividadReciente(data.map(a => ({
+          id: a.id_log,
+          accion: a.accion,
+          tiempo: calcularTiempoTranscurrido(a.fecha_hora),
+          usuario: a.Usuario ? `${a.Usuario.nombre} ${a.Usuario.apellido}` : "Sistema"
+        })))
+      }
+    }
+    fetchActividadReciente()
+  }, [])
+
+  // Función para mostrar tiempo relativo
+  function calcularTiempoTranscurrido(fecha) {
+    const ahora = new Date()
+    const fechaLog = new Date(fecha)
+    const diffMs = ahora - fechaLog
+    const minutos = Math.floor(diffMs / 60000)
+    if (minutos < 60) return `Hace ${minutos} minutos`
+    const horas = Math.floor(minutos / 60)
+    if (horas < 24) return `Hace ${horas} horas`
+    const dias = Math.floor(horas / 24)
+    return `Hace ${dias} días`
   }
 
   if (isLoading) {
@@ -426,7 +426,7 @@ export default function DashboardCoordinador() {
 
               <div className="p-6">
                 <div className="space-y-4">
-                  {ACTIVIDAD_RECIENTE.map((actividad) => (
+                  {actividadReciente.map((actividad) => (
                     <div key={actividad.id} className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
                       <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2"></div>
                       <div className="flex-1">
