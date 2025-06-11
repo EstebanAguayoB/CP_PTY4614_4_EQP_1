@@ -102,6 +102,7 @@ export default function DashboardCoordinador() {
   const [isLoading, setIsLoading] = useState(true)
   const [taller_impartido, setTaller_impartido] = useState([]);
   const [profesores, setProfesores] = useState([]);
+  const [profesoresActivos, setProfesoresActivos] = useState([])
   const [error, setError] = useState(null)
   const navigate = useNavigate()
 
@@ -151,9 +152,6 @@ export default function DashboardCoordinador() {
     profesores();
   }, []);
 
-  console.log('profesores:', profesores);
-  console.log('Error:', error);
-
   //efecto para profesores
     // Efecto para cargar talleres
   useEffect(() => {
@@ -169,8 +167,38 @@ export default function DashboardCoordinador() {
     taller_impartido();
   }, []);
 
-  console.log('talleres:', taller_impartido);
-  console.log('Error:', error);
+  useEffect(() => {
+    const fetchProfesoresActivos = async () => {
+      const { data, error } = await supabase
+        .from("ProfesorDetalle")
+        .select(`
+          id_usuario,
+          especialidad,
+          Usuario:Usuario!inner(id_usuario, nombre, apellido, correo),
+          AsignacionProfesor:AsignacionProfesor(id_taller_impartido, estado_asignacion, TallerImpartido(nombre_publico)),
+          activo
+        `)
+        .eq("activo", true)
+      if (!error && data) {
+        // Procesar talleres y alumnos por profesor
+        const procesados = data.map((prof) => ({
+          id: prof.id_usuario,
+          nombre: `${prof.Usuario?.nombre || ""} ${prof.Usuario?.apellido || ""}`,
+          email: prof.Usuario?.correo || "",
+          talleres: (prof.AsignacionProfesor || [])
+            .filter(a => a.estado_asignacion === "ACTIVA")
+            .map(a => a.TallerImpartido?.nombre_publico)
+            .filter(Boolean)
+            .join(", "),
+          especialidad: prof.especialidad,
+          // Si tienes alumnos por taller, puedes sumar aquí
+          alumnos: "-", // Puedes calcularlo si tienes la relación
+        }))
+        setProfesoresActivos(procesados)
+      }
+    }
+    fetchProfesoresActivos()
+  }, [])
 
   const logout = async () => {
     try {
@@ -355,13 +383,12 @@ export default function DashboardCoordinador() {
 
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {PROFESORES.map((profesor) => (
+                  {profesoresActivos.map((profesor) => (
                     <div key={profesor.id} className="bg-gray-50 rounded-lg p-6 hover:shadow-md transition-shadow">
                       <div className="flex justify-between items-start mb-4">
                         <h3 className="text-lg font-semibold text-gray-900">{profesor.nombre}</h3>
                         <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs rounded-full">Activo</span>
                       </div>
-
                       <div className="space-y-2 mb-4">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Email:</span>
@@ -369,7 +396,7 @@ export default function DashboardCoordinador() {
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Talleres:</span>
-                          <span className="text-gray-900">{profesor.taller_impartido}</span>
+                          <span className="text-gray-900">{profesor.talleres}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Alumnos:</span>
@@ -380,7 +407,6 @@ export default function DashboardCoordinador() {
                           <span className="text-gray-900">{profesor.especialidad}</span>
                         </div>
                       </div>
-
                       <button className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded w-full flex items-center justify-center transition-colors">
                         <Eye className="mr-2 w-4 h-4" />
                         Ver Perfil
