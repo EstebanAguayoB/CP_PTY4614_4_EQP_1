@@ -15,6 +15,7 @@ export default function DashboardProfesor() {
   const navigate = useNavigate()
   const [alumnosDestacados, setAlumnosDestacados] = useState([])
   const [actividadReciente, setActividadReciente] = useState([])
+  const [actualizando, setActualizando] = useState(false)
 
   useEffect(() => {
     const getUser = async () => {
@@ -230,20 +231,30 @@ export default function DashboardProfesor() {
         return []
       }
 
-      // Obtener talleres del profesor
-      const { data: talleresProfesor, error: errorTalleres } = await supabase
-        .from("TallerImpartido")
-        .select("id_taller_impartido, nombre_publico")
-        .eq("profesor_asignado", usuario.id_usuario)
-        .eq("estado", "activo")
+      // Usar los talleres ya cargados si están disponibles
+      let tallerIds = []
+      let talleresProfesor = []
 
-      if (errorTalleres || !talleresProfesor || talleresProfesor.length === 0) {
-        return []
+      if (misTalleres.length > 0) {
+        tallerIds = misTalleres.map((t) => t.id)
+        talleresProfesor = misTalleres.map((t) => ({ id_taller_impartido: t.id, nombre_publico: t.nombre }))
+      } else {
+        // Obtener talleres del profesor si no están cargados
+        const { data: talleres, error: errorTalleres } = await supabase
+          .from("TallerImpartido")
+          .select("id_taller_impartido, nombre_publico")
+          .eq("profesor_asignado", usuario.id_usuario)
+          .eq("estado", "activo")
+
+        if (errorTalleres || !talleres || talleres.length === 0) {
+          return []
+        }
+
+        tallerIds = talleres.map((t) => t.id_taller_impartido)
+        talleresProfesor = talleres
       }
 
-      const tallerIds = talleresProfesor.map((t) => t.id_taller_impartido)
-
-      // Obtener participaciones de estudiantes en los talleres del profesor
+      // Obtener participaciones y evidencias en una sola consulta para reducir llamadas a la API
       const { data: participaciones, error: errorParticipaciones } = await supabase
         .from("ParticipacionEstudiante")
         .select(`
@@ -260,44 +271,77 @@ export default function DashboardProfesor() {
           Nivel (
             numero_nivel,
             descripcion
+          ),
+          Evidencia (
+            id_evidencia,
+            validada_por_profesor,
+            fecha_envio,
+            semana
           )
         `)
         .in("id_taller_impartido", tallerIds)
         .in("estado", ["EN_PROGRESO", "FINALIZADO"])
 
-      if (errorParticipaciones || !participaciones) {
+      if (errorParticipaciones || !participaciones || participaciones.length === 0) {
         return []
       }
 
-      // Obtener evidencias recientes para calcular progreso
-      const participacionIds = participaciones.map((p) => p.id_participacion)
-
-      const { data: evidencias, error: errorEvidencias } = await supabase
-        .from("Evidencia")
-        .select("id_participacion, validada_por_profesor, fecha_envio")
-        .in("id_participacion", participacionIds)
-        .gte("fecha_envio", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()) // Últimos 30 días
-
-      // Calcular progreso por estudiante
-      const estudiantesConProgreso = participaciones.map((participacion) => {
-        const evidenciasEstudiante =
-          evidencias?.filter((e) => e.id_participacion === participacion.id_participacion) || []
+      // Calcular puntuación de destacado para cada estudiante
+      const estudiantesConPuntuacion = participaciones.map((participacion) => {
+        const evidenciasEstudiante = participacion.Evidencia || []
         const evidenciasValidadas = evidenciasEstudiante.filter((e) => e.validada_por_profesor === 1)
 
-        // Calcular progreso basado en evidencias validadas y nivel actual
+        // Calcular puntuación base por cantidad de evidencias
+        let puntuacion = evidenciasEstudiante.length * 10
+
+        // Añadir puntos por porcentaje de validación
+        const porcentajeValidadas =
+          evidenciasEstudiante.length > 0 ? (evidenciasValidadas.length / evidenciasEstudiante.length) * 100 : 0
+        puntuacion += porcentajeValidadas
+
+        // Añadir puntos por nivel actual
+        const nivelActual = participacion.Nivel?.numero_nivel || 1
+        puntuacion += nivelActual * 15
+
+        // Añadir puntos por regularidad (evidencias en semanas consecutivas)
+        if (evidenciasEstudiante.length > 1) {
+          const semanas = evidenciasEstudiante.map((e) => e.semana).sort((a, b) => a - b)
+          let semanasConsecutivas = 1
+          let maxConsecutivas = 1
+
+          for (let i = 1; i < semanas.length; i++) {
+            if (semanas[i] === semanas[i - 1] + 1) {
+              semanasConsecutivas++
+              maxConsecutivas = Math.max(maxConsecutivas, semanasConsecutivas)
+            } else {
+              semanasConsecutivas = 1
+            }
+          }
+
+          puntuacion += maxConsecutivas * 5
+        }
+
+        // Añadir puntos por evidencias recientes (últimos 30 días)
+        const evidenciasRecientes = evidenciasEstudiante.filter(
+          (e) => new Date(e.fecha_envio) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        )
+        puntuacion += evidenciasRecientes.length * 8
+
+        // Calcular progreso basado en evidencias validadas
         let progreso = 0
         if (evidenciasEstudiante.length > 0) {
           progreso = Math.round((evidenciasValidadas.length / evidenciasEstudiante.length) * 100)
-          // Ajustar progreso basado en el nivel actual
-          if (participacion.Nivel?.numero_nivel === 2) progreso = Math.min(progreso + 10, 100)
-          if (participacion.Nivel?.numero_nivel >= 3) progreso = Math.min(progreso + 20, 100)
         }
+
+        // Ajustar progreso basado en el nivel actual
+        if (nivelActual === 2) progreso = Math.min(progreso + 10, 100)
+        if (nivelActual >= 3) progreso = Math.min(progreso + 20, 100)
 
         const tallerAsociado = talleresProfesor.find((t) => t.id_taller_impartido === participacion.id_taller_impartido)
 
         let nivelTexto = "Básico"
-        if (participacion.Nivel?.numero_nivel === 2) nivelTexto = "Intermedio"
-        else if (participacion.Nivel?.numero_nivel >= 3) nivelTexto = "Avanzado"
+        if (nivelActual === 2) nivelTexto = "Intermedio"
+        else if (nivelActual >= 3) nivelTexto = "Avanzado"
 
         return {
           id: participacion.Estudiante.id_estudiante,
@@ -305,15 +349,15 @@ export default function DashboardProfesor() {
           taller: tallerAsociado?.nombre_publico || "Taller",
           nivel: nivelTexto,
           progreso: progreso,
-          evidenciasRecientes: evidenciasEstudiante.length,
+          evidenciasRecientes: evidenciasRecientes.length,
+          evidenciasTotal: evidenciasEstudiante.length,
+          evidenciasValidadas: evidenciasValidadas.length,
+          puntuacion: puntuacion,
         }
       })
 
-      // Filtrar y ordenar por progreso, tomar los top 3
-      const alumnosDestacados = estudiantesConProgreso
-        .filter((estudiante) => estudiante.progreso >= 70) // Solo estudiantes con buen progreso
-        .sort((a, b) => b.progreso - a.progreso)
-        .slice(0, 3)
+      // Filtrar y ordenar por puntuación, tomar los top 3
+      const alumnosDestacados = estudiantesConPuntuacion.sort((a, b) => b.puntuacion - a.puntuacion).slice(0, 3)
 
       return alumnosDestacados
     } catch (error) {
@@ -336,60 +380,88 @@ export default function DashboardProfesor() {
         return []
       }
 
-      // Obtener talleres del profesor
-      const { data: talleresProfesor, error: errorTalleres } = await supabase
-        .from("TallerImpartido")
-        .select("id_taller_impartido, nombre_publico")
-        .eq("profesor_asignado", usuario.id_usuario)
-        .eq("estado", "activo")
+      // Usar los talleres ya cargados si están disponibles
+      let tallerIds = []
+      let talleresProfesor = []
 
-      if (errorTalleres || !talleresProfesor) {
-        return []
+      if (misTalleres.length > 0) {
+        tallerIds = misTalleres.map((t) => t.id)
+        talleresProfesor = misTalleres.map((t) => ({ id_taller_impartido: t.id, nombre_publico: t.nombre }))
+      } else {
+        // Obtener talleres del profesor si no están cargados
+        const { data: talleres, error: errorTalleres } = await supabase
+          .from("TallerImpartido")
+          .select("id_taller_impartido, nombre_publico")
+          .eq("profesor_asignado", usuario.id_usuario)
+          .eq("estado", "activo")
+
+        if (errorTalleres || !talleres) {
+          return []
+        }
+
+        tallerIds = talleres.map((t) => t.id_taller_impartido)
+        talleresProfesor = talleres
       }
-
-      const tallerIds = talleresProfesor.map((t) => t.id_taller_impartido)
 
       // Obtener logs de acciones relacionadas con el profesor y sus talleres
       const { data: logs, error: errorLogs } = await supabase
         .from("LogAccion")
-        .select("*")
+        .select(`
+          id_log,
+          id_usuario,
+          accion,
+          fecha_hora,
+          detalle
+        `)
         .or(`id_usuario.eq.${usuario.id_usuario},detalle.ilike.%${tallerIds.join("%,detalle.ilike.%")}%`)
         .order("fecha_hora", { ascending: false })
-        .limit(5)
+        .limit(10)
 
       if (errorLogs || !logs) {
         return []
       }
 
       // Formatear actividades
-      const actividades = logs.map((log, index) => {
+      const actividades = logs.map((log) => {
         const tiempoTranscurrido = calcularTiempoTranscurrido(log.fecha_hora)
 
         let accionFormateada = log.accion
-        const usuario = "Sistema"
+        let tallerAsociado = "Sistema"
 
         // Personalizar mensaje según el tipo de acción
         if (log.accion.includes("CREATE")) {
-          accionFormateada = `Nueva ${log.detalle || "actividad creada"}`
+          if (log.detalle?.includes("estudiante") || log.detalle?.includes("alumno")) {
+            accionFormateada = `Nuevo estudiante agregado: ${log.detalle || ""}`
+          } else if (log.detalle?.includes("evidencia")) {
+            accionFormateada = `Nueva evidencia creada: ${log.detalle || ""}`
+          } else {
+            accionFormateada = `Nueva ${log.detalle || "actividad creada"}`
+          }
         } else if (log.accion.includes("UPDATE")) {
-          accionFormateada = `Actualización: ${log.detalle || "información actualizada"}`
-        } else if (log.accion.includes("SEND")) {
-          accionFormateada = `Envío: ${log.detalle || "contenido enviado"}`
-        } else {
-          accionFormateada = log.detalle || log.accion
+          if (log.detalle?.includes("estudiante") || log.detalle?.includes("alumno")) {
+            accionFormateada = `Estudiante actualizado: ${log.detalle || ""}`
+          } else if (log.detalle?.includes("evidencia")) {
+            accionFormateada = `Evidencia actualizada: ${log.detalle || ""}`
+          } else {
+            accionFormateada = `Actualización: ${log.detalle || "información actualizada"}`
+          }
         }
 
         // Determinar el taller asociado
-        const tallerAsociado = talleresProfesor.find(
+        const tallerAsociadoObj = talleresProfesor.find(
           (t) => log.detalle?.includes(t.id_taller_impartido.toString()) || log.detalle?.includes(t.nombre_publico),
         )
 
+        if (tallerAsociadoObj) {
+          tallerAsociado = tallerAsociadoObj.nombre_publico
+        }
+
         return {
-          id: log.id_log,
+          id: `log-${log.id_log}`,
           accion: accionFormateada,
           tiempo: tiempoTranscurrido,
-          usuario: log.id_usuario === usuario.id_usuario ? "Tú" : usuario,
-          taller: tallerAsociado?.nombre_publico || "Sistema",
+          usuario: log.id_usuario === usuario.id_usuario ? "Tú" : "Sistema",
+          taller: tallerAsociado,
         }
       })
 
@@ -430,6 +502,14 @@ export default function DashboardProfesor() {
     navigate("/")
   }
 
+  const actualizarDashboard = async () => {
+    if (user) {
+      setActualizando(true)
+      await obtenerTalleresProfesor(user.email)
+      setActualizando(false)
+    }
+  }
+
   const totalAlumnos = misTalleres.reduce((sum, taller) => sum + taller.totalAlumnos, 0)
   const talleresActivos = misTalleres.filter((taller) => taller.estado === "activo").length
   const progresoPromedio =
@@ -450,11 +530,10 @@ export default function DashboardProfesor() {
   if (loading) {
     return (
       <div className="flex h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/40">
-        <DashboardProfeSidebar sidebarOpen={sidebarOpen} toggleSidebar={toggleSidebar} userRole="Profesor" />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Cargando dashboard...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">Cargando talleres...</p>
           </div>
         </div>
       </div>
@@ -487,6 +566,36 @@ export default function DashboardProfesor() {
                 <h1 className="text-2xl font-bold text-gray-900">Dashboard del Profesor</h1>
               </div>
             </div>
+            <button
+              onClick={actualizarDashboard}
+              disabled={actualizando}
+              className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-2 px-4 rounded-lg flex items-center transition-colors disabled:opacity-50"
+            >
+              {actualizando ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Actualizando...
+                </>
+              ) : (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  Actualizar Talleres
+                </>
+              )}
+            </button>
           </div>
         </header>
 
@@ -629,77 +738,72 @@ export default function DashboardProfesor() {
 
             {/* Content based on active tab */}
             {activeTab === "miTaller" && (
-              <div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {misTalleres.length === 0 ? (
-                    <div className="col-span-full text-center py-12">
-                      <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No tienes talleres asignados</h3>
-                      <p className="text-gray-600">Contacta al coordinador para que te asigne talleres.</p>
-                    </div>
-                  ) : (
-                    misTalleres.map((taller) => (
-                      <div key={taller.id} className="bg-white rounded-xl shadow-md overflow-hidden">
-                        <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50">
-                          <h2 className="text-xl font-semibold text-gray-900">Taller de {taller.nombre}</h2>
-                          <p className="text-gray-600">{taller.descripcion}</p>
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                {misTalleres.length === 0 ? (
+                  <div className="col-span-full text-center py-12">
+                    <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No tienes talleres asignados</h3>
+                    <p className="text-gray-600">Contacta al coordinador para que te asigne talleres.</p>
+                  </div>
+                ) : (
+                  misTalleres.map((taller) => (
+                    <div key={taller.id} className="bg-white rounded-xl shadow-md overflow-hidden">
+                      <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50">
+                        <h2 className="text-xl font-semibold text-gray-900">Taller de {taller.nombre}</h2>
+                        <p className="text-gray-600">{taller.descripcion}</p>
+                      </div>
+
+                      <div className="p-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Información General</h3>
+                        <div className="space-y-4">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Niveles:</span>
+                            <div className="flex flex-wrap gap-1">
+                              {taller.niveles.map((nivel) => (
+                                <span key={nivel} className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                                  {nivel}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Alumnos:</span>
+                            <span className="text-gray-900 font-medium">{taller.totalAlumnos}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Estado:</span>
+                            <span className="px-2 py-1 text-xs bg-emerald-100 text-emerald-800 rounded-full">
+                              {taller.estado}
+                            </span>
+                          </div>
                         </div>
 
-                        <div className="p-6">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Información General</h3>
-                          <div className="space-y-4">
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Niveles:</span>
-                              <div className="flex flex-wrap gap-1">
-                                {taller.niveles.map((nivel) => (
-                                  <span
-                                    key={nivel}
-                                    className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
-                                  >
-                                    {nivel}
-                                  </span>
-                                ))}
-                              </div>
+                        <div className="mt-6">
+                          <h4 className="text-md font-medium text-gray-900 mb-3">Progreso General</h4>
+                          <div className="flex items-center mb-2">
+                            <div className="flex-1 bg-gray-200 rounded-full h-2 mr-2">
+                              <div
+                                className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${taller.progreso}%` }}
+                              ></div>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Alumnos:</span>
-                              <span className="text-gray-900 font-medium">{taller.totalAlumnos}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Estado:</span>
-                              <span className="px-2 py-1 text-xs bg-emerald-100 text-emerald-800 rounded-full">
-                                {taller.estado}
-                              </span>
-                            </div>
+                            <span className="text-sm text-gray-900 font-medium">{taller.progreso}%</span>
                           </div>
+                        </div>
 
-                          <div className="mt-6">
-                            <h4 className="text-md font-medium text-gray-900 mb-3">Progreso General</h4>
-                            <div className="flex items-center mb-2">
-                              <div className="flex-1 bg-gray-200 rounded-full h-2 mr-2">
-                                <div
-                                  className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
-                                  style={{ width: `${taller.progreso}%` }}
-                                ></div>
-                              </div>
-                              <span className="text-sm text-gray-900 font-medium">{taller.progreso}%</span>
-                            </div>
-                          </div>
-
-                          <div className="mt-6">
-                            <button
-                              onClick={() => openDetallesModal(taller)}
-                              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center transition-colors"
-                            >
-                              <Eye className="w-4 h-4 mr-2" />
-                              Ver Detalles Completos
-                            </button>
-                          </div>
+                        <div className="mt-6">
+                          <button
+                            onClick={() => openDetallesModal(taller)}
+                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center transition-colors"
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            Ver Detalles Completos
+                          </button>
                         </div>
                       </div>
-                    ))
-                  )}
-                </div>
+                    </div>
+                  ))
+                )}
               </div>
             )}
 
@@ -709,7 +813,7 @@ export default function DashboardProfesor() {
                   <div className="flex justify-between items-center">
                     <div>
                       <h2 className="text-xl font-semibold text-gray-900">Alumnos Destacados</h2>
-                      <p className="text-gray-600">Alumnos con mayor progreso en los últimos 30 días</p>
+                      <p className="text-gray-600">Alumnos con mayor progreso basado en evidencias</p>
                     </div>
                     <button className="bg-emerald-500 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded transition-colors">
                       Ver Todos los Alumnos
@@ -719,32 +823,50 @@ export default function DashboardProfesor() {
 
                 <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {alumnosDestacados.map((alumno) => (
-                      <div key={alumno.id} className="bg-gray-50 rounded-lg p-6 hover:shadow-md transition-shadow">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold">
-                            {alumno.nombre.charAt(0)}
-                          </div>
-                          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                            {alumno.nivel}
-                          </span>
-                        </div>
-
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1">{alumno.nombre}</h3>
-                        <p className="text-sm text-gray-600 mb-2">Taller: {alumno.taller}</p>
-                        <p className="text-sm text-gray-600 mb-4">Nivel {alumno.nivel}</p>
-
-                        <div className="flex items-center">
-                          <div className="flex-1 bg-gray-200 rounded-full h-2 mr-3">
-                            <div
-                              className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${alumno.progreso}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-sm text-gray-900 font-medium">{alumno.progreso}%</span>
-                        </div>
+                    {alumnosDestacados.length === 0 ? (
+                      <div className="col-span-full text-center py-12">
+                        <Award className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No hay alumnos destacados aún</h3>
+                        <p className="text-gray-600">Los alumnos aparecerán aquí cuando tengan evidencias validadas.</p>
                       </div>
-                    ))}
+                    ) : (
+                      alumnosDestacados.map((alumno) => (
+                        <div key={alumno.id} className="bg-gray-50 rounded-lg p-6 hover:shadow-md transition-shadow">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold">
+                              {alumno.nombre.charAt(0)}
+                            </div>
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                              {alumno.nivel}
+                            </span>
+                          </div>
+
+                          <h3 className="text-lg font-semibold text-gray-900 mb-1">{alumno.nombre}</h3>
+                          <p className="text-sm text-gray-600 mb-2">Taller: {alumno.taller}</p>
+
+                          <div className="grid grid-cols-2 gap-2 mb-4">
+                            <div className="bg-emerald-50 p-2 rounded-md text-center">
+                              <p className="text-xs text-gray-600">Evidencias</p>
+                              <p className="font-semibold text-emerald-700">{alumno.evidenciasTotal || 0}</p>
+                            </div>
+                            <div className="bg-blue-50 p-2 rounded-md text-center">
+                              <p className="text-xs text-gray-600">Validadas</p>
+                              <p className="font-semibold text-blue-700">{alumno.evidenciasValidadas || 0}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center">
+                            <div className="flex-1 bg-gray-200 rounded-full h-2 mr-3">
+                              <div
+                                className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${alumno.progreso}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-sm text-gray-900 font-medium">{alumno.progreso}%</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -759,23 +881,34 @@ export default function DashboardProfesor() {
 
                 <div className="p-6">
                   <div className="space-y-4">
-                    {actividadReciente.map((actividad) => (
-                      <div key={actividad.id} className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
-                        <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2"></div>
-                        <div className="flex-1">
-                          <p className="text-gray-900 font-medium">{actividad.accion}</p>
-                          <div className="flex items-center space-x-2 text-sm text-gray-500">
-                            <span>
-                              {actividad.tiempo} por {actividad.usuario}
-                            </span>
-                            <span>•</span>
-                            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                              {actividad.taller}
-                            </span>
+                    {actividadReciente.length === 0 ? (
+                      <div className="text-center py-12">
+                        <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No hay actividad reciente</h3>
+                        <p className="text-gray-600">Las actividades aparecerán aquí cuando haya nuevas acciones.</p>
+                      </div>
+                    ) : (
+                      actividadReciente.map((actividad) => (
+                        <div
+                          key={actividad.id}
+                          className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2"></div>
+                          <div className="flex-1">
+                            <p className="text-gray-900 font-medium">{actividad.accion}</p>
+                            <div className="flex items-center space-x-2 text-sm text-gray-500">
+                              <span>
+                                {actividad.tiempo} por {actividad.usuario}
+                              </span>
+                              <span>•</span>
+                              <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                {actividad.taller}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
