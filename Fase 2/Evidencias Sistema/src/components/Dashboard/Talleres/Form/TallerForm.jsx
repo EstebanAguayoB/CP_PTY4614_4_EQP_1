@@ -51,6 +51,15 @@ export function TallerForm({ onClose, userId }) {
     e.preventDefault()
     setLoading(true)
     setError(null)
+
+    // Validar que todos los niveles tengan descripción y habilidades clave
+    const nivelesValidos = niveles.every(nivel => nivel.descripcion && nivel.habilidades_clave)
+    if (!nivelesValidos) {
+      setError('Todos los niveles deben tener descripción y habilidades clave.')
+      setLoading(false)
+      return
+    }
+
     try {
       // 1. Crear el taller definido
       const tallerDefinidoData = {
@@ -73,7 +82,7 @@ export function TallerForm({ onClose, userId }) {
 
       // 2. Crear los niveles
       for (const nivel of niveles) {
-        await window.supabase
+        const { error: errorNivel } = await window.supabase
           .from('Nivel')
           .insert({
             id_taller_definido: tallerDefinido.id_taller_definido,
@@ -81,9 +90,12 @@ export function TallerForm({ onClose, userId }) {
             descripcion: nivel.descripcion,
             habilidades_clave: nivel.habilidades_clave
           })
+        if (errorNivel) {
+          console.error('Error al insertar nivel:', errorNivel)
+          throw errorNivel
+        }
       }
 
-      // Listo, solo se crea la preconfiguración (TallerDefinido)
       onClose(true)
     } catch (err) {
       setError(err.message)
