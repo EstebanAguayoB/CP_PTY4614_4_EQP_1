@@ -1,9 +1,27 @@
 import { useState, useEffect, useCallback } from "react"
-import { Search, UserPlus, Edit, ArrowLeft, Menu, UserCheck, Trash2, ToggleRight } from "lucide-react"
+import { Search, UserPlus, Edit, ArrowLeft, Menu, UserCheck, ToggleRight, Loader2 } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { useNavigate } from "react-router-dom"
 import DashboardSidebar from "../shared/DashboardSidebar"
 import UserInfoBar from "../shared/UserInfoBar"
+
+// Componente de Loading Animation
+const LoadingSpinner = ({ message = "Cargando información..." }) => {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 space-y-4">
+      <div className="relative">
+        <Loader2 className="h-8 w-8 text-emerald-600 animate-spin" />
+        <div className="absolute inset-0 h-8 w-8 border-2 border-emerald-200 rounded-full animate-pulse"></div>
+      </div>
+      <p className="text-gray-600 text-sm font-medium">{message}</p>
+      <div className="flex space-x-1">
+        <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"></div>
+        <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
+        <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+      </div>
+    </div>
+  )
+}
 
 export default function GestionProfesores() {
   const [showAddForm, setShowAddForm] = useState(false)
@@ -11,6 +29,7 @@ export default function GestionProfesores() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [user, setUser] = useState(null)
   const [profesores, setProfesores] = useState([])
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [form, setForm] = useState({
     nombre: "",
@@ -57,32 +76,41 @@ export default function GestionProfesores() {
 
   // Refrescar profesores (extrae la función para poder llamarla)
   const fetchProfesores = useCallback(async () => {
-    // 1. Trae todos los profesores
-    const { data: profesoresData, error: errorProfesores } = await supabase.from("ProfesorDetalle").select(`
-        id_usuario,
-        especialidad,
-        nivel_educativo,
-        activo,
-        Usuario:Usuario!inner(id_usuario, nombre, apellido, correo)
-      `)
+    try {
+      setLoading(true)
+      setError(null)
 
-    if (errorProfesores) {
-      setError(errorProfesores.message)
-      return
+      // 1. Trae todos los profesores
+      const { data: profesoresData, error: errorProfesores } = await supabase.from("ProfesorDetalle").select(`
+          id_usuario,
+          especialidad,
+          nivel_educativo,
+          activo,
+          Usuario:Usuario!inner(id_usuario, nombre, apellido, correo)
+        `)
+
+      if (errorProfesores) {
+        setError(errorProfesores.message)
+        return
+      }
+
+      const profesoresProcesados = profesoresData.map((profesor) => ({
+        id: profesor.id_usuario,
+        nombre: profesor.Usuario?.nombre || "",
+        apellido: profesor.Usuario?.apellido || "",
+        nombreCompleto: `${profesor.Usuario?.nombre || ""} ${profesor.Usuario?.apellido || ""}`,
+        correo: profesor.Usuario?.correo || "",
+        especialidad: profesor.especialidad,
+        nivel_educativo: profesor.nivel_educativo,
+        estado: profesor.activo ? "Activo" : "No Activo",
+        usuario: profesor.Usuario,
+      }))
+      setProfesores(profesoresProcesados)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
-
-    const profesoresProcesados = profesoresData.map((profesor) => ({
-      id: profesor.id_usuario,
-      nombre: profesor.Usuario?.nombre || "",
-      apellido: profesor.Usuario?.apellido || "",
-      nombreCompleto: `${profesor.Usuario?.nombre || ""} ${profesor.Usuario?.apellido || ""}`,
-      correo: profesor.Usuario?.correo || "",
-      especialidad: profesor.especialidad,
-      nivel_educativo: profesor.nivel_educativo,
-      estado: profesor.activo ? "Activo" : "No Activo",
-      usuario: profesor.Usuario,
-    }))
-    setProfesores(profesoresProcesados)
   }, [])
 
   // useEffect para cargar profesores normalmente
@@ -133,6 +161,7 @@ export default function GestionProfesores() {
 
   const handleSaveEdit = async () => {
     try {
+      setIsSubmitting(true)
       // Actualizar tabla Usuario
       const { error: errorUsuario } = await supabase
         .from("Usuario")
@@ -167,6 +196,8 @@ export default function GestionProfesores() {
       setEditingProfesor(null)
     } catch (err) {
       console.error("Error:", err)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -189,6 +220,7 @@ export default function GestionProfesores() {
       )
     ) {
       try {
+        setIsSubmitting(true)
         // Primero eliminar las asignaciones
         const { error: errorAsignaciones } = await supabase
           .from("AsignacionProfesor")
@@ -220,6 +252,8 @@ export default function GestionProfesores() {
         await fetchProfesores()
       } catch (err) {
         console.error("Error:", err)
+      } finally {
+        setIsSubmitting(false)
       }
     }
   }
@@ -333,10 +367,20 @@ export default function GestionProfesores() {
 
   // Cambiar estado activo/no activo
   const handleToggleEstado = async (prof) => {
-    const nuevoEstado = prof.estado === "Activo" ? false : true
-    const { error } = await supabase.from("ProfesorDetalle").update({ activo: nuevoEstado }).eq("id_usuario", prof.id)
-    if (!error) fetchProfesores()
-    else alert("Error al cambiar estado: " + error.message)
+    try {
+      setIsSubmitting(true)
+      const nuevoEstado = prof.estado === "Activo" ? false : true
+      const { error } = await supabase.from("ProfesorDetalle").update({ activo: nuevoEstado }).eq("id_usuario", prof.id)
+      if (!error) {
+        await fetchProfesores()
+      } else {
+        alert("Error al cambiar estado: " + error.message)
+      }
+    } catch (err) {
+      alert("Error al cambiar estado: " + err.message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   // Opciones para el formulario (puedes obtenerlas dinámicamente si lo deseas)
@@ -412,6 +456,7 @@ export default function GestionProfesores() {
                       onChange={handleChange}
                       placeholder="Nombre"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      disabled={isSubmitting}
                     />
                   </div>
                   <div>
@@ -423,6 +468,7 @@ export default function GestionProfesores() {
                       onChange={handleChange}
                       placeholder="Apellido"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      disabled={isSubmitting}
                     />
                   </div>
                   <div>
@@ -434,6 +480,7 @@ export default function GestionProfesores() {
                       onChange={handleChange}
                       placeholder="Correo@institucion.edu"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      disabled={isSubmitting}
                     />
                   </div>
                   <div>
@@ -443,6 +490,7 @@ export default function GestionProfesores() {
                       value={form.especialidad}
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      disabled={isSubmitting}
                     >
                       <option value="" disabled hidden>
                         Área de especialidad
@@ -461,6 +509,7 @@ export default function GestionProfesores() {
                       value={form.taller}
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      disabled={isSubmitting}
                     >
                       <option value="" disabled hidden>
                         Asignar a taller
@@ -482,6 +531,7 @@ export default function GestionProfesores() {
                       placeholder="Contraseña temporal"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                       autoComplete="new-password"
+                      disabled={isSubmitting}
                     />
                   </div>
                   {formError && <div className="text-red-600">{formError}</div>}
@@ -497,9 +547,10 @@ export default function GestionProfesores() {
                     </button>
                     <button
                       type="submit"
-                      className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-md font-medium shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                      className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-md font-medium shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors disabled:opacity-50 flex items-center justify-center"
                       disabled={isSubmitting}
                     >
+                      {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                       {isSubmitting ? "Registrando..." : "Registrar profesor"}
                     </button>
                   </div>
@@ -557,6 +608,7 @@ export default function GestionProfesores() {
                   <button
                     onClick={() => setShowAddForm(true)}
                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
+                    disabled={loading}
                   >
                     <UserPlus className="w-5 h-5 mr-2 -ml-1" />
                     Añadir Profesor
@@ -571,152 +623,198 @@ export default function GestionProfesores() {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    disabled={loading}
                   />
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Nombre
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Email
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Especialidad
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Nivel Educativo
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Estado
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Acciones
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredProfesores.map((prof) => (
-                      <tr key={prof.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                              {prof.nombreCompleto.charAt(0)}
-                            </div>
-                            <div className="ml-4">
+              {/* Loading y errores */}
+              {loading && <LoadingSpinner message="Cargando profesores..." />}
+
+              {error && !loading && (
+                <div className="text-red-600 text-sm bg-red-50 p-3 rounded mx-6 mb-6">Error: {error}</div>
+              )}
+
+              {/* Tabla de profesores */}
+              {!loading && (
+                <div className="overflow-x-auto">
+                  {filteredProfesores.length > 0 ? (
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Nombre
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Email
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Especialidad
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Nivel Educativo
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Estado
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Acciones
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {filteredProfesores.map((prof) => (
+                          <tr key={prof.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                  {prof.nombreCompleto.charAt(0)}
+                                </div>
+                                <div className="ml-4">
+                                  {editingProfesor === prof.id ? (
+                                    <div className="flex space-x-2">
+                                      <input
+                                        type="text"
+                                        value={editForm.nombre}
+                                        onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
+                                        className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 w-20"
+                                        disabled={isSubmitting}
+                                      />
+                                      <input
+                                        type="text"
+                                        value={editForm.apellido}
+                                        onChange={(e) => setEditForm({ ...editForm, apellido: e.target.value })}
+                                        className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 w-20"
+                                        disabled={isSubmitting}
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div className="text-sm font-medium text-gray-900">{prof.nombreCompleto}</div>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {editingProfesor === prof.id ? (
+                                <input
+                                  type="email"
+                                  value={editForm.correo}
+                                  onChange={(e) => setEditForm({ ...editForm, correo: e.target.value })}
+                                  className="text-sm text-gray-500 border border-gray-300 rounded px-2 py-1 w-full"
+                                  disabled={isSubmitting}
+                                />
+                              ) : (
+                                <div className="text-sm text-gray-500">{prof.correo}</div>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {editingProfesor === prof.id ? (
+                                <select
+                                  value={editForm.especialidad}
+                                  onChange={(e) => setEditForm({ ...editForm, especialidad: e.target.value })}
+                                  className="text-sm border border-gray-300 rounded px-2 py-1"
+                                  disabled={isSubmitting}
+                                >
+                                  {especialidades.map((especialidad) => (
+                                    <option key={especialidad} value={especialidad}>
+                                      {especialidad}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                                  {prof.especialidad}
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {editingProfesor === prof.id ? (
+                                <select
+                                  value={editForm.nivel_educativo}
+                                  onChange={(e) => setEditForm({ ...editForm, nivel_educativo: e.target.value })}
+                                  className="text-sm border border-gray-300 rounded px-2 py-1"
+                                  disabled={isSubmitting}
+                                >
+                                  {nivelesEducativos.map((nivel) => (
+                                    <option key={nivel} value={nivel}>
+                                      {nivel}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                                  {prof.nivel_educativo}
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span
+                                className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                  prof.estado === "Activo"
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : "bg-gray-100 text-gray-800"
+                                }`}
+                              >
+                                {prof.estado}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                               {editingProfesor === prof.id ? (
                                 <div className="flex space-x-2">
-                                  <input
-                                    type="text"
-                                    value={editForm.nombre}
-                                    onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
-                                    className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 w-20"
-                                  />
-                                  <input
-                                    type="text"
-                                    value={editForm.apellido}
-                                    onChange={(e) => setEditForm({ ...editForm, apellido: e.target.value })}
-                                    className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 w-20"
-                                  />
+                                  <button
+                                    onClick={handleSaveEdit}
+                                    className="text-emerald-600 hover:text-emerald-900 transition-colors px-2 py-1 border border-emerald-600 rounded text-xs flex items-center"
+                                    disabled={isSubmitting}
+                                  >
+                                    {isSubmitting && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
+                                    {isSubmitting ? "..." : "Guardar"}
+                                  </button>
+                                  <button
+                                    onClick={handleCancelEdit}
+                                    className="text-gray-600 hover:text-gray-900 transition-colors px-2 py-1 border border-gray-600 rounded text-xs"
+                                    disabled={isSubmitting}
+                                  >
+                                    Cancelar
+                                  </button>
                                 </div>
                               ) : (
-                                <div className="text-sm font-medium text-gray-900">{prof.nombreCompleto}</div>
+                                <div className="flex space-x-2">
+                                  <button
+                                    className="text-blue-600 hover:text-blue-900 transition-colors"
+                                    title="Editar"
+                                    onClick={() => handleEditProfesor(prof)}
+                                    disabled={isSubmitting}
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    className="text-gray-600 hover:text-gray-900 transition-colors"
+                                    title="Cambiar estado"
+                                    onClick={() => handleToggleEstado(prof)}
+                                    disabled={isSubmitting}
+                                  >
+                                    <ToggleRight className="w-4 h-4" />
+                                  </button>
+                                </div>
                               )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {editingProfesor === prof.id ? (
-                            <input
-                              type="email"
-                              value={editForm.correo}
-                              onChange={(e) => setEditForm({ ...editForm, correo: e.target.value })}
-                              className="text-sm text-gray-500 border border-gray-300 rounded px-2 py-1 w-full"
-                            />
-                          ) : (
-                            <div className="text-sm text-gray-500">{prof.correo}</div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {editingProfesor === prof.id ? (
-                            <select
-                              value={editForm.especialidad}
-                              onChange={(e) => setEditForm({ ...editForm, especialidad: e.target.value })}
-                              className="text-sm border border-gray-300 rounded px-2 py-1"
-                            >
-                              {especialidades.map((especialidad) => (
-                                <option key={especialidad} value={especialidad}>
-                                  {especialidad}
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                              {prof.especialidad}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {editingProfesor === prof.id ? (
-                            <select
-                              value={editForm.nivel_educativo}
-                              onChange={(e) => setEditForm({ ...editForm, nivel_educativo: e.target.value })}
-                              className="text-sm border border-gray-300 rounded px-2 py-1"
-                            >
-                              {nivelesEducativos.map((nivel) => (
-                                <option key={nivel} value={nivel}>
-                                  {nivel}
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                              {prof.nivel_educativo}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 py-1 text-xs font-medium rounded-full ${prof.estado === "Activo" ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-800"}`}
-                          >
-                            {prof.estado}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex space-x-2">
-                            <button
-                              className="text-blue-600 hover:text-blue-900 transition-colors"
-                              title="Editar"
-                              onClick={() => handleEditProfesor(prof)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              className="text-gray-600 hover:text-gray-900 transition-colors"
-                              title="Cambiar estado"
-                              onClick={() => handleToggleEstado(prof)}
-                            >
-                              <ToggleRight className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {filteredProfesores.length === 0 && (
-                <div className="text-center py-12">
-                  <UserCheck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No se encontraron profesores</h3>
-                  <p className="text-gray-500">Intenta ajustar tu búsqueda o añadir un nuevo profesor.</p>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div className="text-center py-12">
+                      <UserCheck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No hay profesores disponibles</h3>
+                      <p className="text-gray-500">
+                        {searchTerm
+                          ? "No se encontraron profesores que coincidan con tu búsqueda."
+                          : "Los profesores aparecerán aquí cuando se agreguen al sistema."}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
-              {error && <div className="text-center py-4 text-red-600">Error al cargar profesores: {error}</div>}
             </div>
           </div>
         </main>

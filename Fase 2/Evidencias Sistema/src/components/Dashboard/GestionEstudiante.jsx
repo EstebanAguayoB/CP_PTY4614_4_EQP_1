@@ -1,9 +1,27 @@
 import { useState, useEffect } from "react"
-import { Search, UserPlus, Edit, ArrowLeft, Menu, GraduationCap, Trash2 } from "lucide-react"
+import { Search, UserPlus, Edit, ArrowLeft, Menu, GraduationCap, Trash2, Loader2 } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { useNavigate } from "react-router-dom"
 import DashboardSidebar from "../shared/DashboardSidebar"
 import UserInfoBar from "../shared/UserInfoBar"
+
+// Componente de Loading Animation
+const LoadingSpinner = ({ message = "Cargando información..." }) => {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 space-y-4">
+      <div className="relative">
+        <Loader2 className="h-8 w-8 text-emerald-600 animate-spin" />
+        <div className="absolute inset-0 h-8 w-8 border-2 border-emerald-200 rounded-full animate-pulse"></div>
+      </div>
+      <p className="text-gray-600 text-sm font-medium">{message}</p>
+      <div className="flex space-x-1">
+        <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"></div>
+        <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
+        <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+      </div>
+    </div>
+  )
+}
 
 export default function GestionEstudiante() {
   const [showAddForm, setShowAddForm] = useState(false)
@@ -23,6 +41,12 @@ export default function GestionEstudiante() {
     apellido: "",
     correo_apoderado: "",
   })
+
+  // Estados para carga y datos
+  const [alumnos, setAlumnos] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [submitting, setSubmitting] = useState(false)
 
   const navigate = useNavigate()
 
@@ -45,12 +69,9 @@ export default function GestionEstudiante() {
     navigate("/")
   }
 
-  // alumnos
-  const [alumnos, setAlumnos] = useState([])
-  const [error, setError] = useState(null)
-
   const fetchAlumnos = async () => {
     try {
+      setLoading(true)
       const { data, error } = await supabase.from("Estudiante").select(`
           id_estudiante,
           nombre,
@@ -69,10 +90,16 @@ export default function GestionEstudiante() {
             )
           )
         `)
-      if (error) setError(error)
-      else setAlumnos(data)
+      if (error) {
+        setError(error.message)
+      } else {
+        setAlumnos(data || [])
+        setError(null)
+      }
     } catch (err) {
-      setError(err)
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -117,6 +144,7 @@ export default function GestionEstudiante() {
 
   const handleSaveEdit = async () => {
     try {
+      setSubmitting(true)
       const { error } = await supabase.from("Estudiante").update(editForm).eq("id_estudiante", editingStudent)
 
       if (error) {
@@ -129,6 +157,8 @@ export default function GestionEstudiante() {
       setEditingStudent(null)
     } catch (err) {
       console.error("Error:", err)
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -149,6 +179,7 @@ export default function GestionEstudiante() {
       )
     ) {
       try {
+        setSubmitting(true)
         // Primero eliminar las participaciones
         const { error: errorParticipaciones } = await supabase
           .from("ParticipacionEstudiante")
@@ -172,6 +203,8 @@ export default function GestionEstudiante() {
         await fetchAlumnos()
       } catch (err) {
         console.error("Error:", err)
+      } finally {
+        setSubmitting(false)
       }
     }
   }
@@ -184,12 +217,21 @@ export default function GestionEstudiante() {
     e.preventDefault()
     // Validación básica
     if (!form.nombre || !form.apellido || !form.correo_apoderado) return
-    const { error } = await supabase.from("Estudiante").insert([form])
-    if (!error) {
-      setShowAddForm(false)
-      await fetchAlumnos() // Recargar alumnos
-    } else {
+
+    try {
+      setSubmitting(true)
+      const { error } = await supabase.from("Estudiante").insert([form])
+      if (!error) {
+        setShowAddForm(false)
+        setForm({ nombre: "", apellido: "", correo_apoderado: "" })
+        await fetchAlumnos() // Recargar alumnos
+      } else {
+        alert("Error al registrar alumno")
+      }
+    } catch (err) {
       alert("Error al registrar alumno")
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -253,6 +295,7 @@ export default function GestionEstudiante() {
                       placeholder="Nombre completo"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                       required
+                      disabled={submitting}
                     />
                   </div>
 
@@ -266,6 +309,7 @@ export default function GestionEstudiante() {
                       placeholder="Apellido"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                       required
+                      disabled={submitting}
                     />
                   </div>
 
@@ -279,6 +323,7 @@ export default function GestionEstudiante() {
                       placeholder="Correo@institucion.edu"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                       required
+                      disabled={submitting}
                     />
                   </div>
 
@@ -287,14 +332,17 @@ export default function GestionEstudiante() {
                       type="button"
                       onClick={() => setShowAddForm(false)}
                       className="flex-1 px-4 py-2 bg-white border border-gray-300 rounded-md font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                      disabled={submitting}
                     >
                       Cancelar
                     </button>
                     <button
                       type="submit"
-                      className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-md font-medium shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                      className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-md font-medium shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors disabled:opacity-50 flex items-center justify-center"
+                      disabled={submitting}
                     >
-                      Registrar alumno
+                      {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                      {submitting ? "Registrando..." : "Registrar alumno"}
                     </button>
                   </div>
                 </form>
@@ -329,7 +377,7 @@ export default function GestionEstudiante() {
                 <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
                   <GraduationCap className="w-5 h-5 text-white" />
                 </div>
-                <h1 className="text-2xl font-bold text-gray-900">Gestión de Estudiantes</h1>
+                <h1 className="text-2xl font-bold text-gray-900">Gestión de Alumnos</h1>
               </div>
             </div>
           </div>
@@ -351,6 +399,7 @@ export default function GestionEstudiante() {
                   <button
                     onClick={() => setShowAddForm(true)}
                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
+                    disabled={loading}
                   >
                     <UserPlus className="w-5 h-5 mr-2 -ml-1" />
                     Añadir Alumno
@@ -365,138 +414,169 @@ export default function GestionEstudiante() {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    disabled={loading}
                   />
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Nombre
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Email Tutor
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Taller
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Nivel
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Progreso
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Estado
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Acciones
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredAlumnos.map((alumno) => (
-                      <tr key={alumno.id_estudiante} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {editingStudent === alumno.id_estudiante ? (
-                            <div className="flex space-x-2">
-                              <input
-                                type="text"
-                                value={editForm.nombre}
-                                onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
-                                className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 w-20"
-                              />
-                              <input
-                                type="text"
-                                value={editForm.apellido}
-                                onChange={(e) => setEditForm({ ...editForm, apellido: e.target.value })}
-                                className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 w-20"
-                              />
-                            </div>
-                          ) : (
-                            <div className="text-sm font-medium text-gray-900">
-                              {alumno.nombre} {alumno.apellido}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {editingStudent === alumno.id_estudiante ? (
-                            <input
-                              type="email"
-                              value={editForm.correo_apoderado}
-                              onChange={(e) => setEditForm({ ...editForm, correo_apoderado: e.target.value })}
-                              className="text-sm text-gray-500 border border-gray-300 rounded px-2 py-1 w-full"
-                            />
-                          ) : (
-                            <div className="text-sm text-gray-500">{alumno.correo_apoderado}</div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{alumno.taller}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                            {alumno.nivel}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                              <div
-                                className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${alumno.progreso}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm text-gray-900">{alumno.progreso}%</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-2 py-1 text-xs font-medium bg-emerald-100 text-emerald-800 rounded-full">
-                            {alumno.estado}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          {editingStudent === alumno.id_estudiante ? (
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={handleSaveEdit}
-                                className="text-emerald-600 hover:text-emerald-900 transition-colors px-2 py-1 border border-emerald-600 rounded text-xs"
-                              >
-                                Guardar
-                              </button>
-                              <button
-                                onClick={handleCancelEdit}
-                                className="text-gray-600 hover:text-gray-900 transition-colors px-2 py-1 border border-gray-600 rounded text-xs"
-                              >
-                                Cancelar
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => handleEditStudent(alumno)}
-                                className="text-emerald-600 hover:text-emerald-900 transition-colors p-1 rounded hover:bg-emerald-50"
-                                title="Editar estudiante"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteStudent(alumno.id_estudiante)}
-                                className="text-red-600 hover:text-red-900 transition-colors p-1 rounded hover:bg-red-50"
-                                title="Eliminar estudiante"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {/* Loading y errores */}
+              {loading && <LoadingSpinner message="Cargando alumnos..." />}
+
+              {error && !loading && (
+                <div className="text-red-600 text-sm bg-red-50 p-3 rounded mx-6 mb-6">Error: {error}</div>
+              )}
+
+              {/* Tabla de alumnos */}
+              {!loading && (
+                <div className="overflow-x-auto">
+                  {filteredAlumnos.length > 0 ? (
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Nombre
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Email Tutor
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Taller
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Nivel
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Progreso
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Estado
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Acciones
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {filteredAlumnos.map((alumno) => (
+                          <tr key={alumno.id_estudiante} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {editingStudent === alumno.id_estudiante ? (
+                                <div className="flex space-x-2">
+                                  <input
+                                    type="text"
+                                    value={editForm.nombre}
+                                    onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
+                                    className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 w-20"
+                                    disabled={submitting}
+                                  />
+                                  <input
+                                    type="text"
+                                    value={editForm.apellido}
+                                    onChange={(e) => setEditForm({ ...editForm, apellido: e.target.value })}
+                                    className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 w-20"
+                                    disabled={submitting}
+                                  />
+                                </div>
+                              ) : (
+                                <div className="text-sm font-medium text-gray-900">
+                                  {alumno.nombre} {alumno.apellido}
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {editingStudent === alumno.id_estudiante ? (
+                                <input
+                                  type="email"
+                                  value={editForm.correo_apoderado}
+                                  onChange={(e) => setEditForm({ ...editForm, correo_apoderado: e.target.value })}
+                                  className="text-sm text-gray-500 border border-gray-300 rounded px-2 py-1 w-full"
+                                  disabled={submitting}
+                                />
+                              ) : (
+                                <div className="text-sm text-gray-500">{alumno.correo_apoderado}</div>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{alumno.taller}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                                {alumno.nivel}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                  <div
+                                    className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
+                                    style={{ width: `${alumno.progreso}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm text-gray-900">{alumno.progreso}%</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="px-2 py-1 text-xs font-medium bg-emerald-100 text-emerald-800 rounded-full">
+                                {alumno.estado}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              {editingStudent === alumno.id_estudiante ? (
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={handleSaveEdit}
+                                    className="text-emerald-600 hover:text-emerald-900 transition-colors px-2 py-1 border border-emerald-600 rounded text-xs flex items-center"
+                                    disabled={submitting}
+                                  >
+                                    {submitting && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
+                                    {submitting ? "..." : "Guardar"}
+                                  </button>
+                                  <button
+                                    onClick={handleCancelEdit}
+                                    className="text-gray-600 hover:text-gray-900 transition-colors px-2 py-1 border border-gray-600 rounded text-xs"
+                                    disabled={submitting}
+                                  >
+                                    Cancelar
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={() => handleEditStudent(alumno)}
+                                    className="text-emerald-600 hover:text-emerald-900 transition-colors p-1 rounded hover:bg-emerald-50"
+                                    title="Editar estudiante"
+                                    disabled={submitting}
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteStudent(alumno.id_estudiante)}
+                                    className="text-red-600 hover:text-red-900 transition-colors p-1 rounded hover:bg-red-50"
+                                    title="Eliminar estudiante"
+                                    disabled={submitting}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div className="text-center py-12">
+                      <GraduationCap className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No hay alumnos disponibles</h3>
+                      <p className="text-gray-500">
+                        {searchTerm
+                          ? "No se encontraron alumnos que coincidan con tu búsqueda."
+                          : "Los alumnos aparecerán aquí cuando se agreguen al sistema."}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </main>
