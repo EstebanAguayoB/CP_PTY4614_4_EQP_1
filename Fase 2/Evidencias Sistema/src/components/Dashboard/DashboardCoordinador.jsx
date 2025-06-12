@@ -104,7 +104,14 @@ export default function DashboardCoordinador() {
   useEffect(() => {
     const profesores = async () => {
       try {
-        let { data, error } = await supabase.from("TallerImpartido").select("*, Usuario(nombre, apellido)");;
+        let { data, error } = await supabase
+          .from("TallerImpartido")
+          .select(`
+            *,
+            Usuario(nombre, apellido),
+            TallerDefinido(id_taller_definido, nombre, niveles_totales),
+            ParticipacionEstudiante(id_participacion, estado)
+          `);;
         if (error) setError(error);
         else setProfesores(data);
       } catch (err) {
@@ -213,6 +220,22 @@ export default function DashboardCoordinador() {
     const dias = Math.floor(horas / 24)
     return `Hace ${dias} días`
   }
+
+  const talleresProcesados = taller_impartido.map((taller) => {
+    // Contar alumnos inscritos/en progreso
+    const alumnos = (taller.ParticipacionEstudiante || []).filter(
+      (p) => p.estado === "INSCRITO" || p.estado === "EN_PROGRESO"
+    ).length
+
+    // Obtener niveles (si tienes niveles_totales en TallerDefinido)
+    const niveles = taller.TallerDefinido?.niveles_totales || "-"
+
+    return {
+      ...taller,
+      alumnos,
+      niveles,
+    }
+  })
 
   if (isLoading) {
     return (
@@ -343,28 +366,25 @@ export default function DashboardCoordinador() {
 
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {taller_impartido.map((taller_impartido) => (
-                    <div key={taller_impartido.id} className="bg-gray-50 rounded-lg p-6 hover:shadow-md transition-shadow">
+                  {talleresProcesados.map((taller) => (
+                    <div key={taller.id_taller_impartido} className="bg-gray-50 rounded-lg p-6 hover:shadow-md transition-shadow">
                       <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900">{taller_impartido.nombre_publico}</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">{taller.nombre_publico}</h3>
                         <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs rounded-full">Activo</span>
                       </div>
-
-                      <p className="text-gray-600 text-sm mb-4">{taller_impartido.descripcion_publica}</p>
-
+                      <p className="text-gray-600 text-sm mb-4">{taller.descripcion_publica}</p>
                       <div className="space-y-2 mb-4">
                         <div className="flex justify-between text-sm">
                             <span className="text-gray-500">Profesor:</span>
-                              <span className="text-gray-900">{taller_impartido.Usuario.nombre} {taller_impartido.Usuario.apellido}</span> 
+                              <span className="text-gray-900">{taller.Usuario?.nombre} {taller.Usuario?.apellido}</span> 
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Alumnos:</span>
-                          {/* <span className="text-gray-900">{taller.alumnos}</span> */}
-                          {/*cantid*/}
+                          <span className="text-gray-900">{taller.alumnos}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Niveles:</span>
-                          <span className="text-gray-900">{taller_impartido.nivel_minimo}</span>
+                          <span className="text-gray-900">{taller.niveles}</span>
                         </div>
                       </div>
                     </div>
