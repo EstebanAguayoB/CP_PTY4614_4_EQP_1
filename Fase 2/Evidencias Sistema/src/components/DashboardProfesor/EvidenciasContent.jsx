@@ -12,6 +12,7 @@ export default function EvidenciasContent() {
   const [showViewModal, setShowViewModal] = useState(false)
   const [selectedEvidencia, setSelectedEvidencia] = useState(null)
   const [searchTerm, setSearchTerm] = useState("")
+  const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
   const [filterTaller, setFilterTaller] = useState("")
@@ -41,6 +42,10 @@ export default function EvidenciasContent() {
           ...prev,
           validadoPor: data.user.email || "",
         }))
+        // Simular carga de datos
+        setTimeout(() => {
+          setLoading(false)
+        }, 1500)
       } else {
         navigate("/")
       }
@@ -329,6 +334,20 @@ export default function EvidenciasContent() {
 
   const evidenciasPendientes = evidencias.filter((e) => e.estado === "Pendiente").length
   const evidenciasAprobadas = evidencias.filter((e) => e.estado === "Aprobada").length
+
+  if (loading) {
+    return (
+      <div className="flex h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/40">
+        <DashboardProfeSidebar sidebarOpen={sidebarOpen} toggleSidebar={toggleSidebar} userRole="Profesor" />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Cargando evidencias...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/40">
@@ -945,4 +964,5 @@ export default function EvidenciasContent() {
     </div>
   )
 }
+
 

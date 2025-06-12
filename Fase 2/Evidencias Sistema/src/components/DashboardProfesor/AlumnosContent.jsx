@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Users, Plus, Search, Edit, Trash2, Menu, X, Check } from "lucide-react"
+import { Users, Plus, Search, Edit, UserX, Menu, X, Check } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "../../lib/supabase"
 import DashboardProfeSidebar from "../shared/DashboardProfeSidebar"
@@ -9,12 +9,11 @@ export default function AlumnosContent() {
   const [user, setUser] = useState(null)
   const [profesorId, setProfesorId] = useState(null) // Nuevo estado para el ID del profesor
   const [showAddModal, setShowAddModal] = useState(false)
-  const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedTaller, setSelectedTaller] = useState("")
-  const [editingAlumno, setEditingAlumno] = useState(null)
   const [deletingAlumno, setDeletingAlumno] = useState(null)
+  const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
   // Estados para el formulario
@@ -25,6 +24,19 @@ export default function AlumnosContent() {
     estado: "",
     fechaInscripcion: "",
   })
+
+  // Estados para edición inline
+  const [editingAlumno, setEditingAlumno] = useState(null)
+  const [editForm, setEditForm] = useState({
+    rutEstudiante: "",
+    idTaller: "",
+    nivelActual: "",
+    estado: "",
+    fechaInscripcion: "",
+  })
+  const [submitting, setSubmitting] = useState(false)
+
+  const [activeTab, setActiveTab] = useState("activos")
 
   useEffect(() => {
     const getUser = async () => {
@@ -80,6 +92,7 @@ export default function AlumnosContent() {
 
     const fetchAlumnos = async () => {
       try {
+        setLoading(true)
         // Filtrar alumnos solo de los talleres del profesor actual
         const { data, error } = await supabase
           .from("ParticipacionEstudiante")
@@ -188,13 +201,16 @@ export default function AlumnosContent() {
         }
       } catch (err) {
         setError(err)
+      } finally {
+        setLoading(false)
       }
     }
 
-    fetchAlumnos()
-    misTalleres()
-    estudiante()
-    Nivel()
+    const loadAllData = async () => {
+      await Promise.all([fetchAlumnos(), misTalleres(), estudiante(), Nivel()])
+    }
+
+    loadAllData()
   }, [profesorId]) // Dependencia del profesorId
 
   // Actualizar niveles disponibles cuando cambie el taller seleccionado
@@ -236,30 +252,6 @@ export default function AlumnosContent() {
     })
   }
 
-  const openEditModal = (alumno) => {
-    setEditingAlumno(alumno)
-    setFormData({
-      rutEstudiante: alumno.id_estudiante,
-      idTaller: alumno.id_taller_impartido.toString(),
-      nivelActual: alumno.nivel_actual,
-      estado: alumno.estado,
-      fechaInscripcion: alumno.fecha_inscripcion,
-    })
-    setShowEditModal(true)
-  }
-
-  const closeEditModal = () => {
-    setShowEditModal(false)
-    setEditingAlumno(null)
-    setFormData({
-      rutEstudiante: "",
-      idTaller: "",
-      nivelActual: "",
-      estado: "",
-      fechaInscripcion: "",
-    })
-  }
-
   const openDeleteModal = (alumno) => {
     setDeletingAlumno(alumno)
     setShowDeleteModal(true)
@@ -276,6 +268,96 @@ export default function AlumnosContent() {
       ...prev,
       [name]: value,
     }))
+  }
+
+  // Funciones de edición inline
+  const handleEditAlumno = (alumno) => {
+    setEditingAlumno(alumno.id_participacion)
+    setEditForm({
+      rutEstudiante: alumno.id_estudiante, // Mantener el ID pero no será editable
+      idTaller: alumno.id_taller_impartido.toString(), // No será editable
+      nivelActual: alumno.nivel_actual.toString(), // Será input manual
+      estado: alumno.estado,
+      fechaInscripcion: alumno.fecha_inscripcion,
+    })
+  }
+
+  const handleSaveEdit = async () => {
+    try {
+      setSubmitting(true)
+
+      // Validar que todos los campos requeridos estén presentes
+      if (!editForm.nivelActual || !editForm.estado || !editForm.fechaInscripcion) {
+        alert("Por favor, complete todos los campos requeridos")
+        setSubmitting(false)
+        return
+      }
+
+      // Obtener el alumno que estamos editando
+      const alumnoActual = alumnos.find((a) => a.id_participacion === editingAlumno)
+      if (!alumnoActual) {
+        alert("No se encontró el alumno que está editando")
+        setSubmitting(false)
+        return
+      }
+
+      // Preparar los datos para la actualización (solo campos editables)
+      const datosActualizados = {
+        nivel_actual: Number(editForm.nivelActual),
+        estado: editForm.estado,
+        fecha_inscripcion: editForm.fechaInscripcion,
+      }
+
+      console.log("Actualizando alumno con datos:", datosActualizados)
+
+      // Usar el cliente de Supabase sin RLS para evitar problemas de políticas
+      const { data, error } = await supabase
+        .from("ParticipacionEstudiante")
+        .update(datosActualizados)
+        .eq("id_participacion", editingAlumno)
+
+      if (error) {
+        console.error("Error al actualizar alumno:", error)
+        alert(`Error al actualizar: ${error.message}`)
+        return
+      }
+
+      // Actualizar los datos localmente sin recargar la página
+      setAlumnos(
+        alumnos.map((alumno) =>
+          alumno.id_participacion === editingAlumno
+            ? {
+                ...alumno,
+                nivel_actual: Number(editForm.nivelActual),
+                estado: editForm.estado,
+                fecha_inscripcion: editForm.fechaInscripcion,
+              }
+            : alumno,
+        ),
+      )
+
+      // Mostrar mensaje de éxito
+      alert("Alumno actualizado exitosamente")
+
+      // Limpiar el estado de edición
+      setEditingAlumno(null)
+    } catch (err) {
+      console.error("Error en la actualización:", err)
+      alert(`Error inesperado: ${err.message}`)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditingAlumno(null)
+    setEditForm({
+      rutEstudiante: "",
+      idTaller: "",
+      nivelActual: "",
+      estado: "",
+      fechaInscripcion: "",
+    })
   }
 
   const handleSubmit = async (e) => {
@@ -300,7 +382,7 @@ export default function AlumnosContent() {
         a.id_taller_impartido === Number.parseInt(formData.idTaller),
     )
 
-    if (estudianteYaRegistrado && !editingAlumno) {
+    if (estudianteYaRegistrado) {
       alert("Este estudiante ya está registrado en el taller seleccionado")
       return
     }
@@ -325,68 +407,50 @@ export default function AlumnosContent() {
     const estudianteSeleccionado = estudiante.find((e) => e.id_estudiante === Number.parseInt(formData.rutEstudiante))
     const taller = misTalleres.find((t) => t.id_taller_impartido === Number.parseInt(formData.idTaller))
 
-    if (editingAlumno) {
-      // Editar alumno existente
-      const { error } = await supabase
-        .from("ParticipacionEstudiante")
-        .update({
-          id_estudiante: Number.parseInt(formData.rutEstudiante),
-          id_taller_impartido: Number.parseInt(formData.idTaller),
-          nivel_actual: Number.parseInt(formData.nivelActual),
-          estado: formData.estado,
-          fecha_inscripcion: formData.fechaInscripcion,
-        })
-        .eq("id_participacion", editingAlumno.id_participacion)
+    const nuevoAlumno = {
+      id_estudiante: Number.parseInt(formData.rutEstudiante),
+      id_taller_impartido: Number.parseInt(formData.idTaller),
+      nivel_actual: Number.parseInt(formData.nivelActual),
+      estado: formData.estado,
+      fecha_inscripcion: formData.fechaInscripcion,
+    }
+    console.log("Nuevo Alumno:", nuevoAlumno)
 
-      if (error) {
-        console.log("Error al actualizar:", error)
-        alert("Error al actualizar el alumno")
-      } else {
-        // Recargar datos
-        window.location.reload()
-        closeEditModal()
-        alert("Alumno actualizado exitosamente")
-      }
+    // Insertar nuevo alumno en la base de datos
+    const { error } = await supabase.from("ParticipacionEstudiante").insert([nuevoAlumno])
+    console.log("error", error)
+
+    if (error) {
+      alert("Error al registrar el alumno")
     } else {
-      // Crear nuevo alumno
-      const nuevoAlumno = {
-        id_estudiante: Number.parseInt(formData.rutEstudiante),
-        id_taller_impartido: Number.parseInt(formData.idTaller),
-        nivel_actual: Number.parseInt(formData.nivelActual),
-        estado: formData.estado,
-        fecha_inscripcion: formData.fechaInscripcion,
-      }
-      console.log("Nuevo Alumno:", nuevoAlumno)
-
-      // Insertar nuevo alumno en la base de datos
-      const { error } = await supabase.from("ParticipacionEstudiante").insert([nuevoAlumno])
-      console.log("error", error)
-
-      if (error) {
-        alert("Error al registrar el alumno")
-      } else {
-        // Recargar datos
-        window.location.reload()
-        closeAddModal()
-        alert("Alumno registrado exitosamente")
-      }
+      // Recargar datos
+      window.location.reload()
+      closeAddModal()
+      alert("Alumno registrado exitosamente")
     }
   }
 
-  const handleDelete = async () => {
+  const handleDesactivar = async () => {
     if (deletingAlumno) {
+      const nuevoEstado = deletingAlumno.estado === "RETIRADO" ? "EN_PROGRESO" : "RETIRADO"
+
       const { error } = await supabase
         .from("ParticipacionEstudiante")
-        .delete()
+        .update({ estado: nuevoEstado })
         .eq("id_participacion", deletingAlumno.id_participacion)
 
       if (error) {
-        alert("Error al eliminar el alumno")
+        alert("Error al cambiar el estado del alumno")
       } else {
-        // Recargar datos
-        window.location.reload()
+        // Actualizar los datos localmente sin recargar la página
+        setAlumnos(
+          alumnos.map((alumno) =>
+            alumno.id_participacion === deletingAlumno.id_participacion ? { ...alumno, estado: nuevoEstado } : alumno,
+          ),
+        )
+
         closeDeleteModal()
-        alert("Alumno eliminado exitosamente")
+        alert(`Alumno ${nuevoEstado === "RETIRADO" ? "desactivado" : "reactivado"} exitosamente`)
       }
     }
   }
@@ -400,7 +464,13 @@ export default function AlumnosContent() {
     const matchesTaller =
       selectedTaller === "" || alumno.TallerImpartido.id_taller_impartido === Number.parseInt(selectedTaller)
 
-    return matchesSearch && matchesTaller
+    // Filtro por pestaña activa
+    const matchesTab =
+      activeTab === "activos"
+        ? alumno.estado === "INSCRITO" || alumno.estado === "EN_PROGRESO" || alumno.estado === "FINALIZADO"
+        : alumno.estado === "RETIRADO"
+
+    return matchesSearch && matchesTaller && matchesTab
   })
 
   const getEstadoColor = (estado) => {
@@ -436,13 +506,23 @@ export default function AlumnosContent() {
     return date.toLocaleDateString("es-CL")
   }
 
-  // Mostrar loading mientras se obtiene el profesor ID
-  if (!profesorId) {
+  const handleEditFormChange = (e) => {
+    const { name, value } = e.target
+    setEditForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
+
+  if (loading) {
     return (
-      <div className="flex h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/40 items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-emerald-500"></div>
-          <p className="mt-4 text-gray-600">Cargando información del profesor...</p>
+      <div className="flex h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/40">
+        <DashboardProfeSidebar sidebarOpen={sidebarOpen} toggleSidebar={toggleSidebar} userRole="Profesor" />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Cargando alumnos...</p>
+          </div>
         </div>
       </div>
     )
@@ -560,6 +640,40 @@ export default function AlumnosContent() {
               </button>
             </div>
 
+            {/* Pestañas */}
+            <div className="mb-6">
+              <div className="border-b border-gray-200">
+                <nav className="-mb-px flex space-x-8">
+                  <button
+                    onClick={() => setActiveTab("activos")}
+                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === "activos"
+                        ? "border-emerald-500 text-emerald-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    Activos (
+                    {
+                      alumnos.filter(
+                        (a) => a.estado === "INSCRITO" || a.estado === "EN_PROGRESO" || a.estado === "FINALIZADO",
+                      ).length
+                    }
+                    )
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("desactivados")}
+                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === "desactivados"
+                        ? "border-emerald-500 text-emerald-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    Desactivados ({alumnos.filter((a) => a.estado === "RETIRADO").length})
+                  </button>
+                </nav>
+              </div>
+            </div>
+
             {/* Tabla de alumnos */}
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
               <div className="p-6 border-b border-gray-200">
@@ -622,39 +736,97 @@ export default function AlumnosContent() {
                           {alumno.TallerImpartido?.nombre_publico}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getNivelColor(alumno.Nivel?.descripcion)}`}
-                          >
-                            {alumno.Nivel?.descripcion || "N/A"}
-                          </span>
+                          {editingAlumno === alumno.id_participacion ? (
+                            <input
+                              type="number"
+                              name="nivelActual"
+                              value={editForm.nivelActual}
+                              onChange={handleEditFormChange}
+                              min="1"
+                              className="shadow-sm focus:ring-emerald-500 focus:border-emerald-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                              placeholder="Ingrese nivel"
+                            />
+                          ) : (
+                            <span
+                              className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getNivelColor(alumno.Nivel?.descripcion)}`}
+                            >
+                              {alumno.Nivel?.descripcion || `Nivel ${alumno.nivel_actual}`}
+                            </span>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getEstadoColor(alumno.estado)}`}
-                          >
-                            {alumno.estado}
-                          </span>
+                          {editingAlumno === alumno.id_participacion ? (
+                            <select
+                              name="estado"
+                              value={editForm.estado}
+                              onChange={handleEditFormChange}
+                              className="shadow-sm focus:ring-emerald-500 focus:border-emerald-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                            >
+                              <option value="">Seleccionar estado</option>
+                              <option value="INSCRITO">INSCRITO</option>
+                              <option value="EN_PROGRESO">EN PROGRESO</option>
+                              <option value="FINALIZADO">FINALIZADO</option>
+                              <option value="RETIRADO">RETIRADO</option>
+                            </select>
+                          ) : (
+                            <span
+                              className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getEstadoColor(alumno.estado)}`}
+                            >
+                              {alumno.estado}
+                            </span>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(alumno.fecha_inscripcion)}
+                          {editingAlumno === alumno.id_participacion ? (
+                            <input
+                              type="date"
+                              name="fechaInscripcion"
+                              value={editForm.fechaInscripcion}
+                              onChange={handleEditFormChange}
+                              className="shadow-sm focus:ring-emerald-500 focus:border-emerald-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                            />
+                          ) : (
+                            formatDate(alumno.fecha_inscripcion)
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => openEditModal(alumno)}
-                              className="text-emerald-600 hover:text-emerald-900 p-1 rounded transition-colors"
-                              title="Editar alumno"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => openDeleteModal(alumno)}
-                              className="text-red-600 hover:text-red-900 p-1 rounded transition-colors"
-                              title="Eliminar alumno"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
+                          {editingAlumno === alumno.id_participacion ? (
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={handleSaveEdit}
+                                disabled={submitting}
+                                className="text-emerald-600 hover:text-emerald-900 p-1 rounded transition-colors"
+                                title="Guardar"
+                              >
+                                <Check className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                disabled={submitting}
+                                className="text-gray-600 hover:text-gray-900 p-1 rounded transition-colors"
+                                title="Cancelar"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleEditAlumno(alumno)}
+                                className="text-emerald-600 hover:text-emerald-900 p-1 rounded transition-colors"
+                                title="Editar alumno"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => openDeleteModal(alumno)}
+                                className="text-orange-600 hover:text-orange-900 p-1 rounded transition-colors"
+                                title={alumno.estado === "RETIRADO" ? "Reactivar alumno" : "Desactivar alumno"}
+                              >
+                                <UserX className="h-4 w-4" />
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -667,17 +839,12 @@ export default function AlumnosContent() {
       </div>
 
       {/* Modal para añadir/editar alumno */}
-      {(showAddModal || showEditModal) && (
+      {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden border border-gray-200">
             <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50 flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">
-                {editingAlumno ? "Editar Alumno" : "Añadir Nuevo Alumno"}
-              </h2>
-              <button
-                onClick={editingAlumno ? closeEditModal : closeAddModal}
-                className="text-gray-500 hover:text-gray-700"
-              >
+              <h2 className="text-xl font-semibold text-gray-900">Añadir Nuevo Alumno</h2>
+              <button onClick={closeAddModal} className="text-gray-500 hover:text-gray-700">
                 <X className="h-6 w-6" />
               </button>
             </div>
@@ -786,7 +953,7 @@ export default function AlumnosContent() {
               <div className="flex justify-end space-x-3 mt-6">
                 <button
                   type="button"
-                  onClick={editingAlumno ? closeEditModal : closeAddModal}
+                  onClick={closeAddModal}
                   className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
                 >
                   Cancelar
@@ -796,7 +963,7 @@ export default function AlumnosContent() {
                   className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center"
                 >
                   <Check className="w-4 h-4 mr-2" />
-                  {editingAlumno ? "Actualizar Alumno" : "Registrar Alumno"}
+                  Registrar Alumno
                 </button>
               </div>
             </form>
@@ -804,23 +971,30 @@ export default function AlumnosContent() {
         </div>
       )}
 
-      {/* Modal de confirmación para eliminar */}
+      {/* Modal de confirmación para desactivar/reactivar */}
       {showDeleteModal && deletingAlumno && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden border border-gray-200">
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Confirmar Eliminación</h2>
+              <h2 className="text-xl font-semibold text-gray-900">
+                {deletingAlumno.estado === "RETIRADO" ? "Reactivar Alumno" : "Desactivar Alumno"}
+              </h2>
             </div>
 
             <div className="p-6">
               <p className="text-gray-600 mb-4">
-                ¿Estás seguro de que deseas eliminar al alumno{" "}
+                ¿Estás seguro de que deseas {deletingAlumno.estado === "RETIRADO" ? "reactivar" : "desactivar"} al
+                alumno{" "}
                 <span className="font-semibold text-gray-900">
                   {deletingAlumno.Estudiante?.nombre} {deletingAlumno.Estudiante?.apellido}
                 </span>
                 ?
               </p>
-              <p className="text-sm text-red-600">Esta acción no se puede deshacer.</p>
+              <p className="text-sm text-gray-600">
+                {deletingAlumno.estado === "RETIRADO"
+                  ? "El alumno volverá a estar activo en el taller."
+                  : "El alumno será marcado como retirado del taller."}
+              </p>
             </div>
 
             <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
@@ -831,11 +1005,15 @@ export default function AlumnosContent() {
                 Cancelar
               </button>
               <button
-                onClick={handleDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center"
+                onClick={handleDesactivar}
+                className={`px-4 py-2 text-white rounded-lg transition-colors flex items-center ${
+                  deletingAlumno.estado === "RETIRADO"
+                    ? "bg-green-600 hover:bg-green-700"
+                    : "bg-orange-600 hover:bg-orange-700"
+                }`}
               >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Eliminar
+                <UserX className="w-4 h-4 mr-2" />
+                {deletingAlumno.estado === "RETIRADO" ? "Reactivar" : "Desactivar"}
               </button>
             </div>
           </div>

@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import { BookOpen, Users, TrendingUp, FileText, Eye, Menu, X, Award } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
@@ -452,10 +450,11 @@ export default function DashboardProfesor() {
   if (loading) {
     return (
       <div className="flex h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/40">
+        <DashboardProfeSidebar sidebarOpen={sidebarOpen} toggleSidebar={toggleSidebar} userRole="Profesor" />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">Cargando talleres...</p>
+            <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Cargando dashboard...</p>
           </div>
         </div>
       </div>
@@ -630,72 +629,77 @@ export default function DashboardProfesor() {
 
             {/* Content based on active tab */}
             {activeTab === "miTaller" && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                {misTalleres.length === 0 ? (
-                  <div className="col-span-full text-center py-12">
-                    <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No tienes talleres asignados</h3>
-                    <p className="text-gray-600">Contacta al coordinador para que te asigne talleres.</p>
-                  </div>
-                ) : (
-                  misTalleres.map((taller) => (
-                    <div key={taller.id} className="bg-white rounded-xl shadow-md overflow-hidden">
-                      <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50">
-                        <h2 className="text-xl font-semibold text-gray-900">Taller de {taller.nombre}</h2>
-                        <p className="text-gray-600">{taller.descripcion}</p>
-                      </div>
-
-                      <div className="p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Información General</h3>
-                        <div className="space-y-4">
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Niveles:</span>
-                            <div className="flex flex-wrap gap-1">
-                              {taller.niveles.map((nivel) => (
-                                <span key={nivel} className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                                  {nivel}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Alumnos:</span>
-                            <span className="text-gray-900 font-medium">{taller.totalAlumnos}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Estado:</span>
-                            <span className="px-2 py-1 text-xs bg-emerald-100 text-emerald-800 rounded-full">
-                              {taller.estado}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="mt-6">
-                          <h4 className="text-md font-medium text-gray-900 mb-3">Progreso General</h4>
-                          <div className="flex items-center mb-2">
-                            <div className="flex-1 bg-gray-200 rounded-full h-2 mr-2">
-                              <div
-                                className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${taller.progreso}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm text-gray-900 font-medium">{taller.progreso}%</span>
-                          </div>
-                        </div>
-
-                        <div className="mt-6">
-                          <button
-                            onClick={() => openDetallesModal(taller)}
-                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center transition-colors"
-                          >
-                            <Eye className="w-4 h-4 mr-2" />
-                            Ver Detalles Completos
-                          </button>
-                        </div>
-                      </div>
+              <div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {misTalleres.length === 0 ? (
+                    <div className="col-span-full text-center py-12">
+                      <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No tienes talleres asignados</h3>
+                      <p className="text-gray-600">Contacta al coordinador para que te asigne talleres.</p>
                     </div>
-                  ))
-                )}
+                  ) : (
+                    misTalleres.map((taller) => (
+                      <div key={taller.id} className="bg-white rounded-xl shadow-md overflow-hidden">
+                        <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50">
+                          <h2 className="text-xl font-semibold text-gray-900">Taller de {taller.nombre}</h2>
+                          <p className="text-gray-600">{taller.descripcion}</p>
+                        </div>
+
+                        <div className="p-6">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Información General</h3>
+                          <div className="space-y-4">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Niveles:</span>
+                              <div className="flex flex-wrap gap-1">
+                                {taller.niveles.map((nivel) => (
+                                  <span
+                                    key={nivel}
+                                    className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
+                                  >
+                                    {nivel}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Alumnos:</span>
+                              <span className="text-gray-900 font-medium">{taller.totalAlumnos}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Estado:</span>
+                              <span className="px-2 py-1 text-xs bg-emerald-100 text-emerald-800 rounded-full">
+                                {taller.estado}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="mt-6">
+                            <h4 className="text-md font-medium text-gray-900 mb-3">Progreso General</h4>
+                            <div className="flex items-center mb-2">
+                              <div className="flex-1 bg-gray-200 rounded-full h-2 mr-2">
+                                <div
+                                  className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
+                                  style={{ width: `${taller.progreso}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-sm text-gray-900 font-medium">{taller.progreso}%</span>
+                            </div>
+                          </div>
+
+                          <div className="mt-6">
+                            <button
+                              onClick={() => openDetallesModal(taller)}
+                              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center transition-colors"
+                            >
+                              <Eye className="w-4 h-4 mr-2" />
+                              Ver Detalles Completos
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             )}
 
