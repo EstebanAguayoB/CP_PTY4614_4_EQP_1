@@ -389,10 +389,6 @@ export default function DashboardCoordinador() {
                           <span className="text-gray-500">Alumnos:</span>
                           <span className="text-gray-900">{taller.alumnos}</span>
                         </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-500">Niveles:</span>
-                          <span className="text-gray-900">{taller.niveles}</span>
-                        </div>
                       </div>
                     </div>
                   ))}

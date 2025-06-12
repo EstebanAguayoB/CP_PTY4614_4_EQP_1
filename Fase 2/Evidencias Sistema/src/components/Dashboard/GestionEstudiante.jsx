@@ -29,6 +29,7 @@ export default function GestionEstudiante() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [user, setUser] = useState(null)
   const [form, setForm] = useState({
+    rut: "",
     nombre: "",
     apellido: "",
     correo_apoderado: "",
@@ -216,20 +217,20 @@ export default function GestionEstudiante() {
   const handleAddAlumno = async (e) => {
     e.preventDefault()
     // Validación básica
-    if (!form.nombre || !form.apellido || !form.correo_apoderado) return
+    if (!form.rut || !form.nombre || !form.apellido || !form.correo_apoderado) return
 
     try {
       setSubmitting(true)
-      const { error } = await supabase.from("Estudiante").insert([form])
+      const { error } = await supabase.from("Estudiante").insert([{ ...form, estado: "ACTIVO" }])
       if (!error) {
         setShowAddForm(false)
-        setForm({ nombre: "", apellido: "", correo_apoderado: "" })
-        await fetchAlumnos() // Recargar alumnos
+        setForm({ rut: "", nombre: "", apellido: "", correo_apoderado: "" })
+        await fetchAlumnos()
       } else {
-        alert("Error al registrar alumno")
+        alert("Error al registrar alumno: " + error.message)
       }
     } catch (err) {
-      alert("Error al registrar alumno")
+      alert("Error al registrar alumno: " + err.message)
     } finally {
       setSubmitting(false)
     }
@@ -285,6 +286,20 @@ export default function GestionEstudiante() {
                 <p className="text-gray-600 mb-8">Completa la información para registrar un nuevo alumno</p>
 
                 <form className="space-y-6" onSubmit={handleAddAlumno}>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">RUT</label>
+                    <input
+                      type="text"
+                      name="rut"
+                      value={form.rut}
+                      onChange={handleChange}
+                      placeholder="RUT del estudiante"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      required
+                      disabled={submitting}
+                    />
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
                     <input
