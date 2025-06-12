@@ -109,7 +109,7 @@ export default function DashboardCoordinador() {
           .select(`
             *,
             Usuario(nombre, apellido),
-            TallerDefinido(id_taller_definido, nombre, niveles_totales),
+            TallerDefinido(id_taller_definido, nombre, niveles_totales, Nivel(numero_nivel, descripcion)),
             ParticipacionEstudiante(id_participacion, estado)
           `);;
         if (error) setError(error);
@@ -227,8 +227,15 @@ export default function DashboardCoordinador() {
       (p) => p.estado === "INSCRITO" || p.estado === "EN_PROGRESO"
     ).length
 
-    // Obtener niveles (si tienes niveles_totales en TallerDefinido)
-    const niveles = taller.TallerDefinido?.niveles_totales || "-"
+    // Obtener niveles (array de objetos)
+    const nivelesArray = taller.TallerDefinido?.Nivel || []
+    const niveles =
+      nivelesArray.length > 0
+        ? nivelesArray
+            .sort((a, b) => a.numero_nivel - b.numero_nivel)
+            .map((n) => `Nivel ${n.numero_nivel}: ${n.descripcion}`)
+            .join(", ")
+        : "-"
 
     return {
       ...taller,
