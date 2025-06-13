@@ -734,13 +734,8 @@ export default function GestionProfesores() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               {editingProfesor === prof.id ? (
-                                <input
-                                  type="email"
-                                  value={editForm.correo}
-                                  onChange={(e) => setEditForm({ ...editForm, correo: e.target.value })}
-                                  className="text-sm text-gray-500 border border-gray-300 rounded px-2 py-1 w-full"
-                                  disabled={isSubmitting}
-                                />
+                                // Solo mostrar el correo, sin permitir editar
+                                <div className="text-sm text-gray-500">{editForm.correo}</div>
                               ) : (
                                 <div className="text-sm text-gray-500">{prof.correo}</div>
                               )}
