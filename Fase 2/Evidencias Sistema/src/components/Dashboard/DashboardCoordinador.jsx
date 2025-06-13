@@ -139,34 +139,39 @@ export default function DashboardCoordinador() {
   }, []);
 
   useEffect(() => {
-    const fetchProfesoresActivos = async () => {
+    async function fetchProfesoresActivos() {
       const { data, error } = await supabase
-        .from("ProfesorDetalle")
+        .from("AsignacionProfesor")
         .select(`
           id_usuario,
-          especialidad,
-          Usuario:Usuario!inner(id_usuario, nombre, apellido, correo),
-          AsignacionProfesor:AsignacionProfesor(id_taller_impartido, estado_asignacion, TallerImpartido(nombre_publico)),
-          activo
+          Usuario (
+            nombre,
+            apellido,
+            correo
+          ),
+          ProfesorDetalle (
+            nivel_educativo,
+            especialidad
+          )
         `)
-        .eq("activo", true)
-      if (!error && data) {
-        // Procesar talleres y alumnos por profesor
-        const procesados = data.map((prof) => ({
-          id: prof.id_usuario,
-          nombre: `${prof.Usuario?.nombre || ""} ${prof.Usuario?.apellido || ""}`,
-          email: prof.Usuario?.correo || "",
-          talleres: (prof.AsignacionProfesor || [])
-            .filter(a => a.estado_asignacion === "ACTIVA")
-            .map(a => a.TallerImpartido?.nombre_publico)
-            .filter(Boolean)
-            .join(", "),
-          especialidad: prof.especialidad,
-          // Si tienes alumnos por taller, puedes sumar aquí
-          alumnos: "-", // Puedes calcularlo si tienes la relación
-        }))
-        setProfesoresActivos(procesados)
+        .eq("estado_asignacion", "ACTIVA")
+        .eq("rol", "RESPONSABLE")
+
+      if (error) {
+        setError(error.message)
+        return
       }
+
+      // Procesar los datos para el render
+      const procesados = (data || []).map((prof) => ({
+        id: prof.id_usuario,
+        nombreCompleto: `${prof.Usuario?.nombre || ""} ${prof.Usuario?.apellido || ""}`,
+        correo: prof.Usuario?.correo || "-",
+        nivel_educativo: prof.ProfesorDetalle?.nivel_educativo || "-",
+        especialidad: prof.ProfesorDetalle?.especialidad || "-",
+        estado: "Activo",
+      }))
+      setProfesoresActivos(procesados)
     }
     fetchProfesoresActivos()
   }, [])
@@ -422,8 +427,8 @@ export default function DashboardCoordinador() {
                     <div key={profesor.id} className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 flex flex-col justify-between">
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900">{profesor.nombre}</h3>
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${profesor.estado === "Activo" ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-800"}`}>
+                          <h3 className="text-lg font-semibold text-gray-900">{profesor.nombreCompleto}</h3>
+                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800">
                             {profesor.estado}
                           </span>
                         </div>
@@ -431,16 +436,10 @@ export default function DashboardCoordinador() {
                           <span className="font-medium text-gray-700">Email:</span> {profesor.correo}
                         </div>
                         <div className="text-sm text-gray-500 mb-2">
-                          <span className="font-medium text-gray-700">Especialidad:</span> {profesor.especialidad}
-                        </div>
-                        <div className="text-sm text-gray-500 mb-2">
                           <span className="font-medium text-gray-700">Nivel educativo:</span> {profesor.nivel_educativo}
                         </div>
                         <div className="text-sm text-gray-500 mb-2">
-                          <span className="font-medium text-gray-700">Talleres:</span> {profesor.talleres || "-"}
-                        </div>
-                        <div className="text-sm text-gray-500 mb-2">
-                          <span className="font-medium text-gray-700">Alumnos:</span> {profesor.alumnos ?? "-"}
+                          <span className="font-medium text-gray-700">Especialidad:</span> {profesor.especialidad}
                         </div>
                       </div>
                       <button

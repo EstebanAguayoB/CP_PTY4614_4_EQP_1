@@ -111,18 +111,19 @@ export default function GestionProfesores() {
         return
       }
 
-      const profesoresProcesados = profesoresData.map((profesor) => ({
-        id: profesor.id_usuario,
-        nombre: profesor.Usuario?.nombre || "",
-        apellido: profesor.Usuario?.apellido || "",
-        nombreCompleto: `${profesor.Usuario?.nombre || ""} ${profesor.Usuario?.apellido || ""}`,
-        correo: profesor.Usuario?.correo || "",
-        especialidad: profesor.especialidad,
-        nivel_educativo: profesor.nivel_educativo,
-        estado: profesor.activo ? "Activo" : "No Activo",
-        usuario: profesor.Usuario,
-      }))
-      setProfesores(profesoresProcesados)
+// ...dentro del useEffect o función que procesa los datos...
+const profesoresProcesados = profesoresData.map((profesor) => ({
+  id: profesor.id_usuario,
+  nombre: profesor.Usuario?.nombre || "",
+  apellido: profesor.Usuario?.apellido || "",
+  nombreCompleto: `${profesor.Usuario?.nombre || ""} ${profesor.Usuario?.apellido || ""}`,
+  correo: profesor.Usuario?.correo || "",
+  especialidad: profesor.especialidad,
+  nivel_educativo: profesor.nivel_educativo,
+  estado: profesor.activo ? "Activo" : "No Activo",
+  usuario: profesor.Usuario,
+}))
+setProfesores(profesoresProcesados)
     } catch (err) {
       setError(err.message)
     } finally {
