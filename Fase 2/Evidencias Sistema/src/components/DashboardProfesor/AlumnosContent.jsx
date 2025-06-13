@@ -772,7 +772,7 @@ export default function AlumnosContent() {
                             <span
                               className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getEstadoColor(alumno.estado)}`}
                             >
-                              {alumno.estado}
+                              {alumno.estado === "EN_PROGRESO" ? "EN PROGRESO" : alumno.estado}
                             </span>
                           )}
                         </td>

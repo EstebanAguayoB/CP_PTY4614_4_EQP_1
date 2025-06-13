@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import { BookOpen, Users, Upload, Menu, FileText, X, Check } from "lucide-react"
 import { useNavigate } from "react-router-dom"
@@ -322,11 +320,7 @@ export default function MisTalleresContent() {
                 />
               </div>
 
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold">
-                  {user && user.email.charAt(0).toUpperCase()}
-                </div>
-              </div>
+              {/* User avatar removed from header */}
             </div>
           </div>
         </header>
@@ -369,34 +363,6 @@ export default function MisTalleresContent() {
         {/* Contenido principal con scroll */}
         <main className="flex-1 overflow-y-auto">
           <div className="px-4 sm:px-6 lg:px-8 py-8">
-            {/* Tabs */}
-            <div className="mb-6">
-              <div className="border-b border-gray-200">
-                <nav className="-mb-px flex space-x-8">
-                  <button
-                    onClick={() => setActiveTab("activos")}
-                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === "activos"
-                        ? "border-emerald-500 text-emerald-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    Activos ({misTalleres.filter((taller) => taller.estado === "activo").length})
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("inactivos")}
-                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === "inactivos"
-                        ? "border-emerald-500 text-emerald-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    Inactivos ({misTalleres.filter((taller) => taller.estado === "inactivo").length})
-                  </button>
-                </nav>
-              </div>
-            </div>
-
             {/* Contenido basado en la pestaña activa */}
             {activeTab === "activos" && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -874,3 +840,4 @@ export default function MisTalleresContent() {
     </div>
   )
 }
+

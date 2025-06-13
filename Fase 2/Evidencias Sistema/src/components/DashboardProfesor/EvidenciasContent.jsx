@@ -53,6 +53,16 @@ export default function EvidenciasContent() {
     getUser()
   }, [navigate])
 
+  useEffect(() => {
+    // Cuando cambia el taller seleccionado, resetear el alumno seleccionado
+    if (formData.idTaller) {
+      setFormData((prev) => ({
+        ...prev,
+        alumno: "", // Resetear el alumno seleccionado
+      }))
+    }
+  }, [formData.idTaller])
+
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen)
   }
@@ -252,7 +262,7 @@ export default function EvidenciasContent() {
       tallerNombre: taller?.nombre || "",
       alumno: alumno?.nombre || "",
       nivel: alumno?.nivel || "",
-      semana: formData.semana,
+      semana: `Semana ${formData.semana}`,
       descripcion: formData.descripcion,
       tipo: "Documento", // Por defecto
       fecha: formData.fecha,
@@ -482,7 +492,7 @@ export default function EvidenciasContent() {
                     <option value="Avanzado">Avanzado</option>
                   </select>
                 </div>
-                <div className="flex-1">
+                <div>
                   <label htmlFor="filterSemana" className="block text-sm font-medium text-gray-700 mb-1">
                     Filtrar por Semana
                   </label>
@@ -617,7 +627,9 @@ export default function EvidenciasContent() {
                             {evidencia.nivel}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{evidencia.semana}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {evidencia.semana.includes("Semana") ? evidencia.semana.split(" ")[1] : evidencia.semana}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-xs truncate">
                           {evidencia.descripcion}
                         </td>
@@ -724,11 +736,10 @@ export default function EvidenciasContent() {
                     onChange={handleInputChange}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     required
-                    disabled={!formData.idTaller}
                   >
                     <option value="">Seleccionar alumno</option>
                     {formData.idTaller &&
-                      alumnosPorTaller[formData.idTaller]?.map((alumno) => (
+                      (alumnosPorTaller[formData.idTaller] || []).map((alumno) => (
                         <option key={alumno.id} value={alumno.id}>
                           {alumno.nombre} - {alumno.nivel}
                         </option>
@@ -740,16 +751,21 @@ export default function EvidenciasContent() {
                   <label htmlFor="semana" className="block text-sm font-medium text-gray-700 mb-2">
                     Semana *
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="semana"
                     name="semana"
                     value={formData.semana}
                     onChange={handleInputChange}
-                    placeholder="Ej: Semana 8"
                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     required
-                  />
+                  >
+                    <option value="">Seleccionar semana</option>
+                    {[...Array(10)].map((_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        {i + 1}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -807,9 +823,8 @@ export default function EvidenciasContent() {
                     id="validadoPor"
                     name="validadoPor"
                     value={formData.validadoPor}
-                    onChange={handleInputChange}
-                    placeholder="Nombre del profesor"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    readOnly
+                    className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed"
                     required
                   />
                 </div>
@@ -885,7 +900,11 @@ export default function EvidenciasContent() {
 
                 <div>
                   <h3 className="text-sm font-medium text-gray-700 mb-1">Semana</h3>
-                  <p className="text-gray-900">{selectedEvidencia.semana}</p>
+                  <p className="text-gray-900">
+                    {selectedEvidencia.semana.includes("Semana")
+                      ? selectedEvidencia.semana.split(" ")[1]
+                      : selectedEvidencia.semana}
+                  </p>
                 </div>
 
                 <div>
@@ -964,5 +983,3 @@ export default function EvidenciasContent() {
     </div>
   )
 }
-
-
