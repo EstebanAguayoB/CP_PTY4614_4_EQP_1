@@ -7,7 +7,6 @@ import DashboardProfeSidebar from "../shared/DashboardProfeSidebar"
 export default function EvidenciasContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [user, setUser] = useState(null)
-  const [activeTab, setActiveTab] = useState("pendientes")
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
   const [selectedEvidencia, setSelectedEvidencia] = useState(null)
@@ -32,6 +31,8 @@ export default function EvidenciasContent() {
     observaciones: "",
   })
 
+  const [evidencias, setEvidencias] = useState([])
+
   useEffect(() => {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser()
@@ -42,6 +43,8 @@ export default function EvidenciasContent() {
           ...prev,
           validadoPor: data.user.email || "",
         }))
+        // Cargar historial de evidencias
+        cargarEvidencias()
         // Simular carga de datos
         setTimeout(() => {
           setLoading(false)
@@ -52,6 +55,62 @@ export default function EvidenciasContent() {
     }
     getUser()
   }, [navigate])
+
+  const cargarEvidencias = async () => {
+    try {
+      setLoading(true)
+
+      // Obtener las evidencias de la base de datos
+      const { data, error } = await supabase
+        .from("Evidencia")
+        .select(`
+          *,
+          ParticipacionEstudiante:id_participacion (
+            Estudiante:id_estudiante (nombre, apellido),
+            TallerImpartido:id_taller_impartido (
+              nombre_publico,
+              TallerDefinido:id_taller_definido (nombre)
+            ),
+            nivel_actual
+          )
+        `)
+        .order("fecha_envio", { ascending: false })
+
+      if (error) {
+        console.error("Error al cargar evidencias:", error)
+        return
+      }
+
+      // Transformar los datos para adaptarlos al formato esperado
+      const evidenciasFormateadas = data.map((evidencia) => {
+        const estudiante = evidencia.ParticipacionEstudiante?.Estudiante
+        const taller = evidencia.ParticipacionEstudiante?.TallerImpartido
+        const nombreTaller = taller?.nombre_publico || taller?.TallerDefinido?.nombre || "Sin nombre"
+
+        return {
+          id: evidencia.id_evidencia,
+          idTaller: taller?.id_taller_impartido,
+          tallerNombre: nombreTaller,
+          alumno: estudiante ? `${estudiante.nombre} ${estudiante.apellido}` : "Desconocido",
+          nivel: evidencia.ParticipacionEstudiante?.nivel_actual || "No especificado",
+          semana: `Semana ${evidencia.semana}`,
+          descripcion: evidencia.descripcion || "Sin descripción",
+          tipo: evidencia.archivo_url ? evidencia.archivo_url.split(".").pop() || "Documento" : "Documento",
+          fecha: evidencia.fecha_envio,
+          validadoPor: evidencia.validada_por_profesor ? "Validado" : "Pendiente",
+          observaciones: evidencia.observaciones || "",
+          estado: evidencia.validada_por_profesor ? "Aprobada" : "Pendiente",
+          archivoUrl: evidencia.archivo_url || "",
+        }
+      })
+
+      setEvidencias(evidenciasFormateadas)
+    } catch (error) {
+      console.error("Error al cargar evidencias:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     // Cuando cambia el taller seleccionado, resetear el alumno seleccionado
@@ -95,100 +154,6 @@ export default function EvidenciasContent() {
       { id: 7, nombre: "Isabella Moreno", nivel: "Básico" },
     ],
   }
-
-  // Datos de evidencias
-  const [evidencias, setEvidencias] = useState([
-    {
-      id: 1,
-      idTaller: 1,
-      tallerNombre: "Robótica",
-      alumno: "Laura Martínez",
-      nivel: "Avanzado",
-      semana: "Semana 8",
-      descripcion: "Proyecto de robot seguidor de línea",
-      tipo: "Documento",
-      fecha: "2025-04-18",
-      validadoPor: "Prof. Juan Pérez",
-      observaciones: "Excelente trabajo, cumple todos los objetivos",
-      estado: "Pendiente",
-      archivoUrl: "https://ejemplo.com/evidencia1.pdf",
-    },
-    {
-      id: 2,
-      idTaller: 1,
-      tallerNombre: "Robótica",
-      alumno: "Carlos Sánchez",
-      nivel: "Intermedio",
-      semana: "Semana 7",
-      descripcion: "Informe de proyecto de brazo robótico",
-      tipo: "Documento",
-      fecha: "2025-04-15",
-      validadoPor: "Prof. Juan Pérez",
-      observaciones: "Buen progreso, necesita mejorar documentación",
-      estado: "Pendiente",
-      archivoUrl: "https://ejemplo.com/evidencia2.pdf",
-    },
-    {
-      id: 3,
-      idTaller: 1,
-      tallerNombre: "Robótica",
-      alumno: "Ana García",
-      nivel: "Básico",
-      semana: "Semana 6",
-      descripcion: "Demostración de robot básico",
-      tipo: "Video",
-      fecha: "2025-04-12",
-      validadoPor: "Prof. Juan Pérez",
-      observaciones: "Cumple con los requisitos básicos",
-      estado: "Pendiente",
-      archivoUrl: "https://ejemplo.com/evidencia3.mp4",
-    },
-    {
-      id: 4,
-      idTaller: 2,
-      tallerNombre: "Programación",
-      alumno: "Miguel Torres",
-      nivel: "Intermedio",
-      semana: "Semana 5",
-      descripcion: "Aplicación web con Python",
-      tipo: "Proyecto",
-      fecha: "2025-04-10",
-      validadoPor: "Prof. María González",
-      observaciones: "Excelente implementación de funcionalidades",
-      estado: "Aprobada",
-      archivoUrl: "https://ejemplo.com/evidencia4.zip",
-    },
-    {
-      id: 5,
-      idTaller: 2,
-      tallerNombre: "Programación",
-      alumno: "Sofía Rodríguez",
-      nivel: "Avanzado",
-      semana: "Semana 8",
-      descripcion: "Sistema de gestión con base de datos",
-      tipo: "Proyecto",
-      fecha: "2025-04-16",
-      validadoPor: "Prof. María González",
-      observaciones: "Trabajo sobresaliente, implementación completa",
-      estado: "Aprobada",
-      archivoUrl: "https://ejemplo.com/evidencia5.zip",
-    },
-    {
-      id: 6,
-      idTaller: 3,
-      tallerNombre: "Diseño 3D",
-      alumno: "Diego Flores",
-      nivel: "Intermedio",
-      semana: "Semana 4",
-      descripcion: "Modelo 3D de prototipo",
-      tipo: "Archivo 3D",
-      fecha: "2025-04-08",
-      validadoPor: "Prof. Ana Rodríguez",
-      observaciones: "Buen diseño, atención al detalle",
-      estado: "Aprobada",
-      archivoUrl: "https://ejemplo.com/evidencia6.stl",
-    },
-  ])
 
   const openUploadModal = () => {
     setShowUploadModal(true)
@@ -293,11 +258,7 @@ export default function EvidenciasContent() {
     setSearchTerm("")
   }
 
-  // Filtrar evidencias
   const evidenciasFiltradas = evidencias.filter((evidencia) => {
-    // Filtro por estado (tab activo)
-    const matchesTab = activeTab === "pendientes" ? evidencia.estado === "Pendiente" : evidencia.estado === "Aprobada"
-
     // Filtro por término de búsqueda
     const matchesSearch =
       evidencia.alumno.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -310,7 +271,7 @@ export default function EvidenciasContent() {
     const matchesSemana = filterSemana === "" || evidencia.semana === filterSemana
     const matchesFecha = filterFecha === "" || evidencia.fecha.includes(filterFecha)
 
-    return matchesSearch && matchesTab && matchesTaller && matchesNivel && matchesSemana && matchesFecha
+    return matchesSearch && matchesTaller && matchesNivel && matchesSemana && matchesFecha
   })
 
   const getEstadoColor = (estado) => {
@@ -319,6 +280,8 @@ export default function EvidenciasContent() {
         return "bg-yellow-100 text-yellow-800"
       case "Aprobada":
         return "bg-green-100 text-green-800"
+      case "Histórico":
+        return "bg-blue-100 text-blue-800"
       default:
         return "bg-gray-100 text-gray-800"
     }
@@ -341,9 +304,6 @@ export default function EvidenciasContent() {
     const date = new Date(dateString)
     return date.toLocaleDateString("es-CL")
   }
-
-  const evidenciasPendientes = evidencias.filter((e) => e.estado === "Pendiente").length
-  const evidenciasAprobadas = evidencias.filter((e) => e.estado === "Aprobada").length
 
   if (loading) {
     return (
@@ -535,45 +495,19 @@ export default function EvidenciasContent() {
               </div>
             </div>
 
-            {/* Tabs */}
             <div className="mb-6">
               <div className="border-b border-gray-200">
-                <nav className="-mb-px flex space-x-8">
-                  <button
-                    onClick={() => setActiveTab("pendientes")}
-                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === "pendientes"
-                        ? "border-emerald-500 text-emerald-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    Pendientes ({evidenciasPendientes})
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("aprobadas")}
-                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === "aprobadas"
-                        ? "border-emerald-500 text-emerald-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    Aprobadas ({evidenciasAprobadas})
-                  </button>
-                </nav>
+                <h2 className="text-xl font-semibold text-gray-900 py-4">
+                  Historial de Evidencias ({evidencias.length})
+                </h2>
               </div>
             </div>
 
             {/* Tabla de evidencias */}
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
               <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {activeTab === "pendientes" ? "Evidencias Pendientes" : "Evidencias Aprobadas"}
-                </h2>
-                <p className="text-gray-600">
-                  {activeTab === "pendientes"
-                    ? "Evidencias que requieren revisión y aprobación"
-                    : "Evidencias que ya han sido revisadas y aprobadas"}
-                </p>
+                <h2 className="text-xl font-semibold text-gray-900">Historial de Evidencias</h2>
+                <p className="text-gray-600">Historial completo de evidencias generadas en talleres</p>
               </div>
 
               <div className="overflow-x-auto">
@@ -675,14 +609,8 @@ export default function EvidenciasContent() {
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                       <FileText className="h-8 w-8 text-gray-400" />
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No hay evidencias {activeTab === "pendientes" ? "pendientes" : "aprobadas"}
-                    </h3>
-                    <p className="text-gray-500 max-w-md">
-                      {activeTab === "pendientes"
-                        ? "No tienes evidencias pendientes de revisión en este momento."
-                        : "No hay evidencias aprobadas para mostrar."}
-                    </p>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No hay evidencias en el historial</h3>
+                    <p className="text-gray-500 max-w-md">No hay registros históricos de evidencias para mostrar.</p>
                   </div>
                 </div>
               )}

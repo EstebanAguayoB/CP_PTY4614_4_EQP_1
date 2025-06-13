@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect } from "react"
 import { BookOpen, Users, Upload, Menu, FileText, X, Check } from "lucide-react"
 import { useNavigate } from "react-router-dom"
@@ -18,6 +20,17 @@ export default function MisTalleresContent() {
   const [misTalleres, setMisTalleres] = useState([])
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
+
+  const [formData, setFormData] = useState({
+    idTaller: "",
+    alumno: "",
+    semana: "",
+    descripcion: "",
+    archivoUrl: "",
+    fecha: new Date().toISOString().split("T")[0],
+    validadoPor: user?.email || "",
+    observaciones: "",
+  })
 
   useEffect(() => {
     const getUser = async () => {
@@ -214,11 +227,14 @@ export default function MisTalleresContent() {
         .eq("id_taller_impartido", selectedTaller.id)
         .single()
 
+      // Get the selected week from the form
+      const selectedWeek = document.getElementById("semana").value
+
       if (participacion) {
         // Insertar la evidencia
         const { error } = await supabase.from("Evidencia").insert({
           id_participacion: participacion.id_participacion,
-          semana: Math.ceil(Date.now() / (7 * 24 * 60 * 60 * 1000)), // Semana actual aproximada
+          semana: Number.parseInt(selectedWeek), // Use the selected week value
           descripcion: evidenciaText,
           fecha_envio: new Date().toISOString(),
           validada_por_profesor: 1,
@@ -638,6 +654,24 @@ export default function MisTalleresContent() {
               {selectedAlumno && (
                 <>
                   <div className="mb-6">
+                    <label htmlFor="semana" className="block text-sm font-medium text-gray-700 mb-2">
+                      Semana *
+                    </label>
+                    <select
+                      id="semana"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      required
+                    >
+                      <option value="">Seleccionar semana</option>
+                      {[...Array(16)].map((_, i) => (
+                        <option key={i + 1} value={i + 1}>
+                          Semana {i + 1}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="mb-6">
                     <label htmlFor="evidencia" className="block text-sm font-medium text-gray-700 mb-2">
                       Descripción de la Evidencia
                     </label>
@@ -840,4 +874,3 @@ export default function MisTalleresContent() {
     </div>
   )
 }
-
