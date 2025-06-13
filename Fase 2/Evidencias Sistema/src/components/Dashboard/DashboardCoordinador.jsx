@@ -64,6 +64,8 @@ export default function DashboardCoordinador() {
   const [taller_impartido, setTaller_impartido] = useState([]);
   const [profesores, setProfesores] = useState([]);
   const [profesoresActivos, setProfesoresActivos] = useState([])
+  const [loadingProfesores, setLoadingProfesores] = useState(true)
+  const [errorProfesores, setErrorProfesores] = useState(null)
   const [actividadReciente, setActividadReciente] = useState([])
   const [error, setError] = useState(null)
   const [profesorSeleccionado, setProfesorSeleccionado] = useState(null)
@@ -139,40 +141,61 @@ export default function DashboardCoordinador() {
   }, []);
 
   useEffect(() => {
-    async function fetchProfesoresActivos() {
+    const fetchProfesoresActivos = async () => {
+      setLoadingProfesores(true)
       const { data, error } = await supabase
-        .from("AsignacionProfesor")
+        .from('TallerImpartido')
         .select(`
-          id_usuario,
+          profesor_asignado,
           Usuario (
+            id_usuario,
             nombre,
             apellido,
-            correo
+            correo,
+            ProfesorDetalle (
+              nivel_educativo,
+              especialidad
+            )
           ),
-          ProfesorDetalle (
-            nivel_educativo,
-            especialidad
-          )
+          TallerDefinido (nombre)
         `)
-        .eq("estado_asignacion", "ACTIVA")
-        .eq("rol", "RESPONSABLE")
-
       if (error) {
-        setError(error.message)
+        setErrorProfesores(error)
+        setLoadingProfesores(false)
         return
       }
 
-      // Procesar los datos para el render
-      const procesados = (data || []).map((prof) => ({
-        id: prof.id_usuario,
-        nombreCompleto: `${prof.Usuario?.nombre || ""} ${prof.Usuario?.apellido || ""}`,
-        correo: prof.Usuario?.correo || "-",
-        nivel_educativo: prof.ProfesorDetalle?.nivel_educativo || "-",
-        especialidad: prof.ProfesorDetalle?.especialidad || "-",
-        estado: "Activo",
+      // Agrupar talleres por profesor
+      const profesoresMap = {}
+      data.forEach((taller) => {
+        const profId = taller.profesor_asignado
+        if (!profesoresMap[profId]) {
+          profesoresMap[profId] = {
+            id_usuario: taller.Usuario?.id_usuario,
+            nombre: taller.Usuario?.nombre,
+            apellido: taller.Usuario?.apellido,
+            correo: taller.Usuario?.correo,
+            nivel_educativo: taller.Usuario?.ProfesorDetalle?.nivel_educativo,
+            especialidad: taller.Usuario?.ProfesorDetalle?.especialidad,
+            talleres: [],
+          }
+        }
+        if (taller.TallerDefinido?.nombre) {
+          profesoresMap[profId].talleres.push(taller.TallerDefinido.nombre)
+        }
+      })
+
+      // Convertir a array y agregar cantidad de talleres
+      const profesoresArray = Object.values(profesoresMap).map((prof) => ({
+        ...prof,
+        cantidad_talleres: prof.talleres.length,
+        nombres_talleres: prof.talleres.join(", "),
       }))
-      setProfesoresActivos(procesados)
+
+      setProfesoresActivos(profesoresArray)
+      setLoadingProfesores(false)
     }
+
     fetchProfesoresActivos()
   }, [])
 
@@ -416,42 +439,47 @@ export default function DashboardCoordinador() {
             {/* Sección de Profesores */}
             <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
               <div className="p-6 border-b border-gray-200">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-xl font-semibold text-gray-900">Profesores Activos</h2>
-                </div>
+                <h2 className="text-xl font-semibold text-gray-900">Profesores Activos</h2>
               </div>
-
               <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {profesoresActivos.map((profesor) => (
-                    <div key={profesor.id} className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900">{profesor.nombreCompleto}</h3>
-                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800">
-                            {profesor.estado}
-                          </span>
+                {loadingProfesores ? (
+                  <div>Cargando...</div>
+                ) : errorProfesores ? (
+                  <div className="text-red-600">Error: {errorProfesores.message}</div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {profesoresActivos.map((prof) => (
+                      <div key={prof.id_usuario} className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-lg font-semibold text-gray-900">{prof.nombre} {prof.apellido}</h3>
+                          </div>
+                          <div className="text-sm text-gray-500 mb-2">
+                            <span className="font-medium text-gray-700">Email:</span> {prof.correo}
+                          </div>
+                          <div className="text-sm text-gray-500 mb-2">
+                            <span className="font-medium text-gray-700">Nivel educativo:</span> {prof.nivel_educativo}
+                          </div>
+                          <div className="text-sm text-gray-500 mb-2">
+                            <span className="font-medium text-gray-700">Especialidad:</span> {prof.especialidad}
+                          </div>
+                          <div className="text-sm text-gray-500 mb-2">
+                            <span className="font-medium text-gray-700">Cantidad de talleres:</span> {prof.cantidad_talleres}
+                          </div>
+                          <div className="text-sm text-gray-500 mb-2">
+                            <span className="font-medium text-gray-700">Talleres:</span> {prof.nombres_talleres}
+                          </div>
                         </div>
-                        <div className="text-sm text-gray-500 mb-2">
-                          <span className="font-medium text-gray-700">Email:</span> {profesor.correo}
-                        </div>
-                        <div className="text-sm text-gray-500 mb-2">
-                          <span className="font-medium text-gray-700">Nivel educativo:</span> {profesor.nivel_educativo}
-                        </div>
-                        <div className="text-sm text-gray-500 mb-2">
-                          <span className="font-medium text-gray-700">Especialidad:</span> {profesor.especialidad}
-                        </div>
+                        <button
+                          className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded transition-colors flex items-center justify-center"
+                          onClick={() => handleVerDetalles && handleVerDetalles(prof)}
+                        >
+                          Ver Detalles
+                        </button>
                       </div>
-                      <button
-                        className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded transition-colors flex items-center justify-center"
-                        onClick={() => handleVerDetalles(profesor)}
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        Ver Detalles
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
