@@ -13,7 +13,10 @@ export function TallerForm({ onClose, userId }) {
     edad_minima: '',
     edad_maxima: '',
     id_periodo: '',
-    profesor_asignado: ''
+    profesor_asignado: '',
+    dia_semana: '',
+    hora_inicio: '',
+    hora_fin: ''
   })
   const [niveles, setNiveles] = useState([
     { numero_nivel: 1, descripcion: '', habilidades_clave: '' }
@@ -253,6 +256,45 @@ export function TallerForm({ onClose, userId }) {
               </option>
             ))}
           </select>
+        </div>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Día de la semana</label>
+        <select
+          value={formData.dia_semana}
+          onChange={e => setFormData({ ...formData, dia_semana: e.target.value })}
+          required
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        >
+          <option value="">Selecciona un día</option>
+          <option value="Lunes">Lunes</option>
+          <option value="Martes">Martes</option>
+          <option value="Miércoles">Miércoles</option>
+          <option value="Jueves">Jueves</option>
+          <option value="Viernes">Viernes</option>
+          <option value="Sábado">Sábado</option>
+        </select>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Hora de inicio</label>
+          <input
+            type="time"
+            value={formData.hora_inicio}
+            onChange={e => setFormData({ ...formData, hora_inicio: e.target.value })}
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Hora de fin</label>
+          <input
+            type="time"
+            value={formData.hora_fin}
+            onChange={e => setFormData({ ...formData, hora_fin: e.target.value })}
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          />
         </div>
       </div>
       {error && (

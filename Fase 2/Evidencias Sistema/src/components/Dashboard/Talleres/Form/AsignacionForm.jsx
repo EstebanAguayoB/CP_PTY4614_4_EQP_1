@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../../../lib/supabase'
 import { useTalleres } from '../../../../hooks/useTalleres'
 
-export function AsignacionForm({ tallerId, onClose }) {
+export function AsignacionForm({ tallerId, onClose, tallerSeleccionado }) {
   const { updateTallerImpartido } = useTalleres()
   const [selectedProfesor, setSelectedProfesor] = useState('')
   const [profesores, setProfesores] = useState([])
@@ -35,10 +35,53 @@ export function AsignacionForm({ tallerId, onClose }) {
     }
   }
 
+  const validarDisponibilidad = async (profesorId, dia_semana, hora_inicio, hora_fin) => {
+    const { data: asignaciones, error } = await supabase
+      .from("AsignacionProfesor")
+      .select(`
+        id_taller_impartido,
+        estado_asignacion,
+        TallerImpartido(dia_semana, hora_inicio, hora_fin, nombre_publico)
+      `)
+      .eq("id_usuario", profesorId)
+      .eq("estado_asignacion", "ACTIVA")
+
+    if (error) {
+      alert("Error consultando disponibilidad del profesor")
+      return false
+    }
+
+    // Verificar traslape de horarios
+    const conflicto = asignaciones.some(asig => {
+      const taller = asig.TallerImpartido
+      if (!taller) return false
+      if (taller.dia_semana !== dia_semana) return false
+      // Compara traslape de horas
+      return (
+        (hora_inicio < taller.hora_fin && hora_fin > taller.hora_inicio)
+      )
+    })
+
+    if (conflicto) {
+      alert("El profesor ya tiene un taller asignado en ese horario.")
+      return false
+    }
+    return true
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
+
+    // Supón que tienes los datos del taller a asignar
+    const { dia_semana, hora_inicio, hora_fin } = tallerSeleccionado // o formData
+
+    const disponible = await validarDisponibilidad(selectedProfesor, dia_semana, hora_inicio, hora_fin)
+    if (!disponible) {
+      setLoading(false)
+      return
+    }
 
     try {
       // Verificar si ya existe una asignación activa

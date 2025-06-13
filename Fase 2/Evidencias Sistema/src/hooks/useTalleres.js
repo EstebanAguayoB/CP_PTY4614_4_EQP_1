@@ -35,7 +35,10 @@ export function useTalleres() {
           nombre_publico: tallerData.nombre_publico,
           descripcion_publica: tallerData.descripcion_publica,
           profesor_asignado: parseInt(tallerData.profesor_asignado),
-          estado: tallerData.estado
+          estado: tallerData.estado,
+          dia_semana: tallerData.dia_semana,         
+          hora_inicio: tallerData.hora_inicio,       
+          hora_fin: tallerData.hora_fin              
         }])
         .select()
         .single()

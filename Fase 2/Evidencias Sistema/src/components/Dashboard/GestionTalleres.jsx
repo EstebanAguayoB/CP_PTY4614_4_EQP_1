@@ -68,7 +68,17 @@ export function GestionTalleres() {
   const [selectedPeriod, setSelectedPeriod] = useState("")
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [user, setUser] = useState(null)
-  const [selectedTaller, setSelectedTaller] = useState(null)
+  const [selectedTaller, setSelectedTaller] = useState({
+    id_taller_definido: "",
+    nombre_publico: "",
+    descripcion_publica: "",
+    id_periodo: "",
+    profesor_asignado: "",
+    estado: "activo",
+    dia_semana: "",
+    hora_inicio: "",
+    hora_fin: "",
+  })
   const [selectedPreconfiguracionId, setSelectedPreconfiguracionId] = useState("")
   const [error, setError] = useState(null)
   const [selectedPeriodoId, setSelectedPeriodoId] = useState("")
@@ -134,7 +144,17 @@ export function GestionTalleres() {
   }
 
   const toggleAddForm = () => {
-    setSelectedTaller(null)
+    setSelectedTaller({
+      id_taller_definido: "",
+      nombre_publico: "",
+      descripcion_publica: "",
+      id_periodo: "",
+      profesor_asignado: "",
+      estado: "activo",
+      dia_semana: "",
+      hora_inicio: "",
+      hora_fin: "",
+    })
     setShowAddForm(!showAddForm)
     setShowDetailView(false)
     setShowEditForm(false)
@@ -185,7 +205,17 @@ export function GestionTalleres() {
     setShowDetailView(false)
     setShowAddForm(false)
     setShowEditForm(false)
-    setSelectedTaller(null)
+    setSelectedTaller({
+      id_taller_definido: "",
+      nombre_publico: "",
+      descripcion_publica: "",
+      id_periodo: "",
+      profesor_asignado: "",
+      estado: "activo",
+      dia_semana: "",
+      hora_inicio: "",
+      hora_fin: "",
+    })
     setSelectedPreconfiguracionId("")
     setError(null)
     refreshTalleres()
@@ -215,12 +245,15 @@ export function GestionTalleres() {
     const preconfig = preconfiguraciones.find((p) => p.id_taller_definido === id)
     if (preconfig) {
       setSelectedTaller({
-        id_taller_definido: preconfig.id_taller_definido,
-        nombre_publico: preconfig.nombre,
-        descripcion_publica: preconfig.descripcion,
+        id_taller_definido: preconfig?.id_taller_definido || "",
+        nombre_publico: preconfig?.nombre || "",
+        descripcion_publica: preconfig?.descripcion || "",
         id_periodo: "",
         profesor_asignado: "",
         estado: "activo",
+        dia_semana: "",
+        hora_inicio: "",
+        hora_fin: "",
       })
       setShowAddForm(true)
       setError(null)
@@ -236,12 +269,15 @@ export function GestionTalleres() {
     const preconfig = preconfiguraciones.find((p) => p.id_taller_definido.toString() === selectedPreconfiguracionId)
     if (preconfig) {
       setSelectedTaller({
-        id_taller_definido: preconfig.id_taller_definido,
-        nombre_publico: preconfig.nombre,
-        descripcion_publica: preconfig.descripcion,
+        id_taller_definido: preconfig?.id_taller_definido || "",
+        nombre_publico: preconfig?.nombre || "",
+        descripcion_publica: preconfig?.descripcion || "",
         id_periodo: "",
         profesor_asignado: "",
         estado: "activo",
+        dia_semana: "",
+        hora_inicio: "",
+        hora_fin: "",
       })
       setShowAddForm(true)
       setError(null)
@@ -386,18 +422,16 @@ export function GestionTalleres() {
                       <button
                         key={tab.key}
                         onClick={() => handleTabChange(tab.key)}
-                        className={`${
-                          activeTab === tab.key
-                            ? "border-emerald-500 text-emerald-600"
-                            : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                        } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
+                        className={`${activeTab === tab.key
+                          ? "border-emerald-500 text-emerald-600"
+                          : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                          } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
                       >
                         <tab.icon className="mr-2 h-5 w-5" />
                         {tab.name}
                         <span
-                          className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            activeTab === tab.key ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-900"
-                          }`}
+                          className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${activeTab === tab.key ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-900"
+                            }`}
                         >
                           {getTallerCountByTab(tab.key)}
                         </span>
@@ -433,9 +467,8 @@ export function GestionTalleres() {
                       </button>
                       <select
                         id="period-filter"
-                        className={`block w-full pl-3 pr-10 py-2 text-base border ${
-                          selectedPeriod === "" ? "border-emerald-500 ring-2 ring-emerald-200" : "border-gray-300"
-                        } focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm rounded-md`}
+                        className={`block w-full pl-3 pr-10 py-2 text-base border ${selectedPeriod === "" ? "border-emerald-500 ring-2 ring-emerald-200" : "border-gray-300"
+                          } focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm rounded-md`}
                         value={selectedPeriod}
                         onChange={handlePeriodChange}
                       >
@@ -516,11 +549,10 @@ export function GestionTalleres() {
                             <div className="bg-gray-50 px-5 py-3 flex space-x-3 border-t border-gray-200">
                               <button
                                 onClick={() => handleEstadoChange(taller.id_taller_impartido, taller.estado)}
-                                className={`flex-1 flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md ${
-                                  taller.estado === "activo"
-                                    ? "text-orange-700 bg-orange-100 hover:bg-orange-200"
-                                    : "text-green-700 bg-green-100 hover:bg-green-200"
-                                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors`}
+                                className={`flex-1 flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md ${taller.estado === "activo"
+                                  ? "text-orange-700 bg-orange-100 hover:bg-orange-200"
+                                  : "text-green-700 bg-green-100 hover:bg-green-200"
+                                  } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors`}
                               >
                                 {taller.estado === "activo" ? (
                                   <>
@@ -664,6 +696,10 @@ export function GestionTalleres() {
                       setError("Debes seleccionar un período y un profesor.")
                       return
                     }
+                    if (!selectedTaller.dia_semana || !selectedTaller.hora_inicio || !selectedTaller.hora_fin) {
+                      setError("Debes ingresar el día, hora de inicio y hora de fin.")
+                      return
+                    }
                     try {
                       await createTaller({
                         id_taller_definido: selectedTaller.id_taller_definido,
@@ -672,6 +708,9 @@ export function GestionTalleres() {
                         id_periodo: Number.parseInt(selectedPeriodoId),
                         profesor_asignado: Number.parseInt(selectedProfesorId),
                         estado: "activo",
+                        dia_semana: selectedTaller.dia_semana,
+                        hora_inicio: selectedTaller.hora_inicio,
+                        hora_fin: selectedTaller.hora_fin,
                       })
                       // REGISTRO EN LOGACCION
                       await registrarAccion({
@@ -679,13 +718,23 @@ export function GestionTalleres() {
                         accion: "Crear Taller",
                         detalle: `Se creó el taller "${selectedTaller.nombre_publico}" en el período ${selectedPeriodoId} con el profesor ${selectedProfesorId}`,
                       })
+                      // --- SOLUCIÓN: Cierra el formulario y resetea el estado ---
                       setShowAddForm(false)
-                      setSelectedTaller(null)
+                      setSelectedTaller({
+                        id_taller_definido: "",
+                        nombre_publico: "",
+                        descripcion_publica: "",
+                        id_periodo: "",
+                        profesor_asignado: "",
+                        estado: "activo",
+                        dia_semana: "",
+                        hora_inicio: "",
+                        hora_fin: "",
+                      })
                       setSelectedPeriodoId("")
                       setSelectedProfesorId("")
                       setError(null)
                       await refreshTalleres()
-                      localStorage.setItem("profesoresNeedsRefresh", Date.now())
                     } catch (err) {
                       setError("Error al crear el taller: " + err.message)
                     }
@@ -750,6 +799,43 @@ export function GestionTalleres() {
                         ))}
                     </select>
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Día de la semana</label>
+                    <select
+                      className="w-full border rounded px-3 py-2"
+                      value={selectedTaller.dia_semana}
+                      onChange={e => setSelectedTaller({ ...selectedTaller, dia_semana: e.target.value })}
+                      required
+                    >
+                      <option value="">Selecciona un día</option>
+                      <option value="Lunes">Lunes</option>
+                      <option value="Martes">Martes</option>
+                      <option value="Miércoles">Miércoles</option>
+                      <option value="Jueves">Jueves</option>
+                      <option value="Viernes">Viernes</option>
+                      <option value="Sábado">Sábado</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Hora de inicio</label>
+                    <input
+                      type="time"
+                      className="w-full border rounded px-3 py-2"
+                      value={selectedTaller.hora_inicio}
+                      onChange={e => setSelectedTaller({ ...selectedTaller, hora_inicio: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Hora de fin</label>
+                    <input
+                      type="time"
+                      className="w-full border rounded px-3 py-2"
+                      value={selectedTaller.hora_fin}
+                      onChange={e => setSelectedTaller({ ...selectedTaller, hora_fin: e.target.value })}
+                      required
+                    />
+                  </div>
                   <button type="submit" className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700">
                     Crear Taller
                   </button>
@@ -779,6 +865,9 @@ export function GestionTalleres() {
                         descripcion_publica: selectedTaller.descripcion_publica,
                         profesor_asignado: Number.parseInt(selectedTaller.profesor_asignado),
                         id_periodo: Number.parseInt(selectedTaller.id_periodo),
+                        dia_semana: selectedTaller.dia_semana,
+                        hora_inicio: selectedTaller.hora_inicio,
+                        hora_fin: selectedTaller.hora_fin,
                       })
                       setShowEditForm(false)
                       setSelectedTaller(null)
@@ -852,6 +941,43 @@ export function GestionTalleres() {
                           </option>
                         ))}
                     </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Día de la semana</label>
+                    <select
+                      className="w-full border rounded px-3 py-2"
+                      value={selectedTaller.dia_semana}
+                      onChange={e => setSelectedTaller({ ...selectedTaller, dia_semana: e.target.value })}
+                      required
+                    >
+                      <option value="">Selecciona un día</option>
+                      <option value="Lunes">Lunes</option>
+                      <option value="Martes">Martes</option>
+                      <option value="Miércoles">Miércoles</option>
+                      <option value="Jueves">Jueves</option>
+                      <option value="Viernes">Viernes</option>
+                      <option value="Sábado">Sábado</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Hora de inicio</label>
+                    <input
+                      type="time"
+                      className="w-full border rounded px-3 py-2"
+                      value={selectedTaller.hora_inicio}
+                      onChange={e => setSelectedTaller({ ...selectedTaller, hora_inicio: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Hora de fin</label>
+                    <input
+                      type="time"
+                      className="w-full border rounded px-3 py-2"
+                      value={selectedTaller.hora_fin}
+                      onChange={e => setSelectedTaller({ ...selectedTaller, hora_fin: e.target.value })}
+                      required
+                    />
                   </div>
                   <button type="submit" className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700">
                     Guardar Cambios
