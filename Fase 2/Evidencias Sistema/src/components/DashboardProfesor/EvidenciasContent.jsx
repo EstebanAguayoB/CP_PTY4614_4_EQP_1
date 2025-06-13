@@ -93,7 +93,7 @@ export default function EvidenciasContent() {
           tallerNombre: nombreTaller,
           alumno: estudiante ? `${estudiante.nombre} ${estudiante.apellido}` : "Desconocido",
           nivel: evidencia.ParticipacionEstudiante?.nivel_actual || "No especificado",
-          semana: `Semana ${evidencia.semana}`,
+          semana: evidencia.semana,
           descripcion: evidencia.descripcion || "Sin descripción",
           tipo: evidencia.archivo_url ? evidencia.archivo_url.split(".").pop() || "Documento" : "Documento",
           fecha: evidencia.fecha_envio,
@@ -195,6 +195,19 @@ export default function EvidenciasContent() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
+
+    // Validación especial para el campo semana
+    if (name === "semana") {
+      const numValue = Number.parseInt(value)
+      if (value === "" || (numValue >= 1 && numValue <= 16)) {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value,
+        }))
+      }
+      return
+    }
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -227,7 +240,7 @@ export default function EvidenciasContent() {
       tallerNombre: taller?.nombre || "",
       alumno: alumno?.nombre || "",
       nivel: alumno?.nivel || "",
-      semana: `Semana ${formData.semana}`,
+      semana: formData.semana,
       descripcion: formData.descripcion,
       tipo: "Documento", // Por defecto
       fecha: formData.fecha,
@@ -561,9 +574,7 @@ export default function EvidenciasContent() {
                             {evidencia.nivel}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {evidencia.semana.includes("Semana") ? evidencia.semana.split(" ")[1] : evidencia.semana}
-                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{evidencia.semana}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-xs truncate">
                           {evidencia.descripcion}
                         </td>
@@ -679,21 +690,18 @@ export default function EvidenciasContent() {
                   <label htmlFor="semana" className="block text-sm font-medium text-gray-700 mb-2">
                     Semana *
                   </label>
-                  <select
+                  <input
+                    type="number"
                     id="semana"
                     name="semana"
                     value={formData.semana}
                     onChange={handleInputChange}
+                    min="1"
+                    max="16"
+                    placeholder="Ingrese número de semana (1-16)"
                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     required
-                  >
-                    <option value="">Seleccionar semana</option>
-                    {[...Array(10)].map((_, i) => (
-                      <option key={i + 1} value={i + 1}>
-                        {i + 1}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 <div>
@@ -828,11 +836,7 @@ export default function EvidenciasContent() {
 
                 <div>
                   <h3 className="text-sm font-medium text-gray-700 mb-1">Semana</h3>
-                  <p className="text-gray-900">
-                    {selectedEvidencia.semana.includes("Semana")
-                      ? selectedEvidencia.semana.split(" ")[1]
-                      : selectedEvidencia.semana}
-                  </p>
+                  <p className="text-gray-900">{selectedEvidencia.semana}</p>
                 </div>
 
                 <div>
