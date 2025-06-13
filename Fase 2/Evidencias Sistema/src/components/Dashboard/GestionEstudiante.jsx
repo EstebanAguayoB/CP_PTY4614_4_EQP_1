@@ -4,6 +4,7 @@ import { supabase } from "../../../lib/supabase"
 import { useNavigate } from "react-router-dom"
 import DashboardSidebar from "../shared/DashboardSidebar"
 import UserInfoBar from "../shared/UserInfoBar"
+import { registrarAccion } from "../../utils/logAccion"
 
 // Componente de Loading Animation
 const LoadingSpinner = ({ message = "Cargando información..." }) => {
@@ -60,6 +61,22 @@ export default function GestionEstudiante() {
     }
     getUser()
   }, [navigate])
+
+  useEffect(() => {
+    const getUsuarioDb = async () => {
+      if (user && user.id) {
+        const { data: usuarioDb } = await supabase
+          .from("Usuario")
+          .select("id_usuario")
+          .eq("uid", user.id)
+          .single()
+        if (usuarioDb) {
+          setUser((prev) => ({ ...prev, id_usuario: usuarioDb.id_usuario }))
+        }
+      }
+    }
+    getUsuarioDb()
+  }, [user])
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen)
@@ -147,15 +164,18 @@ export default function GestionEstudiante() {
     try {
       setSubmitting(true)
       const { error } = await supabase.from("Estudiante").update(editForm).eq("id_estudiante", editingStudent)
-
-      if (error) {
+      if (!error) {
+        // REGISTRO EN LOGACCION
+        await registrarAccion({
+          id_usuario: user.id_usuario,
+          accion: "Editar Estudiante",
+          detalle: `Se editó el estudiante ID ${editingStudent}`,
+        })
+        await fetchAlumnos()
+        setEditingStudent(null)
+      } else {
         console.error("Error updating student:", error)
-        return
       }
-
-      // Refresh the students list
-      await fetchAlumnos()
-      setEditingStudent(null)
     } catch (err) {
       console.error("Error:", err)
     } finally {
@@ -181,26 +201,25 @@ export default function GestionEstudiante() {
     ) {
       try {
         setSubmitting(true)
-        // Primero eliminar las participaciones
         const { error: errorParticipaciones } = await supabase
           .from("ParticipacionEstudiante")
           .delete()
           .eq("id_estudiante", studentId)
-
         if (errorParticipaciones) {
           console.error("Error deleting participations:", errorParticipaciones)
           return
         }
-
-        // Luego eliminar el estudiante
         const { error: errorEstudiante } = await supabase.from("Estudiante").delete().eq("id_estudiante", studentId)
-
         if (errorEstudiante) {
           console.error("Error deleting student:", errorEstudiante)
           return
         }
-
-        // Refresh the students list
+        // REGISTRO EN LOGACCION
+        await registrarAccion({
+          id_usuario: user.id_usuario,
+          accion: "Eliminar Estudiante",
+          detalle: `Se eliminó el estudiante ID ${studentId}`,
+        })
         await fetchAlumnos()
       } catch (err) {
         console.error("Error:", err)
@@ -216,18 +235,23 @@ export default function GestionEstudiante() {
 
   const handleAddAlumno = async (e) => {
     e.preventDefault()
-    // Validación básica
     if (!form.rut || !form.nombre || !form.apellido || !form.correo_apoderado) return
 
     try {
       setSubmitting(true)
-      const { error } = await supabase.from("Estudiante").insert([{ ...form, estado: "ACTIVO" }])
-      if (!error) {
+      const { data, error } = await supabase.from("Estudiante").insert([{ ...form, estado: "ACTIVO" }]).select().single()
+      if (!error && data) {
+        // REGISTRO EN LOGACCION
+        await registrarAccion({
+          id_usuario: user.id_usuario,
+          accion: "Crear Estudiante",
+          detalle: `Se creó el estudiante ${data.nombre} ${data.apellido} (RUT: ${data.rut})`,
+        })
         setShowAddForm(false)
         setForm({ rut: "", nombre: "", apellido: "", correo_apoderado: "" })
         await fetchAlumnos()
       } else {
-        alert("Error al registrar alumno: " + error.message)
+        alert("Error al registrar alumno: " + (error?.message || ""))
       }
     } catch (err) {
       alert("Error al registrar alumno: " + err.message)
