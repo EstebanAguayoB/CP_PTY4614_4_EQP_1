@@ -4,6 +4,7 @@ import { supabase } from "../../../lib/supabase"
 import { useNavigate } from "react-router-dom"
 import DashboardSidebar from "../shared/DashboardSidebar"
 import UserInfoBar from "../shared/UserInfoBar"
+import { registrarAccion } from "../../utils/logAccion"
 
 // Componente de Loading Animation
 const LoadingSpinner = ({ message = "Cargando información..." }) => {
@@ -66,6 +67,22 @@ export default function GestionProfesores() {
     }
     getUser()
   }, [navigate])
+
+  useEffect(() => {
+    const getUsuarioDb = async () => {
+      if (user && user.id) {
+        const { data: usuarioDb } = await supabase
+          .from("Usuario")
+          .select("id_usuario")
+          .eq("uid", user.id)
+          .single()
+        if (usuarioDb) {
+          setUser((prev) => ({ ...prev, id_usuario: usuarioDb.id_usuario }))
+        }
+      }
+    }
+    getUsuarioDb()
+  }, [user])
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen)
 
@@ -191,6 +208,13 @@ export default function GestionProfesores() {
         return
       }
 
+      // Registrar acción en el log
+      await registrarAccion({
+        id_usuario: user.id_usuario,
+        accion: "Editar Profesor",
+        detalle: `Se editó el profesor ID ${editingProfesor}`,
+      })
+
       // Refresh the professors list
       await fetchProfesores()
       setEditingProfesor(null)
@@ -247,6 +271,13 @@ export default function GestionProfesores() {
           console.error("Error deleting user:", errorUsuario)
           return
         }
+
+        // Registrar acción en el log
+        await registrarAccion({
+          id_usuario: user.id_usuario,
+          accion: "Eliminar Profesor",
+          detalle: `Se eliminó el profesor ID ${profesorId}`,
+        })
 
         // Refresh the professors list
         await fetchProfesores()
@@ -346,6 +377,13 @@ export default function GestionProfesores() {
       ])
 
       if (errorAsignacion) throw new Error("Error al asignar taller: " + errorAsignacion.message)
+
+      // Registrar acción en el log
+      await registrarAccion({
+        id_usuario: user.id_usuario,
+        accion: "Crear Profesor",
+        detalle: `Se creó el profesor ${form.nombre} ${form.apellido} (${form.correo}) y se asignó al taller ID ${form.taller}`,
+      })
 
       setFormSuccess("¡Profesor registrado exitosamente!")
       setForm({
