@@ -87,41 +87,45 @@ export default function GestionEstudiante() {
     navigate("/")
   }
 
-  const fetchAlumnos = async () => {
-    try {
-      setLoading(true)
-      const { data, error } = await supabase.from("Estudiante").select(`
-          id_estudiante,
-          nombre,
-          apellido,
-          correo_apoderado,
-          estado,
-          ParticipacionEstudiante:ParticipacionEstudiante(
-            id_taller_impartido,
-            nivel_actual,
-            estado,
-            TallerImpartido(
-              nombre_publico
-            ),
-            Nivel(
-              numero_nivel
-            )
-          )
-        `)
-      if (error) {
-        setError(error.message)
-      } else {
-        setAlumnos(data || [])
-        setError(null)
-      }
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
+  // Al cargar los alumnos desde la base de datos:
   useEffect(() => {
+    const fetchAlumnos = async () => {
+      try {
+        setLoading(true)
+        const { data: alumnosDb, error } = await supabase.from("Estudiante").select(`
+            id_estudiante,
+            nombre,
+            apellido,
+            correo_apoderado,
+            estado,
+            ParticipacionEstudiante:ParticipacionEstudiante(
+              id_taller_impartido,
+              nivel_actual,
+              estado,
+              TallerImpartido(
+                nombre_publico
+              ),
+              Nivel(
+                numero_nivel
+              )
+            )
+          `)
+        if (error) {
+          setError(error.message)
+        } else {
+          const alumnosProcesados = alumnosDb.map((alumno) => ({
+            ...alumno,
+            progreso: calcularProgreso(alumno), // Usa una función real, no Math.random()
+          }))
+          setAlumnos(alumnosProcesados)
+          setError(null)
+        }
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
     fetchAlumnos()
   }, [])
 
@@ -139,7 +143,7 @@ export default function GestionEstudiante() {
       taller: participacion?.TallerImpartido?.nombre_publico || "No asignado",
       nivel: participacion?.Nivel?.numero_nivel ? `Nivel ${participacion.Nivel.numero_nivel}` : "No asignado",
       estado: participacion?.estado || "No asignado",
-      progreso: Math.floor(Math.random() * 100), // Progreso simulado
+      progreso: calcularProgreso(alumno), // Implementa esta función según  reglas de negocio
     }
   })
 
@@ -622,4 +626,17 @@ export default function GestionEstudiante() {
       </div>
     </div>
   )
+}
+
+function calcularProgreso(alumno) {
+  // Lógica real para calcular el progreso del alumno
+  // Por ejemplo, basado en sus participaciones y el estado actual
+  const participaciones = alumno.ParticipacionEstudiante || []
+  const totalTalleres = participaciones.length
+  const talleresCompletados = participaciones.filter(
+    (p) => p.estado === "FINALIZADO" || p.estado === "CERTIFICADO",
+  ).length
+
+  // Retorna un porcentaje
+  return totalTalleres > 0 ? Math.floor((talleresCompletados / totalTalleres) * 100) : 0
 }
