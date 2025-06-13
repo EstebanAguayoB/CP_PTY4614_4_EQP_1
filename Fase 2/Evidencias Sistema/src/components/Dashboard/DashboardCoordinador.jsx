@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { BookOpen, Users, TrendingUp, FileText, Eye, Menu, Loader2 } from "lucide-react"
+import { BookOpen, Users, TrendingUp, FileText, Eye, Menu, Loader2, X } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { useNavigate } from "react-router-dom"
 import DashboardSidebar from "../shared/DashboardSidebar"
@@ -66,6 +66,8 @@ export default function DashboardCoordinador() {
   const [profesoresActivos, setProfesoresActivos] = useState([])
   const [actividadReciente, setActividadReciente] = useState([])
   const [error, setError] = useState(null)
+  const [profesorSeleccionado, setProfesorSeleccionado] = useState(null)
+  const [showDetallesModal, setShowDetallesModal] = useState(false)
   const navigate = useNavigate()
 
   // Efecto para cargar el usuario
@@ -122,7 +124,7 @@ export default function DashboardCoordinador() {
   }, []);
 
   //efecto para profesores
-    // Efecto para cargar talleres
+  // Efecto para cargar talleres
   useEffect(() => {
     const taller_impartido = async () => {
       try {
@@ -232,9 +234,9 @@ export default function DashboardCoordinador() {
     const niveles =
       nivelesArray.length > 0
         ? nivelesArray
-            .sort((a, b) => a.numero_nivel - b.numero_nivel)
-            .map((n) => `Nivel ${n.numero_nivel}: ${n.descripcion}`)
-            .join(", ")
+          .sort((a, b) => a.numero_nivel - b.numero_nivel)
+          .map((n) => `Nivel ${n.numero_nivel}: ${n.descripcion}`)
+          .join(", ")
         : "-"
 
     return {
@@ -272,6 +274,16 @@ export default function DashboardCoordinador() {
     )
   }
 
+  const handleVerDetalles = (profesor) => {
+    setProfesorSeleccionado(profesor)
+    setShowDetallesModal(true)
+  }
+
+  const handleCerrarModal = () => {
+    setShowDetallesModal(false)
+    setProfesorSeleccionado(null)
+  }
+
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/40">
       {/* Sidebar */}
@@ -299,7 +311,7 @@ export default function DashboardCoordinador() {
               </div>
             </div>
 
-          
+
           </div>
         </header>
 
@@ -382,8 +394,8 @@ export default function DashboardCoordinador() {
                       <p className="text-gray-600 text-sm mb-4">{taller.descripcion_publica}</p>
                       <div className="space-y-2 mb-4">
                         <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Profesor:</span>
-                              <span className="text-gray-900">{taller.Usuario?.nombre} {taller.Usuario?.apellido}</span> 
+                          <span className="text-gray-500">Profesor:</span>
+                          <span className="text-gray-900">{taller.Usuario?.nombre} {taller.Usuario?.apellido}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Alumnos:</span>
@@ -407,32 +419,36 @@ export default function DashboardCoordinador() {
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {profesoresActivos.map((profesor) => (
-                    <div key={profesor.id} className="bg-gray-50 rounded-lg p-6 hover:shadow-md transition-shadow">
-                      <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900">{profesor.nombre}</h3>
-                        <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs rounded-full">Activo</span>
+                    <div key={profesor.id} className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900">{profesor.nombre}</h3>
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${profesor.estado === "Activo" ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-800"}`}>
+                            {profesor.estado}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-500 mb-2">
+                          <span className="font-medium text-gray-700">Email:</span> {profesor.correo}
+                        </div>
+                        <div className="text-sm text-gray-500 mb-2">
+                          <span className="font-medium text-gray-700">Especialidad:</span> {profesor.especialidad}
+                        </div>
+                        <div className="text-sm text-gray-500 mb-2">
+                          <span className="font-medium text-gray-700">Nivel educativo:</span> {profesor.nivel_educativo}
+                        </div>
+                        <div className="text-sm text-gray-500 mb-2">
+                          <span className="font-medium text-gray-700">Talleres:</span> {profesor.talleres || "-"}
+                        </div>
+                        <div className="text-sm text-gray-500 mb-2">
+                          <span className="font-medium text-gray-700">Alumnos:</span> {profesor.alumnos ?? "-"}
+                        </div>
                       </div>
-                      <div className="space-y-2 mb-4">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-500">Email:</span>
-                          <span className="text-gray-900 text-xs">{profesor.email}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-500">Talleres:</span>
-                          <span className="text-gray-900">{profesor.talleres}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-500">Alumnos:</span>
-                          <span className="text-gray-900">{profesor.alumnos}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-500">Especialidad:</span>
-                          <span className="text-gray-900">{profesor.especialidad}</span>
-                        </div>
-                      </div>
-                      <button className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded w-full flex items-center justify-center transition-colors">
-                        <Eye className="mr-2 w-4 h-4" />
-                        Ver Perfil
+                      <button
+                        className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded transition-colors flex items-center justify-center"
+                        onClick={() => handleVerDetalles(profesor)}
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Ver Detalles
                       </button>
                     </div>
                   ))}
@@ -466,6 +482,32 @@ export default function DashboardCoordinador() {
           </div>
         </main>
       </div>
+
+      {showDetallesModal && profesorSeleccionado && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">
+            <button
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+              onClick={handleCerrarModal}
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <h2 className="text-2xl font-bold mb-2">{profesorSeleccionado.nombre}</h2>
+            <span className={`inline-block mb-4 px-3 py-1 rounded-full text-xs font-semibold ${profesorSeleccionado.estado === "Activo" ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-800"}`}>
+              {profesorSeleccionado.estado}
+            </span>
+            <div className="space-y-2">
+              <div><span className="font-medium">Email:</span> {profesorSeleccionado.correo}</div>
+              <div><span className="font-medium">Especialidad:</span> {profesorSeleccionado.especialidad}</div>
+              <div><span className="font-medium">Nivel educativo:</span> {profesorSeleccionado.nivel_educativo}</div>
+              <div><span className="font-medium">Talleres:</span> {profesorSeleccionado.talleres || "-"}</div>
+              <div><span className="font-medium">Alumnos asignados:</span> {profesorSeleccionado.alumnos ?? "-"}</div>
+              {/* Puedes agregar más información relevante aquí */}
+            </div>
+            {/* Si tienes más detalles, puedes agregarlos aquí */}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
