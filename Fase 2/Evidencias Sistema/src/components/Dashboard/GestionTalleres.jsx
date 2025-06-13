@@ -23,6 +23,7 @@ import UserInfoBar from "../shared/UserInfoBar"
 import { TallerForm } from "./Talleres/Form/TallerForm"
 import { TallerDetails } from "./Talleres/Details/TallerDetails"
 import { useTalleres } from "../../hooks/useTalleres"
+import { registrarAccion } from "../../utils/logAccion"
 
 // Componente de Loading Animation
 const LoadingSpinner = ({ message = "Cargando información..." }) => {
@@ -256,6 +257,12 @@ export function GestionTalleres() {
     }
     try {
       await updateEstadoTaller(tallerId, newEstado)
+      // REGISTRO EN LOGACCION
+      await registrarAccion({
+        id_usuario: user.id_usuario,
+        accion: "Cambiar Estado Taller",
+        detalle: `Se cambió el estado del taller ID ${tallerId} a ${newEstado}`,
+      })
       await refreshTalleres()
     } catch (err) {
       alert("Error al cambiar el estado del taller: " + err.message)
@@ -268,6 +275,12 @@ export function GestionTalleres() {
     }
     try {
       await deleteTaller(tallerId)
+      // REGISTRO EN LOGACCION
+      await registrarAccion({
+        id_usuario: user.id_usuario,
+        accion: "Eliminar Taller",
+        detalle: `Se eliminó/desactivó el taller ID ${tallerId}`,
+      })
       await refreshTalleres()
     } catch (err) {
       alert("Error al desactivar el taller: " + err.message)
@@ -659,6 +672,12 @@ export function GestionTalleres() {
                         id_periodo: Number.parseInt(selectedPeriodoId),
                         profesor_asignado: Number.parseInt(selectedProfesorId),
                         estado: "activo",
+                      })
+                      // REGISTRO EN LOGACCION
+                      await registrarAccion({
+                        id_usuario: user.id_usuario,
+                        accion: "Crear Taller",
+                        detalle: `Se creó el taller "${selectedTaller.nombre_publico}" en el período ${selectedPeriodoId} con el profesor ${selectedProfesorId}`,
                       })
                       setShowAddForm(false)
                       setSelectedTaller(null)
