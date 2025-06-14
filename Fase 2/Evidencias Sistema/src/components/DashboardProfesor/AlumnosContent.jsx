@@ -28,8 +28,9 @@ export default function AlumnosContent() {
     idTaller: "",
     nivelActual: "",
     estado: "",
-    fechaInscripcion: "",
   })
+
+  const [evidencias, setEvidencias] = useState([])
 
   // Estados para edición inline
   const [editingAlumno, setEditingAlumno] = useState(null)
@@ -91,6 +92,24 @@ export default function AlumnosContent() {
     if (!tallerSeleccionado) return []
 
     return Nivel.filter((nivel) => nivel.id_taller_definido === tallerSeleccionado.id_taller_definido)
+  }
+
+  // Función para obtener evidencias por participación
+  const getEvidenciasPorParticipacion = (idParticipacion) => {
+    return evidencias.filter((ev) => ev.id_participacion === idParticipacion)
+  }
+
+  // Función para calcular el progreso de evidencias
+  const calcularProgresoEvidencias = (idParticipacion) => {
+    const evidenciasEstudiante = evidencias.filter((ev) => ev.id_participacion === idParticipacion)
+    // Contar solo evidencias validadas por el profesor (validada_por_profesor = 1)
+    const totalEvidencias = evidenciasEstudiante.length
+    const progreso = Math.min((evidenciasEstudiante.length / 16) * 100, 100)
+
+    return {
+      total: totalEvidencias,
+      porcentaje: Math.round(progreso),
+    }
   }
 
   useEffect(() => {
@@ -205,8 +224,44 @@ export default function AlumnosContent() {
       }
     }
 
+    const Evidencias = async () => {
+      try {
+        // Obtener todas las participaciones del profesor logueado
+        const { data: participaciones, error: errorParticipaciones } = await supabase
+          .from("ParticipacionEstudiante")
+          .select(`
+            id_participacion,
+            TallerImpartido!inner(profesor_asignado)
+          `)
+          .eq("TallerImpartido.profesor_asignado", profesorId)
+
+        if (errorParticipaciones) {
+          setError(errorParticipaciones)
+          return
+        }
+
+        const idsParticipaciones = participaciones.map((p) => p.id_participacion)
+
+        if (idsParticipaciones.length === 0) {
+          setEvidencias([])
+          return
+        }
+
+        // Obtener todas las evidencias de las participaciones del profesor
+        const { data, error } = await supabase.from("Evidencia").select("*").in("id_participacion", idsParticipaciones)
+
+        if (error) {
+          setError(error)
+        } else {
+          setEvidencias(data || [])
+        }
+      } catch (err) {
+        setError(err)
+      }
+    }
+
     const loadAllData = async () => {
-      await Promise.all([fetchAlumnos(), misTalleres(), estudiante(), Nivel()])
+      await Promise.all([fetchAlumnos(), misTalleres(), estudiante(), Nivel(), Evidencias()])
     }
 
     loadAllData()
@@ -229,7 +284,6 @@ export default function AlumnosContent() {
       idTaller: "",
       nivelActual: "",
       estado: "",
-      fechaInscripcion: "",
     })
   }
 
@@ -240,7 +294,6 @@ export default function AlumnosContent() {
       idTaller: "",
       nivelActual: "",
       estado: "",
-      fechaInscripcion: "",
     })
   }
 
@@ -467,13 +520,7 @@ export default function AlumnosContent() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (
-      !formData.rutEstudiante ||
-      !formData.idTaller ||
-      !formData.nivelActual ||
-      !formData.estado ||
-      !formData.fechaInscripcion
-    ) {
+    if (!formData.rutEstudiante || !formData.idTaller || !formData.nivelActual || !formData.estado) {
       alert("Por favor, complete todos los campos")
       return
     }
@@ -506,7 +553,7 @@ export default function AlumnosContent() {
       id_taller_impartido: Number.parseInt(formData.idTaller),
       nivel_actual: Number.parseInt(formData.nivelActual),
       estado: formData.estado,
-      fecha_inscripcion: formData.fechaInscripcion,
+      fecha_inscripcion: new Date().toISOString().split("T")[0], // Fecha actual
     }
 
     const { error } = await supabase.from("ParticipacionEstudiante").insert([nuevoAlumno])
@@ -600,6 +647,36 @@ export default function AlumnosContent() {
       ...prev,
       [name]: value,
     }))
+  }
+
+  // Componente de barra de progreso
+  const ProgressBar = ({ progreso }) => {
+    const { validadas, total, porcentaje } = progreso
+
+    const getColorClass = (percentage) => {
+      if (percentage >= 80) return "bg-green-500"
+      if (percentage >= 60) return "bg-yellow-500"
+      if (percentage >= 40) return "bg-orange-500"
+      return "bg-red-500"
+    }
+
+    return (
+      <div className="w-full">
+        <div className="flex justify-between items-center mb-1">
+          <span className="text-xs font-medium text-gray-700">{validadas}Evidencias</span>
+          <span className="text-xs font-medium text-gray-700">{porcentaje}%</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div
+            className={`h-2 rounded-full transition-all duration-300 ${getColorClass(porcentaje)}`}
+            style={{ width: `${porcentaje}%` }}
+          ></div>
+        </div>
+        <div className="flex justify-between items-center mt-1">
+          <span className="text-xs text-gray-500">Total: {total} evidencias</span>
+        </div>
+      </div>
+    )
   }
 
   if (loading) {
@@ -801,7 +878,7 @@ export default function AlumnosContent() {
                         Estado
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Fecha Inscripción
+                        Progreso 
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Acciones
@@ -873,17 +950,14 @@ export default function AlumnosContent() {
                             </span>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap">
                           {editingAlumno === alumno.id_participacion ? (
-                            <input
-                              type="date"
-                              name="fechaInscripcion"
-                              value={editForm.fechaInscripcion}
-                              onChange={handleEditFormChange}
-                              className="shadow-sm focus:ring-emerald-500 focus:border-emerald-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                            />
+                            <div className="text-sm text-gray-500">
+                              <ProgressBar progreso={calcularProgresoEvidencias(alumno.id_participacion)} />
+                              <p className="text-xs mt-1">Progreso no editable</p>
+                            </div>
                           ) : (
-                            formatDate(alumno.fecha_inscripcion)
+                            <ProgressBar progreso={calcularProgresoEvidencias(alumno.id_participacion)} />
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -1141,21 +1215,6 @@ export default function AlumnosContent() {
                     <option value="FINALIZADO">FINALIZADO</option>
                     <option value="RETIRADO">RETIRADO</option>
                   </select>
-                </div>
-
-                <div className="md:col-span-2">
-                  <label htmlFor="fechaInscripcion" className="block text-sm font-medium text-gray-700 mb-2">
-                    Fecha de Inscripción *
-                  </label>
-                  <input
-                    type="date"
-                    id="fechaInscripcion"
-                    name="fechaInscripcion"
-                    value={formData.fechaInscripcion}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    required
-                  />
                 </div>
               </div>
 
