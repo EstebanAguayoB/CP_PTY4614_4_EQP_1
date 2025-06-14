@@ -12,10 +12,10 @@ import {
   Users,
   TrendingUp,
   CheckCircle,
-  Target,
-  UserCheck,
-  Star,
   Award,
+  Activity,
+  BookOpen,
+  PieChart,
 } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { useNavigate } from "react-router-dom"
@@ -63,45 +63,82 @@ export default function GestionReportes() {
         resumen:
           "Evaluación integral del progreso de los estudiantes en técnicas deportivas fundamentales y su rendimiento físico durante el segundo trimestre del año académico.",
         metricas: {
-          avancePromedio: {
-            valor: 78.5,
-            descripcion: "Promedio de avance en nivel de competencias deportivas",
+          tasaInscripcion: {
+            valor: 92.5,
+            descripcion: "Porcentaje de inscripciones exitosas respecto a la capacidad total del área",
             detalles: [
-              "Técnica de carrera: 82%",
-              "Resistencia cardiovascular: 75%",
-              "Coordinación motriz: 80%",
-              "Trabajo en equipo: 77%",
+              "Inscripciones totales: 185",
+              "Capacidad total: 200",
+              "Lista de espera: 35 estudiantes",
+              "Tasa de conversión: 94.6%",
             ],
           },
-          evidenciasValidadas: {
-            valor: 92.3,
-            total: 156,
-            validadas: 144,
-            descripcion: "Porcentaje de evidencias de progreso validadas por el instructor",
+          promedioParticipacion: {
+            valor: 28.5,
+            descripcion: "Promedio de estudiantes participantes por taller en el área",
+            detalles: [
+              "Talleres activos: 6",
+              "Total participantes: 171",
+              "Rango: 22-35 estudiantes por taller",
+              "Desviación estándar: 4.2",
+            ],
           },
-          seguimientoPromedio: {
-            valor: 3.2,
-            descripcion: "Número promedio de seguimientos individualizados por estudiante",
-            detalles: ["Evaluaciones técnicas: 2.1 por estudiante", "Seguimientos físicos: 1.1 por estudiante"],
+          talleresActivos: {
+            valor: 6,
+            descripcion: "Número total de talleres activos en el área deportiva",
+            detalles: ["Fútbol: 2 talleres", "Básquetbol: 1 taller", "Atletismo: 1 taller", "Natación: 2 talleres"],
           },
-          retencion: {
-            valor: 88.9,
-            inicial: 45,
-            actual: 40,
-            descripcion: "Tasa de retención de estudiantes en el taller",
+          activosVsFinalizados: {
+            valor: "6:2",
+            activos: 6,
+            finalizados: 2,
+            descripcion: "Relación entre talleres activos y finalizados en el período",
+            detalles: [
+              "Talleres activos: 6",
+              "Talleres finalizados: 2",
+              "Tasa de finalización: 25%",
+              "Próximos a finalizar: 1",
+            ],
           },
-          popularidad: {
-            valor: 95.7,
-            inscritos: 45,
-            capacidad: 47,
-            listaEspera: 12,
-            descripcion: "Nivel de demanda del taller basado en inscripciones",
+          promedioTalleresPorProfesor: {
+            valor: 1.5,
+            descripcion: "Promedio de talleres asignados por profesor en el área",
+            detalles: [
+              "Total profesores: 4",
+              "Total talleres: 6",
+              "Profesores con 1 taller: 2",
+              "Profesores con 2 talleres: 2",
+            ],
           },
-          finalizacion: {
-            valor: 85.4,
-            completados: 35,
-            total: 41,
-            descripcion: "Porcentaje de estudiantes que completaron satisfactoriamente el taller",
+          tasaAsignacion: {
+            valor: 100,
+            descripcion: "Porcentaje de talleres con profesor asignado",
+            detalles: [
+              "Talleres asignados: 6",
+              "Talleres sin asignar: 0",
+              "Profesores disponibles: 1",
+              "Cobertura completa: Sí",
+            ],
+          },
+          tasaExito: {
+            valor: 88.7,
+            descripcion: "Porcentaje de estudiantes que completan exitosamente los talleres del área",
+            detalles: [
+              "Estudiantes que completaron: 164 de 185",
+              "Tasa de aprobación: 91.2%",
+              "Tasa de retención: 87.5%",
+              "Satisfacción promedio: 4.3/5",
+            ],
+          },
+          tendenciasInscripcion: {
+            valor: "+18.3%",
+            descripcion: "Tendencia de crecimiento en inscripciones comparado con el período anterior",
+            detalles: [
+              "Inscripciones período actual: 185",
+              "Inscripciones período anterior: 156",
+              "Crecimiento absoluto: +29 inscripciones",
+              "Proyección próximo período: +22%",
+            ],
           },
         },
         objetivos: [
@@ -134,45 +171,82 @@ export default function GestionReportes() {
         resumen:
           "Análisis comprehensivo del desarrollo creativo y técnico de los estudiantes en artes visuales, con énfasis en pintura, dibujo y composición artística.",
         metricas: {
-          avancePromedio: {
-            valor: 82.1,
-            descripcion: "Promedio de avance en técnicas artísticas y expresión creativa",
+          tasaInscripcion: {
+            valor: 87.5,
+            descripcion: "Porcentaje de inscripciones exitosas respecto a la capacidad total del área",
             detalles: [
-              "Técnicas de pintura: 85%",
-              "Composición visual: 79%",
-              "Uso del color: 84%",
-              "Creatividad original: 80%",
+              "Inscripciones totales: 140",
+              "Capacidad total: 160",
+              "Lista de espera: 22 estudiantes",
+              "Tasa de conversión: 91.2%",
             ],
           },
-          evidenciasValidadas: {
-            valor: 96.4,
-            total: 84,
-            validadas: 81,
-            descripcion: "Porcentaje de obras y proyectos artísticos validados",
+          promedioParticipacion: {
+            valor: 23.3,
+            descripcion: "Promedio de estudiantes participantes por taller en el área",
+            detalles: [
+              "Talleres activos: 6",
+              "Total participantes: 140",
+              "Rango: 18-28 estudiantes por taller",
+              "Desviación estándar: 3.8",
+            ],
           },
-          seguimientoPromedio: {
-            valor: 4.1,
-            descripcion: "Número promedio de revisiones y retroalimentaciones por estudiante",
-            detalles: ["Revisiones de técnica: 2.3 por estudiante", "Evaluaciones creativas: 1.8 por estudiante"],
+          talleresActivos: {
+            valor: 6,
+            descripcion: "Número total de talleres activos en el área artística",
+            detalles: ["Pintura: 2 talleres", "Escultura: 1 taller", "Dibujo: 2 talleres", "Arte digital: 1 taller"],
           },
-          retencion: {
-            valor: 92.9,
-            inicial: 28,
-            actual: 26,
-            descripcion: "Tasa de retención de estudiantes en el taller artístico",
+          activosVsFinalizados: {
+            valor: "6:1",
+            activos: 6,
+            finalizados: 1,
+            descripcion: "Relación entre talleres activos y finalizados en el período",
+            detalles: [
+              "Talleres activos: 6",
+              "Talleres finalizados: 1",
+              "Tasa de finalización: 14.3%",
+              "Próximos a finalizar: 2",
+            ],
           },
-          popularidad: {
-            valor: 87.5,
-            inscritos: 28,
-            capacidad: 32,
-            listaEspera: 8,
-            descripcion: "Nivel de demanda del taller de artes visuales",
+          promedioTalleresPorProfesor: {
+            valor: 2.0,
+            descripcion: "Promedio de talleres asignados por profesor en el área",
+            detalles: [
+              "Total profesores: 3",
+              "Total talleres: 6",
+              "Profesores con 2 talleres: 3",
+              "Distribución equilibrada: Sí",
+            ],
           },
-          finalizacion: {
-            valor: 89.3,
-            completados: 25,
-            total: 28,
-            descripcion: "Porcentaje de estudiantes que completaron el portafolio artístico",
+          tasaAsignacion: {
+            valor: 100,
+            descripcion: "Porcentaje de talleres con profesor asignado",
+            detalles: [
+              "Talleres asignados: 6",
+              "Talleres sin asignar: 0",
+              "Profesores disponibles: 0",
+              "Cobertura completa: Sí",
+            ],
+          },
+          tasaExito: {
+            valor: 92.1,
+            descripcion: "Porcentaje de estudiantes que completan exitosamente los talleres del área",
+            detalles: [
+              "Estudiantes que completaron: 129 de 140",
+              "Tasa de aprobación: 94.3%",
+              "Tasa de retención: 92.1%",
+              "Satisfacción promedio: 4.6/5",
+            ],
+          },
+          tendenciasInscripcion: {
+            valor: "+12.8%",
+            descripcion: "Tendencia de crecimiento en inscripciones comparado con el período anterior",
+            detalles: [
+              "Inscripciones período actual: 140",
+              "Inscripciones período anterior: 124",
+              "Crecimiento absoluto: +16 inscripciones",
+              "Proyección próximo período: +15%",
+            ],
           },
         },
         objetivos: [
@@ -205,45 +279,82 @@ export default function GestionReportes() {
         resumen:
           "Evaluación detallada del progreso musical de los estudiantes en ritmo, melodía, armonía e interpretación instrumental durante el período académico.",
         metricas: {
-          avancePromedio: {
-            valor: 75.8,
-            descripcion: "Promedio de avance en competencias musicales fundamentales",
+          tasaInscripcion: {
+            valor: 91.4,
+            descripcion: "Porcentaje de inscripciones exitosas respecto a la capacidad total del área",
             detalles: [
-              "Precisión rítmica: 78%",
-              "Reconocimiento melódico: 74%",
-              "Interpretación instrumental: 76%",
-              "Teoría musical: 75%",
+              "Inscripciones totales: 128",
+              "Capacidad total: 140",
+              "Lista de espera: 28 estudiantes",
+              "Tasa de conversión: 89.6%",
             ],
           },
-          evidenciasValidadas: {
-            valor: 88.7,
-            total: 128,
-            validadas: 113,
-            descripcion: "Porcentaje de interpretaciones y ejercicios musicales validados",
+          promedioParticipacion: {
+            valor: 25.6,
+            descripcion: "Promedio de estudiantes participantes por taller en el área",
+            detalles: [
+              "Talleres activos: 5",
+              "Total participantes: 128",
+              "Rango: 20-32 estudiantes por taller",
+              "Desviación estándar: 4.1",
+            ],
           },
-          seguimientoPromedio: {
-            valor: 3.8,
-            descripcion: "Número promedio de evaluaciones musicales por estudiante",
-            detalles: ["Evaluaciones técnicas: 2.2 por estudiante", "Presentaciones grupales: 1.6 por estudiante"],
+          talleresActivos: {
+            valor: 5,
+            descripcion: "Número total de talleres activos en el área musical",
+            detalles: ["Piano: 2 talleres", "Guitarra: 1 taller", "Coro: 1 taller", "Ensamble: 1 taller"],
           },
-          retencion: {
+          activosVsFinalizados: {
+            valor: "5:3",
+            activos: 5,
+            finalizados: 3,
+            descripcion: "Relación entre talleres activos y finalizados en el período",
+            detalles: [
+              "Talleres activos: 5",
+              "Talleres finalizados: 3",
+              "Tasa de finalización: 37.5%",
+              "Próximos a finalizar: 1",
+            ],
+          },
+          promedioTalleresPorProfesor: {
+            valor: 1.7,
+            descripcion: "Promedio de talleres asignados por profesor en el área",
+            detalles: [
+              "Total profesores: 3",
+              "Total talleres: 5",
+              "Profesores con 1 taller: 1",
+              "Profesores con 2 talleres: 2",
+            ],
+          },
+          tasaAsignacion: {
+            valor: 100,
+            descripcion: "Porcentaje de talleres con profesor asignado",
+            detalles: [
+              "Talleres asignados: 5",
+              "Talleres sin asignar: 0",
+              "Profesores disponibles: 1",
+              "Cobertura completa: Sí",
+            ],
+          },
+          tasaExito: {
             valor: 84.4,
-            inicial: 32,
-            actual: 27,
-            descripcion: "Tasa de retención en el taller musical",
+            descripcion: "Porcentaje de estudiantes que completan exitosamente los talleres del área",
+            detalles: [
+              "Estudiantes que completaron: 108 de 128",
+              "Tasa de aprobación: 87.5%",
+              "Tasa de retención: 84.4%",
+              "Satisfacción promedio: 4.1/5",
+            ],
           },
-          popularidad: {
-            valor: 91.4,
-            inscritos: 32,
-            capacidad: 35,
-            listaEspera: 15,
-            descripcion: "Demanda del taller de desarrollo musical",
-          },
-          finalizacion: {
-            valor: 81.3,
-            completados: 26,
-            total: 32,
-            descripcion: "Porcentaje de estudiantes que completaron el programa musical",
+          tendenciasInscripcion: {
+            valor: "+25.9%",
+            descripcion: "Tendencia de crecimiento en inscripciones comparado con el período anterior",
+            detalles: [
+              "Inscripciones período actual: 128",
+              "Inscripciones período anterior: 102",
+              "Crecimiento absoluto: +26 inscripciones",
+              "Proyección próximo período: +28%",
+            ],
           },
         },
         objetivos: [
@@ -276,45 +387,87 @@ export default function GestionReportes() {
         resumen:
           "Evaluación especializada del desarrollo creativo en composición artística, expresión personal y pensamiento crítico artístico de los estudiantes.",
         metricas: {
-          avancePromedio: {
-            valor: 86.3,
-            descripcion: "Promedio de avance en creatividad y composición artística",
+          tasaInscripcion: {
+            valor: 80.0,
+            descripcion: "Porcentaje de inscripciones exitosas respecto a la capacidad total del área",
             detalles: [
-              "Originalidad creativa: 88%",
-              "Composición espacial: 85%",
-              "Crítica artística: 84%",
-              "Experimentación: 89%",
+              "Inscripciones totales: 96",
+              "Capacidad total: 120",
+              "Lista de espera: 8 estudiantes",
+              "Tasa de conversión: 92.3%",
             ],
           },
-          evidenciasValidadas: {
-            valor: 94.1,
-            total: 72,
-            validadas: 68,
-            descripcion: "Porcentaje de composiciones y proyectos creativos validados",
+          promedioParticipacion: {
+            valor: 24.0,
+            descripcion: "Promedio de estudiantes participantes por taller en el área",
+            detalles: [
+              "Talleres activos: 4",
+              "Total participantes: 96",
+              "Rango: 20-28 estudiantes por taller",
+              "Desviación estándar: 3.2",
+            ],
           },
-          seguimientoPromedio: {
-            valor: 4.5,
-            descripcion: "Número promedio de revisiones creativas por estudiante",
-            detalles: ["Críticas constructivas: 2.7 por estudiante", "Sesiones de experimentación: 1.8 por estudiante"],
+          talleresActivos: {
+            valor: 4,
+            descripcion: "Número total de talleres activos en el área artística",
+            detalles: [
+              "Composición: 1 taller",
+              "Creatividad: 1 taller",
+              "Arte experimental: 1 taller",
+              "Crítica artística: 1 taller",
+            ],
           },
-          retencion: {
+          activosVsFinalizados: {
+            valor: "4:0",
+            activos: 4,
+            finalizados: 0,
+            descripcion: "Relación entre talleres activos y finalizados en el período",
+            detalles: [
+              "Talleres activos: 4",
+              "Talleres finalizados: 0",
+              "Tasa de finalización: 0%",
+              "Próximos a finalizar: 0",
+            ],
+          },
+          promedioTalleresPorProfesor: {
+            valor: 2.0,
+            descripcion: "Promedio de talleres asignados por profesor en el área",
+            detalles: [
+              "Total profesores: 2",
+              "Total talleres: 4",
+              "Profesores con 2 talleres: 2",
+              "Distribución equilibrada: Sí",
+            ],
+          },
+          tasaAsignacion: {
+            valor: 100,
+            descripcion: "Porcentaje de talleres con profesor asignado",
+            detalles: [
+              "Talleres asignados: 4",
+              "Talleres sin asignar: 0",
+              "Profesores disponibles: 0",
+              "Cobertura completa: Sí",
+            ],
+          },
+          tasaExito: {
             valor: 95.8,
-            inicial: 24,
-            actual: 23,
-            descripcion: "Tasa de retención en el taller de composición",
+            descripcion: "Porcentaje de estudiantes que completan exitosamente los talleres del área",
+            detalles: [
+              "Estudiantes que completaron: 92 de 96",
+              "Tasa de aprobación: 97.9%",
+              "Tasa de retención: 95.8%",
+              "Satisfacción promedio: 4.7/5",
+            ],
           },
-          popularidad: {
-            valor: 80.0,
-            inscritos: 24,
-            capacidad: 30,
-            listaEspera: 5,
-            descripcion: "Demanda del taller de composición artística",
-          },
-          finalizacion: {
-            valor: 91.7,
-            completados: 22,
-            total: 24,
-            descripcion: "Porcentaje de estudiantes que completaron el portafolio creativo",
+          tendenciasInscripcion: {
+            valor: "+8.1%",
+            descripcion: "Tendencia de crecimiento en inscripciones comparado con el período anterior",
+            detalles: [
+              "Inscripciones período actual: 96",
+              "Inscripciones período anterior: 89",
+              "Crecimiento absoluto: +7 inscripciones",
+              "Proyección próximo período: +10%",
+            ],
           },
         },
         objetivos: [
@@ -347,45 +500,86 @@ export default function GestionReportes() {
         resumen:
           "Seguimiento especializado del progreso en interpretación musical individual y grupal, con énfasis en expresividad y técnica interpretativa.",
         metricas: {
-          avancePromedio: {
-            valor: 81.2,
-            descripcion: "Promedio de avance en interpretación y expresión musical",
+          tasaInscripcion: {
+            valor: 94.3,
+            descripcion: "Porcentaje de inscripciones exitosas respecto a la capacidad total del área",
             detalles: [
-              "Técnica interpretativa: 83%",
-              "Expresividad musical: 80%",
-              "Música de conjunto: 82%",
-              "Presencia escénica: 79%",
+              "Inscripciones totales: 99",
+              "Capacidad total: 105",
+              "Lista de espera: 18 estudiantes",
+              "Tasa de conversión: 84.6%",
             ],
           },
-          evidenciasValidadas: {
-            valor: 91.5,
-            total: 96,
-            validadas: 88,
-            descripcion: "Porcentaje de interpretaciones musicales validadas",
+          promedioParticipacion: {
+            valor: 33.0,
+            descripcion: "Promedio de estudiantes participantes por taller en el área",
+            detalles: [
+              "Talleres activos: 3",
+              "Total participantes: 99",
+              "Rango: 30-36 estudiantes por taller",
+              "Desviación estándar: 2.4",
+            ],
           },
-          seguimientoPromedio: {
-            valor: 4.2,
-            descripcion: "Número promedio de evaluaciones interpretativas por estudiante",
-            detalles: ["Recitales individuales: 2.4 por estudiante", "Presentaciones grupales: 1.8 por estudiante"],
+          talleresActivos: {
+            valor: 3,
+            descripcion: "Número total de talleres activos en el área musical",
+            detalles: [
+              "Interpretación vocal: 1 taller",
+              "Interpretación instrumental: 1 taller",
+              "Música de cámara: 1 taller",
+            ],
           },
-          retencion: {
-            valor: 87.5,
-            inicial: 32,
-            actual: 28,
-            descripcion: "Tasa de retención en interpretación musical",
+          activosVsFinalizados: {
+            valor: "3:2",
+            activos: 3,
+            finalizados: 2,
+            descripcion: "Relación entre talleres activos y finalizados en el período",
+            detalles: [
+              "Talleres activos: 3",
+              "Talleres finalizados: 2",
+              "Tasa de finalización: 40%",
+              "Próximos a finalizar: 1",
+            ],
           },
-          popularidad: {
-            valor: 93.3,
-            inscritos: 32,
-            capacidad: 35,
-            listaEspera: 18,
-            descripcion: "Demanda del taller de interpretación musical",
+          promedioTalleresPorProfesor: {
+            valor: 1.5,
+            descripcion: "Promedio de talleres asignados por profesor en el área",
+            detalles: [
+              "Total profesores: 2",
+              "Total talleres: 3",
+              "Profesores con 1 taller: 1",
+              "Profesores con 2 talleres: 1",
+            ],
           },
-          finalizacion: {
-            valor: 84.4,
-            completados: 27,
-            total: 32,
-            descripcion: "Porcentaje de estudiantes que completaron el programa interpretativo",
+          tasaAsignacion: {
+            valor: 100,
+            descripcion: "Porcentaje de talleres con profesor asignado",
+            detalles: [
+              "Talleres asignados: 3",
+              "Talleres sin asignar: 0",
+              "Profesores disponibles: 1",
+              "Cobertura completa: Sí",
+            ],
+          },
+          tasaExito: {
+            valor: 89.9,
+            descripcion: "Porcentaje de estudiantes que completan exitosamente los talleres del área",
+            detalles: [
+              "Estudiantes que completaron: 89 de 99",
+              "Tasa de aprobación: 92.9%",
+              "Tasa de retención: 89.9%",
+              "Satisfacción promedio: 4.4/5",
+            ],
+          },
+          tendenciasInscripcion: {
+            valor: "+19.3%",
+            descripcion: "Tendencia de crecimiento en inscripciones comparado con el período anterior",
+            detalles: [
+              "Inscripciones período actual: 99",
+              "Inscripciones período anterior: 83",
+              "Crecimiento absoluto: +16 inscripciones",
+              "Proyección próximo período: +21%",
+            ],
           },
         },
         objetivos: [
@@ -418,45 +612,82 @@ export default function GestionReportes() {
         resumen:
           "Evaluación integral del desarrollo de habilidades teatrales, expresión corporal, vocal y construcción de personajes en estudiantes del taller.",
         metricas: {
-          avancePromedio: {
-            valor: 79.4,
-            descripcion: "Promedio de avance en competencias teatrales y expresivas",
+          tasaInscripcion: {
+            valor: 73.3,
+            descripcion: "Porcentaje de inscripciones exitosas respecto a la capacidad total del área",
             detalles: [
-              "Expresión corporal: 82%",
-              "Proyección vocal: 77%",
-              "Construcción de personajes: 80%",
-              "Confianza escénica: 78%",
+              "Inscripciones totales: 66",
+              "Capacidad total: 90",
+              "Lista de espera: 5 estudiantes",
+              "Tasa de conversión: 93.0%",
             ],
           },
-          evidenciasValidadas: {
-            valor: 90.9,
-            total: 66,
-            validadas: 60,
-            descripcion: "Porcentaje de actuaciones y ejercicios teatrales validados",
+          promedioParticipacion: {
+            valor: 22.0,
+            descripcion: "Promedio de estudiantes participantes por taller en el área",
+            detalles: [
+              "Talleres activos: 3",
+              "Total participantes: 66",
+              "Rango: 20-24 estudiantes por taller",
+              "Desviación estándar: 1.6",
+            ],
           },
-          seguimientoPromedio: {
-            valor: 3.9,
-            descripcion: "Número promedio de evaluaciones teatrales por estudiante",
-            detalles: ["Evaluaciones individuales: 2.1 por estudiante", "Presentaciones grupales: 1.8 por estudiante"],
+          talleresActivos: {
+            valor: 3,
+            descripcion: "Número total de talleres activos en el área teatral",
+            detalles: ["Teatro básico: 1 taller", "Expresión corporal: 1 taller", "Improvisación: 1 taller"],
           },
-          retencion: {
-            valor: 90.9,
-            inicial: 22,
-            actual: 20,
-            descripcion: "Tasa de retención en el taller teatral",
+          activosVsFinalizados: {
+            valor: "3:1",
+            activos: 3,
+            finalizados: 1,
+            descripcion: "Relación entre talleres activos y finalizados en el período",
+            detalles: [
+              "Talleres activos: 3",
+              "Talleres finalizados: 1",
+              "Tasa de finalización: 25%",
+              "Próximos a finalizar: 1",
+            ],
           },
-          popularidad: {
-            valor: 73.3,
-            inscritos: 22,
-            capacidad: 30,
-            listaEspera: 3,
-            descripcion: "Demanda del taller de habilidades teatrales",
+          promedioTalleresPorProfesor: {
+            valor: 1.5,
+            descripcion: "Promedio de talleres asignados por profesor en el área",
+            detalles: [
+              "Total profesores: 2",
+              "Total talleres: 3",
+              "Profesores con 1 taller: 1",
+              "Profesores con 2 talleres: 1",
+            ],
           },
-          finalizacion: {
-            valor: 86.4,
-            completados: 19,
-            total: 22,
-            descripcion: "Porcentaje de estudiantes que completaron el programa teatral",
+          tasaAsignacion: {
+            valor: 100,
+            descripcion: "Porcentaje de talleres con profesor asignado",
+            detalles: [
+              "Talleres asignados: 3",
+              "Talleres sin asignar: 0",
+              "Profesores disponibles: 0",
+              "Cobertura completa: Sí",
+            ],
+          },
+          tasaExito: {
+            valor: 87.9,
+            descripcion: "Porcentaje de estudiantes que completan exitosamente los talleres del área",
+            detalles: [
+              "Estudiantes que completaron: 58 de 66",
+              "Tasa de aprobación: 90.9%",
+              "Tasa de retención: 87.9%",
+              "Satisfacción promedio: 4.2/5",
+            ],
+          },
+          tendenciasInscripcion: {
+            valor: "+6.5%",
+            descripcion: "Tendencia de crecimiento en inscripciones comparado con el período anterior",
+            detalles: [
+              "Inscripciones período actual: 66",
+              "Inscripciones período anterior: 62",
+              "Crecimiento absoluto: +4 inscripciones",
+              "Proyección próximo período: +8%",
+            ],
           },
         },
         objetivos: [
@@ -548,7 +779,7 @@ export default function GestionReportes() {
       doc.setTextColor(255, 255, 255)
       doc.setFontSize(20)
       doc.setFont("helvetica", "bold")
-      doc.text("REPORTE DETALLADO DE TALLER", pageWidth / 2, 25, { align: "center" })
+      doc.text("REPORTE DETALLADO DE ÁREA", pageWidth / 2, 25, { align: "center" })
 
       yPosition = 50
 
@@ -575,54 +806,73 @@ export default function GestionReportes() {
 
       addSeparator()
 
-      // Métricas de rendimiento
-      addText("MÉTRICAS DE RENDIMIENTO", 14, true, [16, 185, 129])
+      // Métricas de rendimiento del área
+      addText("MÉTRICAS DE RENDIMIENTO DEL ÁREA", 14, true, [16, 185, 129])
 
       const metricas = reporte.contenido.metricas
 
-      // Avance Promedio
-      addText(`Avance Promedio de Nivel: ${metricas.avancePromedio.valor}%`, 12, true)
-      addText(metricas.avancePromedio.descripcion, 10)
-      metricas.avancePromedio.detalles.forEach((detalle) => {
+      // Tasa de Inscripción
+      addText(`Tasa de Inscripción: ${metricas.tasaInscripcion.valor}%`, 12, true)
+      addText(metricas.tasaInscripcion.descripcion, 10)
+      metricas.tasaInscripcion.detalles.forEach((detalle) => {
         addText(`• ${detalle}`, 9)
       })
       yPosition += 3
 
-      // Evidencias Validadas
-      addText(`Evidencias Validadas: ${metricas.evidenciasValidadas.valor}%`, 12, true)
-      addText(metricas.evidenciasValidadas.descripcion, 10)
-      addText(`• Total: ${metricas.evidenciasValidadas.total}`, 9)
-      addText(`• Validadas: ${metricas.evidenciasValidadas.validadas}`, 9)
-      yPosition += 3
-
-      // Seguimientos
-      addText(`Seguimientos por Estudiante: ${metricas.seguimientoPromedio.valor}`, 12, true)
-      addText(metricas.seguimientoPromedio.descripcion, 10)
-      metricas.seguimientoPromedio.detalles.forEach((detalle) => {
+      // Promedio de Participación por Taller
+      addText(`Promedio de Participación por Taller: ${metricas.promedioParticipacion.valor}`, 12, true)
+      addText(metricas.promedioParticipacion.descripcion, 10)
+      metricas.promedioParticipacion.detalles.forEach((detalle) => {
         addText(`• ${detalle}`, 9)
       })
       yPosition += 3
 
-      // Retención
-      addText(`Tasa de Retención: ${metricas.retencion.valor}%`, 12, true)
-      addText(metricas.retencion.descripcion, 10)
-      addText(`• Inicial: ${metricas.retencion.inicial} estudiantes`, 9)
-      addText(`• Actual: ${metricas.retencion.actual} estudiantes`, 9)
+      // Número Total de Talleres Activos
+      addText(`Número Total de Talleres Activos: ${metricas.talleresActivos.valor}`, 12, true)
+      addText(metricas.talleresActivos.descripcion, 10)
+      metricas.talleresActivos.detalles.forEach((detalle) => {
+        addText(`• ${detalle}`, 9)
+      })
       yPosition += 3
 
-      // Popularidad
-      addText(`Popularidad del Taller: ${metricas.popularidad.valor}%`, 12, true)
-      addText(metricas.popularidad.descripcion, 10)
-      addText(`• Inscritos: ${metricas.popularidad.inscritos}`, 9)
-      addText(`• Capacidad: ${metricas.popularidad.capacidad}`, 9)
-      addText(`• Lista de espera: ${metricas.popularidad.listaEspera}`, 9)
+      // Talleres Activos vs. Finalizados
+      addText(`Talleres Activos vs. Finalizados: ${metricas.activosVsFinalizados.valor}`, 12, true)
+      addText(metricas.activosVsFinalizados.descripcion, 10)
+      metricas.activosVsFinalizados.detalles.forEach((detalle) => {
+        addText(`• ${detalle}`, 9)
+      })
       yPosition += 3
 
-      // Finalización
-      addText(`Tasa de Finalización: ${metricas.finalizacion.valor}%`, 12, true)
-      addText(metricas.finalizacion.descripcion, 10)
-      addText(`• Completados: ${metricas.finalizacion.completados}`, 9)
-      addText(`• Total: ${metricas.finalizacion.total}`, 9)
+      // Promedio de Talleres por Profesor
+      addText(`Promedio de Talleres por Profesor: ${metricas.promedioTalleresPorProfesor.valor}`, 12, true)
+      addText(metricas.promedioTalleresPorProfesor.descripcion, 10)
+      metricas.promedioTalleresPorProfesor.detalles.forEach((detalle) => {
+        addText(`• ${detalle}`, 9)
+      })
+      yPosition += 3
+
+      // Tasa de Asignación de Talleres
+      addText(`Tasa de Asignación de Talleres: ${metricas.tasaAsignacion.valor}%`, 12, true)
+      addText(metricas.tasaAsignacion.descripcion, 10)
+      metricas.tasaAsignacion.detalles.forEach((detalle) => {
+        addText(`• ${detalle}`, 9)
+      })
+      yPosition += 3
+
+      // Tasa de Éxito
+      addText(`Tasa de Éxito: ${metricas.tasaExito.valor}%`, 12, true)
+      addText(metricas.tasaExito.descripcion, 10)
+      metricas.tasaExito.detalles.forEach((detalle) => {
+        addText(`• ${detalle}`, 9)
+      })
+      yPosition += 3
+
+      // Tendencias de Inscripción
+      addText(`Tendencias de Inscripción: ${metricas.tendenciasInscripcion.valor}`, 12, true)
+      addText(metricas.tendenciasInscripcion.descripcion, 10)
+      metricas.tendenciasInscripcion.detalles.forEach((detalle) => {
+        addText(`• ${detalle}`, 9)
+      })
       yPosition += 5
 
       addSeparator()
@@ -697,20 +947,24 @@ export default function GestionReportes() {
 
   const getMetricIcon = (type) => {
     switch (type) {
-      case "avance":
-        return <TrendingUp className="w-5 h-5 text-emerald-600" />
-      case "evidencias":
-        return <CheckCircle className="w-5 h-5 text-blue-600" />
-      case "seguimiento":
-        return <Target className="w-5 h-5 text-purple-600" />
-      case "retencion":
-        return <UserCheck className="w-5 h-5 text-orange-600" />
-      case "popularidad":
-        return <Star className="w-5 h-5 text-yellow-600" />
-      case "finalizacion":
-        return <Award className="w-5 h-5 text-green-600" />
+      case "tasaInscripcion":
+        return <Users className="w-5 h-5 text-emerald-600" />
+      case "promedioParticipacion":
+        return <BarChart3 className="w-5 h-5 text-blue-600" />
+      case "talleresActivos":
+        return <BookOpen className="w-5 h-5 text-purple-600" />
+      case "activosVsFinalizados":
+        return <PieChart className="w-5 h-5 text-orange-600" />
+      case "promedioTalleresPorProfesor":
+        return <User className="w-5 h-5 text-teal-600" />
+      case "tasaAsignacion":
+        return <CheckCircle className="w-5 h-5 text-green-600" />
+      case "tasaExito":
+        return <Award className="w-5 h-5 text-yellow-600" />
+      case "tendenciasInscripcion":
+        return <TrendingUp className="w-5 h-5 text-red-600" />
       default:
-        return <BarChart3 className="w-5 h-5 text-gray-600" />
+        return <Activity className="w-5 h-5 text-gray-600" />
     }
   }
 
@@ -787,26 +1041,26 @@ export default function GestionReportes() {
                   <p className="text-gray-700 leading-relaxed">{previewReport.contenido.resumen}</p>
                 </div>
 
-                {/* Métricas de Rendimiento */}
+                {/* Métricas de Rendimiento del Área */}
                 <div className="mb-8">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-6">Métricas de Rendimiento del Taller</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* Avance Promedio */}
+                  <h3 className="text-xl font-semibold text-gray-900 mb-6">Métricas de Rendimiento del Área</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                    {/* Tasa de Inscripción */}
                     <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center space-x-2">
-                          {getMetricIcon("avance")}
-                          <h4 className="font-semibold text-gray-900">Avance Promedio</h4>
+                          {getMetricIcon("tasaInscripcion")}
+                          <h4 className="font-semibold text-gray-900">Tasa de Inscripción</h4>
                         </div>
                         <span className="text-2xl font-bold text-emerald-600">
-                          {previewReport.contenido.metricas.avancePromedio.valor}%
+                          {previewReport.contenido.metricas.tasaInscripcion.valor}%
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mb-3">
-                        {previewReport.contenido.metricas.avancePromedio.descripcion}
+                        {previewReport.contenido.metricas.tasaInscripcion.descripcion}
                       </p>
                       <div className="space-y-1">
-                        {previewReport.contenido.metricas.avancePromedio.detalles.map((detalle, index) => (
+                        {previewReport.contenido.metricas.tasaInscripcion.detalles.map((detalle, index) => (
                           <div key={index} className="text-xs text-gray-500">
                             • {detalle}
                           </div>
@@ -814,46 +1068,22 @@ export default function GestionReportes() {
                       </div>
                     </div>
 
-                    {/* Evidencias Validadas */}
+                    {/* Promedio de Participación por Taller */}
                     <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center space-x-2">
-                          {getMetricIcon("evidencias")}
-                          <h4 className="font-semibold text-gray-900">Evidencias Validadas</h4>
+                          {getMetricIcon("promedioParticipacion")}
+                          <h4 className="font-semibold text-gray-900">Promedio de Participación</h4>
                         </div>
                         <span className="text-2xl font-bold text-blue-600">
-                          {previewReport.contenido.metricas.evidenciasValidadas.valor}%
+                          {previewReport.contenido.metricas.promedioParticipacion.valor}
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mb-3">
-                        {previewReport.contenido.metricas.evidenciasValidadas.descripcion}
+                        {previewReport.contenido.metricas.promedioParticipacion.descripcion}
                       </p>
                       <div className="space-y-1">
-                        <div className="text-xs text-gray-500">
-                          • Total: {previewReport.contenido.metricas.evidenciasValidadas.total}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          • Validadas: {previewReport.contenido.metricas.evidenciasValidadas.validadas}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Seguimientos */}
-                    <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center space-x-2">
-                          {getMetricIcon("seguimiento")}
-                          <h4 className="font-semibold text-gray-900">Seguimientos</h4>
-                        </div>
-                        <span className="text-2xl font-bold text-purple-600">
-                          {previewReport.contenido.metricas.seguimientoPromedio.valor}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-3">
-                        {previewReport.contenido.metricas.seguimientoPromedio.descripcion}
-                      </p>
-                      <div className="space-y-1">
-                        {previewReport.contenido.metricas.seguimientoPromedio.detalles.map((detalle, index) => (
+                        {previewReport.contenido.metricas.promedioParticipacion.detalles.map((detalle, index) => (
                           <div key={index} className="text-xs text-gray-500">
                             • {detalle}
                           </div>
@@ -861,78 +1091,141 @@ export default function GestionReportes() {
                       </div>
                     </div>
 
-                    {/* Retención */}
+                    {/* Número Total de Talleres Activos */}
                     <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center space-x-2">
-                          {getMetricIcon("retencion")}
-                          <h4 className="font-semibold text-gray-900">Tasa de Retención</h4>
+                          {getMetricIcon("talleresActivos")}
+                          <h4 className="font-semibold text-gray-900">Talleres Activos</h4>
+                        </div>
+                        <span className="text-2xl font-bold text-purple-600">
+                          {previewReport.contenido.metricas.talleresActivos.valor}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3">
+                        {previewReport.contenido.metricas.talleresActivos.descripcion}
+                      </p>
+                      <div className="space-y-1">
+                        {previewReport.contenido.metricas.talleresActivos.detalles.map((detalle, index) => (
+                          <div key={index} className="text-xs text-gray-500">
+                            • {detalle}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Talleres Activos vs. Finalizados */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                          {getMetricIcon("activosVsFinalizados")}
+                          <h4 className="font-semibold text-gray-900">Activos vs. Finalizados</h4>
                         </div>
                         <span className="text-2xl font-bold text-orange-600">
-                          {previewReport.contenido.metricas.retencion.valor}%
+                          {previewReport.contenido.metricas.activosVsFinalizados.valor}
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mb-3">
-                        {previewReport.contenido.metricas.retencion.descripcion}
+                        {previewReport.contenido.metricas.activosVsFinalizados.descripcion}
                       </p>
                       <div className="space-y-1">
-                        <div className="text-xs text-gray-500">
-                          • Inicial: {previewReport.contenido.metricas.retencion.inicial} estudiantes
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          • Actual: {previewReport.contenido.metricas.retencion.actual} estudiantes
-                        </div>
+                        {previewReport.contenido.metricas.activosVsFinalizados.detalles.map((detalle, index) => (
+                          <div key={index} className="text-xs text-gray-500">
+                            • {detalle}
+                          </div>
+                        ))}
                       </div>
                     </div>
 
-                    {/* Popularidad */}
+                    {/* Promedio de Talleres por Profesor */}
                     <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center space-x-2">
-                          {getMetricIcon("popularidad")}
-                          <h4 className="font-semibold text-gray-900">Popularidad</h4>
+                          {getMetricIcon("promedioTalleresPorProfesor")}
+                          <h4 className="font-semibold text-gray-900">Talleres por Profesor</h4>
                         </div>
-                        <span className="text-2xl font-bold text-yellow-600">
-                          {previewReport.contenido.metricas.popularidad.valor}%
+                        <span className="text-2xl font-bold text-teal-600">
+                          {previewReport.contenido.metricas.promedioTalleresPorProfesor.valor}
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mb-3">
-                        {previewReport.contenido.metricas.popularidad.descripcion}
+                        {previewReport.contenido.metricas.promedioTalleresPorProfesor.descripcion}
                       </p>
                       <div className="space-y-1">
-                        <div className="text-xs text-gray-500">
-                          • Inscritos: {previewReport.contenido.metricas.popularidad.inscritos}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          • Capacidad: {previewReport.contenido.metricas.popularidad.capacidad}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          • Lista de espera: {previewReport.contenido.metricas.popularidad.listaEspera}
-                        </div>
+                        {previewReport.contenido.metricas.promedioTalleresPorProfesor.detalles.map((detalle, index) => (
+                          <div key={index} className="text-xs text-gray-500">
+                            • {detalle}
+                          </div>
+                        ))}
                       </div>
                     </div>
 
-                    {/* Finalización */}
+                    {/* Tasa de Asignación de Talleres */}
                     <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center space-x-2">
-                          {getMetricIcon("finalizacion")}
-                          <h4 className="font-semibold text-gray-900">Tasa de Finalización</h4>
+                          {getMetricIcon("tasaAsignacion")}
+                          <h4 className="font-semibold text-gray-900">Tasa de Asignación</h4>
                         </div>
                         <span className="text-2xl font-bold text-green-600">
-                          {previewReport.contenido.metricas.finalizacion.valor}%
+                          {previewReport.contenido.metricas.tasaAsignacion.valor}%
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mb-3">
-                        {previewReport.contenido.metricas.finalizacion.descripcion}
+                        {previewReport.contenido.metricas.tasaAsignacion.descripcion}
                       </p>
                       <div className="space-y-1">
-                        <div className="text-xs text-gray-500">
-                          • Completados: {previewReport.contenido.metricas.finalizacion.completados}
+                        {previewReport.contenido.metricas.tasaAsignacion.detalles.map((detalle, index) => (
+                          <div key={index} className="text-xs text-gray-500">
+                            • {detalle}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Tasa de Éxito */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                          {getMetricIcon("tasaExito")}
+                          <h4 className="font-semibold text-gray-900">Tasa de Éxito</h4>
                         </div>
-                        <div className="text-xs text-gray-500">
-                          • Total: {previewReport.contenido.metricas.finalizacion.total}
+                        <span className="text-2xl font-bold text-yellow-600">
+                          {previewReport.contenido.metricas.tasaExito.valor}%
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3">
+                        {previewReport.contenido.metricas.tasaExito.descripcion}
+                      </p>
+                      <div className="space-y-1">
+                        {previewReport.contenido.metricas.tasaExito.detalles.map((detalle, index) => (
+                          <div key={index} className="text-xs text-gray-500">
+                            • {detalle}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Tendencias de Inscripción */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                          {getMetricIcon("tendenciasInscripcion")}
+                          <h4 className="font-semibold text-gray-900">Tendencias de Inscripción</h4>
                         </div>
+                        <span className="text-2xl font-bold text-red-600">
+                          {previewReport.contenido.metricas.tendenciasInscripcion.valor}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3">
+                        {previewReport.contenido.metricas.tendenciasInscripcion.descripcion}
+                      </p>
+                      <div className="space-y-1">
+                        {previewReport.contenido.metricas.tendenciasInscripcion.detalles.map((detalle, index) => (
+                          <div key={index} className="text-xs text-gray-500">
+                            • {detalle}
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>

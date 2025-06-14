@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { FileText, Plus, Search, Eye, Check, X, Menu, Upload, Calendar } from "lucide-react"
+import { FileText, Search, Eye, Check, X, Menu, Upload, Calendar } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "../../lib/supabase"
 import DashboardProfeSidebar from "../shared/DashboardProfeSidebar"
@@ -32,17 +32,37 @@ export default function EvidenciasContent() {
   })
 
   const [evidencias, setEvidencias] = useState([])
+  const [profesorActual, setProfesorActual] = useState(null)
 
   useEffect(() => {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser()
       if (data.user) {
         setUser(data.user)
-        // Pre-llenar el campo "Validado por" con el email del usuario
-        setFormData((prev) => ({
-          ...prev,
-          validadoPor: data.user.email || "",
-        }))
+
+        // Obtener información del profesor actual desde la base de datos
+        const { data: profesorData, error } = await supabase
+          .from("Usuario")
+          .select("id_usuario, nombre, apellido, correo")
+          .eq("correo", data.user.email)
+          .eq("rol", "Profesor")
+          .single()
+
+        if (profesorData && !error) {
+          setProfesorActual(profesorData)
+          // Pre-llenar el campo "Validado por" con el nombre completo del profesor
+          setFormData((prev) => ({
+            ...prev,
+            validadoPor: `${profesorData.nombre} ${profesorData.apellido}`,
+          }))
+        } else {
+          // Fallback al email si no se encuentra en la base de datos
+          setFormData((prev) => ({
+            ...prev,
+            validadoPor: data.user.email || "",
+          }))
+        }
+
         // Cargar historial de evidencias
         cargarEvidencias()
         // Simular carga de datos
@@ -60,7 +80,7 @@ export default function EvidenciasContent() {
     try {
       setLoading(true)
 
-      // Obtener las evidencias de la base de datos
+      // Obtener las evidencias de la base de datos con información del profesor validador
       const { data, error } = await supabase
         .from("Evidencia")
         .select(`
@@ -69,7 +89,8 @@ export default function EvidenciasContent() {
             Estudiante:id_estudiante (nombre, apellido),
             TallerImpartido:id_taller_impartido (
               nombre_publico,
-              TallerDefinido:id_taller_definido (nombre)
+              TallerDefinido:id_taller_definido (nombre),
+              profesor_asignado
             ),
             nivel_actual
           )
@@ -97,6 +118,7 @@ export default function EvidenciasContent() {
           descripcion: evidencia.descripcion || "Sin descripción",
           tipo: evidencia.archivo_url ? evidencia.archivo_url.split(".").pop() || "Documento" : "Documento",
           fecha: evidencia.fecha_envio,
+          validadoPorId: taller?.profesor_asignado, // ID del profesor que validó
           validadoPor: evidencia.validada_por_profesor ? "Validado" : "Pendiente",
           observaciones: evidencia.observaciones || "",
           estado: evidencia.validada_por_profesor ? "Aprobada" : "Pendiente",
@@ -415,8 +437,6 @@ export default function EvidenciasContent() {
         {/* Contenido principal */}
         <main className="flex-1 overflow-y-auto">
           <div className="px-4 sm:px-6 lg:px-8 py-8">
-
-
             {/* Filtros avanzados */}
             <div className="mb-6 bg-white rounded-xl shadow-sm p-4 border border-gray-200">
               <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
@@ -851,8 +871,12 @@ export default function EvidenciasContent() {
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-1">Validado por</h3>
-                  <p className="text-gray-900">{selectedEvidencia.validadoPor}</p>
+                  <h3 className="text-sm font-medium text-gray-700 mb-1">Validado por Profesor</h3>
+                  <p className="text-gray-900">
+                    {selectedEvidencia.estado === "Pendiente"
+                      ? "Pendiente de validación"
+                      : user?.email || "No disponible"}
+                  </p>
                 </div>
 
                 {selectedEvidencia.archivoUrl && (
