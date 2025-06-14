@@ -504,176 +504,173 @@ export default function GestionReportes() {
     setIsDownloading(true)
 
     try {
-      // Crear el contenido HTML del reporte
-      const reportContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <title>Reporte - ${reporte.nombre}</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 40px; color: #333; line-height: 1.6; }
-            .header { text-align: center; margin-bottom: 40px; border-bottom: 3px solid #10b981; padding-bottom: 20px; }
-            .title { font-size: 24px; font-weight: bold; color: #1f2937; margin-bottom: 10px; }
-            .subtitle { font-size: 16px; color: #6b7280; }
-            .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
-            .info-card { background: #f9fafb; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981; }
-            .info-label { font-size: 12px; color: #6b7280; text-transform: uppercase; }
-            .info-value { font-size: 16px; font-weight: bold; color: #1f2937; }
-            .section { margin-bottom: 30px; }
-            .section-title { font-size: 18px; font-weight: bold; color: #1f2937; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; }
-            .metrics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 20px; }
-            .metric-card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; }
-            .metric-title { font-size: 14px; font-weight: bold; color: #374151; margin-bottom: 10px; }
-            .metric-value { font-size: 32px; font-weight: bold; color: #10b981; margin-bottom: 5px; }
-            .metric-desc { font-size: 12px; color: #6b7280; }
-            .metric-details { margin-top: 10px; }
-            .metric-detail { font-size: 12px; color: #4b5563; margin-bottom: 3px; }
-            .list { margin-left: 20px; }
-            .list-item { margin-bottom: 8px; position: relative; }
-            .list-item::before { content: "•"; color: #10b981; font-weight: bold; position: absolute; left: -15px; }
-            .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 20px; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div class="title">${reporte.nombre}</div>
-            <div class="subtitle">Reporte Detallado de Taller - ${reporte.area}</div>
-          </div>
-          
-          <div class="info-grid">
-            <div class="info-card">
-              <div class="info-label">Fecha de Generación</div>
-              <div class="info-value">${reporte.fecha}</div>
-            </div>
-            <div class="info-card">
-              <div class="info-label">Profesor Responsable</div>
-              <div class="info-value">${reporte.profesor}</div>
-            </div>
-            <div class="info-card">
-              <div class="info-label">Estudiantes Participantes</div>
-              <div class="info-value">${reporte.alumnos}</div>
-            </div>
-          </div>
+      // Importar jsPDF dinámicamente
+      const { jsPDF } = await import("jspdf")
 
-          <div class="section">
-            <div class="section-title">Resumen Ejecutivo</div>
-            <p>${reporte.contenido.resumen}</p>
-          </div>
+      // Crear nueva instancia de PDF
+      const doc = new jsPDF()
+      const pageWidth = doc.internal.pageSize.getWidth()
+      const pageHeight = doc.internal.pageSize.getHeight()
+      const margin = 20
+      const maxWidth = pageWidth - margin * 2
+      let yPosition = margin
 
-          <div class="section">
-            <div class="section-title">Métricas de Rendimiento</div>
-            <div class="metrics-grid">
-              <div class="metric-card">
-                <div class="metric-title">Avance Promedio de Nivel</div>
-                <div class="metric-value">${reporte.contenido.metricas.avancePromedio.valor}%</div>
-                <div class="metric-desc">${reporte.contenido.metricas.avancePromedio.descripcion}</div>
-                <div class="metric-details">
-                  ${reporte.contenido.metricas.avancePromedio.detalles.map((detalle) => `<div class="metric-detail">• ${detalle}</div>`).join("")}
-                </div>
-              </div>
-              
-              <div class="metric-card">
-                <div class="metric-title">Evidencias Validadas</div>
-                <div class="metric-value">${reporte.contenido.metricas.evidenciasValidadas.valor}%</div>
-                <div class="metric-desc">${reporte.contenido.metricas.evidenciasValidadas.descripcion}</div>
-                <div class="metric-details">
-                  <div class="metric-detail">• Total: ${reporte.contenido.metricas.evidenciasValidadas.total}</div>
-                  <div class="metric-detail">• Validadas: ${reporte.contenido.metricas.evidenciasValidadas.validadas}</div>
-                </div>
-              </div>
-              
-              <div class="metric-card">
-                <div class="metric-title">Seguimientos por Estudiante</div>
-                <div class="metric-value">${reporte.contenido.metricas.seguimientoPromedio.valor}</div>
-                <div class="metric-desc">${reporte.contenido.metricas.seguimientoPromedio.descripcion}</div>
-                <div class="metric-details">
-                  ${reporte.contenido.metricas.seguimientoPromedio.detalles.map((detalle) => `<div class="metric-detail">• ${detalle}</div>`).join("")}
-                </div>
-              </div>
-              
-              <div class="metric-card">
-                <div class="metric-title">Tasa de Retención</div>
-                <div class="metric-value">${reporte.contenido.metricas.retencion.valor}%</div>
-                <div class="metric-desc">${reporte.contenido.metricas.retencion.descripcion}</div>
-                <div class="metric-details">
-                  <div class="metric-detail">• Inicial: ${reporte.contenido.metricas.retencion.inicial} estudiantes</div>
-                  <div class="metric-detail">• Actual: ${reporte.contenido.metricas.retencion.actual} estudiantes</div>
-                </div>
-              </div>
-              
-              <div class="metric-card">
-                <div class="metric-title">Popularidad del Taller</div>
-                <div class="metric-value">${reporte.contenido.metricas.popularidad.valor}%</div>
-                <div class="metric-desc">${reporte.contenido.metricas.popularidad.descripcion}</div>
-                <div class="metric-details">
-                  <div class="metric-detail">• Inscritos: ${reporte.contenido.metricas.popularidad.inscritos}</div>
-                  <div class="metric-detail">• Capacidad: ${reporte.contenido.metricas.popularidad.capacidad}</div>
-                  <div class="metric-detail">• Lista de espera: ${reporte.contenido.metricas.popularidad.listaEspera}</div>
-                </div>
-              </div>
-              
-              <div class="metric-card">
-                <div class="metric-title">Tasa de Finalización</div>
-                <div class="metric-value">${reporte.contenido.metricas.finalizacion.valor}%</div>
-                <div class="metric-desc">${reporte.contenido.metricas.finalizacion.descripcion}</div>
-                <div class="metric-details">
-                  <div class="metric-detail">• Completados: ${reporte.contenido.metricas.finalizacion.completados}</div>
-                  <div class="metric-detail">• Total: ${reporte.contenido.metricas.finalizacion.total}</div>
-                </div>
-              </div>
-            </div>
-          </div>
+      // Función auxiliar para agregar texto con salto de línea automático
+      const addText = (text, fontSize = 10, isBold = false, color = [0, 0, 0]) => {
+        doc.setFontSize(fontSize)
+        doc.setFont("helvetica", isBold ? "bold" : "normal")
+        doc.setTextColor(color[0], color[1], color[2])
 
-          <div class="section">
-            <div class="section-title">Objetivos del Período</div>
-            <div class="list">
-              ${reporte.contenido.objetivos.map((objetivo) => `<div class="list-item">${objetivo}</div>`).join("")}
-            </div>
-          </div>
+        const lines = doc.splitTextToSize(text, maxWidth)
 
-          <div class="section">
-            <div class="section-title">Resultados Obtenidos</div>
-            <div class="list">
-              ${reporte.contenido.resultados.map((resultado) => `<div class="list-item">${resultado}</div>`).join("")}
-            </div>
-          </div>
+        // Verificar si necesitamos una nueva página
+        if (yPosition + lines.length * fontSize * 0.5 > pageHeight - margin) {
+          doc.addPage()
+          yPosition = margin
+        }
 
-          <div class="section">
-            <div class="section-title">Recomendaciones</div>
-            <div class="list">
-              ${reporte.contenido.recomendaciones.map((recomendacion) => `<div class="list-item">${recomendacion}</div>`).join("")}
-            </div>
-          </div>
+        doc.text(lines, margin, yPosition)
+        yPosition += lines.length * fontSize * 0.5 + 5
+        return yPosition
+      }
 
-          <div class="footer">
-            <p>Reporte generado el ${reporte.fecha} | Sistema de Gestión de Talleres Educativos</p>
-            <p>Profesor: ${reporte.profesor} | Área: ${reporte.area}</p>
-          </div>
-        </body>
-        </html>
-      `
+      // Función para agregar línea separadora
+      const addSeparator = () => {
+        doc.setDrawColor(16, 185, 129) // Color verde
+        doc.line(margin, yPosition, pageWidth - margin, yPosition)
+        yPosition += 10
+      }
 
-      // Crear un blob con el contenido HTML
-      const blob = new Blob([reportContent], { type: "text/html" })
-      const url = URL.createObjectURL(blob)
+      // Encabezado del documento
+      doc.setFillColor(16, 185, 129) // Verde
+      doc.rect(0, 0, pageWidth, 40, "F")
 
-      // Crear un enlace temporal para descargar
-      const link = document.createElement("a")
-      link.href = url
-      link.download = `Reporte_${reporte.nombre.replace(/\s+/g, "_")}_${reporte.fecha.replace(/\//g, "-")}.html`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(20)
+      doc.setFont("helvetica", "bold")
+      doc.text("REPORTE DETALLADO DE TALLER", pageWidth / 2, 25, { align: "center" })
 
-      // Limpiar la URL del objeto
-      URL.revokeObjectURL(url)
+      yPosition = 50
+
+      // Título del reporte
+      addText(reporte.nombre, 16, true, [31, 41, 55])
+      addText(`Área: ${reporte.area}`, 12, false, [107, 114, 128])
+      yPosition += 5
+
+      addSeparator()
+
+      // Información básica
+      addText("INFORMACIÓN GENERAL", 14, true, [16, 185, 129])
+      addText(`Fecha de Generación: ${reporte.fecha}`, 10)
+      addText(`Profesor Responsable: ${reporte.profesor}`, 10)
+      addText(`Estudiantes Participantes: ${reporte.alumnos}`, 10)
+      yPosition += 5
+
+      addSeparator()
+
+      // Resumen ejecutivo
+      addText("RESUMEN EJECUTIVO", 14, true, [16, 185, 129])
+      addText(reporte.contenido.resumen, 10)
+      yPosition += 5
+
+      addSeparator()
+
+      // Métricas de rendimiento
+      addText("MÉTRICAS DE RENDIMIENTO", 14, true, [16, 185, 129])
+
+      const metricas = reporte.contenido.metricas
+
+      // Avance Promedio
+      addText(`Avance Promedio de Nivel: ${metricas.avancePromedio.valor}%`, 12, true)
+      addText(metricas.avancePromedio.descripcion, 10)
+      metricas.avancePromedio.detalles.forEach((detalle) => {
+        addText(`• ${detalle}`, 9)
+      })
+      yPosition += 3
+
+      // Evidencias Validadas
+      addText(`Evidencias Validadas: ${metricas.evidenciasValidadas.valor}%`, 12, true)
+      addText(metricas.evidenciasValidadas.descripcion, 10)
+      addText(`• Total: ${metricas.evidenciasValidadas.total}`, 9)
+      addText(`• Validadas: ${metricas.evidenciasValidadas.validadas}`, 9)
+      yPosition += 3
+
+      // Seguimientos
+      addText(`Seguimientos por Estudiante: ${metricas.seguimientoPromedio.valor}`, 12, true)
+      addText(metricas.seguimientoPromedio.descripcion, 10)
+      metricas.seguimientoPromedio.detalles.forEach((detalle) => {
+        addText(`• ${detalle}`, 9)
+      })
+      yPosition += 3
+
+      // Retención
+      addText(`Tasa de Retención: ${metricas.retencion.valor}%`, 12, true)
+      addText(metricas.retencion.descripcion, 10)
+      addText(`• Inicial: ${metricas.retencion.inicial} estudiantes`, 9)
+      addText(`• Actual: ${metricas.retencion.actual} estudiantes`, 9)
+      yPosition += 3
+
+      // Popularidad
+      addText(`Popularidad del Taller: ${metricas.popularidad.valor}%`, 12, true)
+      addText(metricas.popularidad.descripcion, 10)
+      addText(`• Inscritos: ${metricas.popularidad.inscritos}`, 9)
+      addText(`• Capacidad: ${metricas.popularidad.capacidad}`, 9)
+      addText(`• Lista de espera: ${metricas.popularidad.listaEspera}`, 9)
+      yPosition += 3
+
+      // Finalización
+      addText(`Tasa de Finalización: ${metricas.finalizacion.valor}%`, 12, true)
+      addText(metricas.finalizacion.descripcion, 10)
+      addText(`• Completados: ${metricas.finalizacion.completados}`, 9)
+      addText(`• Total: ${metricas.finalizacion.total}`, 9)
+      yPosition += 5
+
+      addSeparator()
+
+      // Objetivos
+      addText("OBJETIVOS DEL PERÍODO", 14, true, [16, 185, 129])
+      reporte.contenido.objetivos.forEach((objetivo) => {
+        addText(`• ${objetivo}`, 10)
+      })
+      yPosition += 5
+
+      addSeparator()
+
+      // Resultados
+      addText("RESULTADOS OBTENIDOS", 14, true, [16, 185, 129])
+      reporte.contenido.resultados.forEach((resultado) => {
+        addText(`• ${resultado}`, 10)
+      })
+      yPosition += 5
+
+      addSeparator()
+
+      // Recomendaciones
+      addText("RECOMENDACIONES", 14, true, [16, 185, 129])
+      reporte.contenido.recomendaciones.forEach((recomendacion) => {
+        addText(`• ${recomendacion}`, 10)
+      })
+
+      // Footer
+      const currentDate = new Date().toLocaleDateString("es-CL")
+      doc.setFontSize(8)
+      doc.setTextColor(107, 114, 128)
+      doc.text(
+        `Reporte generado el ${currentDate} | Sistema de Gestión de Talleres Educativos`,
+        pageWidth / 2,
+        pageHeight - 10,
+        { align: "center" },
+      )
+
+      // Descargar el PDF
+      const fileName = `Reporte_${reporte.nombre.replace(/\s+/g, "_")}_${reporte.fecha.replace(/\//g, "-")}.pdf`
+      doc.save(fileName)
 
       // Mostrar mensaje de éxito
-      alert(`Reporte "${reporte.nombre}" descargado exitosamente como archivo HTML`)
+      alert(`Reporte "${reporte.nombre}" descargado exitosamente como PDF`)
     } catch (error) {
-      console.error("Error al descargar el reporte:", error)
-      alert("Error al descargar el reporte. Por favor, intenta nuevamente.")
+      console.error("Error al generar el PDF:", error)
+      alert("Error al generar el PDF. Por favor, intenta nuevamente.")
     } finally {
       setIsDownloading(false)
       setShowPreview(false)
