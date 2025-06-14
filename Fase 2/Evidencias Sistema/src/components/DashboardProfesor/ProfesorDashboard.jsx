@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { BookOpen, Users, TrendingUp, FileText, Eye, Menu, X, Award } from "lucide-react"
+import { BookOpen, Users, TrendingUp, FileText, Eye, Menu, X, Award } from 'lucide-react'
 import { supabase } from "../../../lib/supabase"
 import { useNavigate } from "react-router-dom"
 import DashboardProfeSidebar from "../shared/DashboardProfeSidebar"
@@ -530,9 +530,10 @@ export default function DashboardProfesor() {
   if (loading) {
     return (
       <div className="flex h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/40">
+        <DashboardProfeSidebar sidebarOpen={sidebarOpen} toggleSidebar={toggleSidebar} userRole="Profesor" />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
+            <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-gray-600">Cargando Dashboard...</p>
           </div>
         </div>
@@ -566,36 +567,6 @@ export default function DashboardProfesor() {
                 <h1 className="text-2xl font-bold text-gray-900">Dashboard del Profesor</h1>
               </div>
             </div>
-            <button
-              onClick={actualizarDashboard}
-              disabled={actualizando}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-2 px-4 rounded-lg flex items-center transition-colors disabled:opacity-50"
-            >
-              {actualizando ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Actualizando...
-                </>
-              ) : (
-                <>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 mr-2"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
-                  Actualizar Talleres
-                </>
-              )}
-            </button>
           </div>
         </header>
 

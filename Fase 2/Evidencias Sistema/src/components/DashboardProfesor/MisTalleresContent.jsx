@@ -1,10 +1,9 @@
-"use client"
-
 import { useState, useEffect } from "react"
-import { BookOpen, Users, Upload, Menu, FileText, X, Check } from "lucide-react"
+import { BookOpen, Users, Upload, Menu, FileText, X, Check, Package, Calendar } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "../../lib/supabase"
 import DashboardProfeSidebar from "../shared/DashboardProfeSidebar"
+import jsPDF from "jspdf"
 
 export default function MisTalleresContent() {
   const [activeTab, setActiveTab] = useState("activos")
@@ -13,6 +12,8 @@ export default function MisTalleresContent() {
   const [showEvidenciaModal, setShowEvidenciaModal] = useState(false)
   const [showReporteModal, setShowReporteModal] = useState(false)
   const [showAlumnosModal, setShowAlumnosModal] = useState(false)
+  const [showSolicitudRecursosModal, setShowSolicitudRecursosModal] = useState(false)
+  const [showSolicitudActividadModal, setShowSolicitudActividadModal] = useState(false)
   const [selectedTaller, setSelectedTaller] = useState(null)
   const [selectedAlumno, setSelectedAlumno] = useState(null)
   const [evidenciaText, setEvidenciaText] = useState("")
@@ -20,6 +21,20 @@ export default function MisTalleresContent() {
   const [misTalleres, setMisTalleres] = useState([])
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
+
+  // Estados para solicitud de recursos
+  const [solicitudRecursos, setSolicitudRecursos] = useState({
+    taller: "",
+    material: "",
+    motivos: "",
+  })
+
+  // Estados para solicitud de actividad
+  const [solicitudActividad, setSolicitudActividad] = useState({
+    taller: "",
+    actividad: "",
+    motivos: "",
+  })
 
   const [formData, setFormData] = useState({
     idTaller: "",
@@ -217,8 +232,254 @@ export default function MisTalleresContent() {
     setReporteGenerado(false)
   }
 
+  // Funciones para solicitud de recursos
+  const openSolicitudRecursosModal = () => {
+    setShowSolicitudRecursosModal(true)
+    setSolicitudRecursos({ taller: "", material: "", motivos: "" })
+  }
+
+  const closeSolicitudRecursosModal = () => {
+    setShowSolicitudRecursosModal(false)
+    setSolicitudRecursos({ taller: "", material: "", motivos: "" })
+  }
+
+  const openSolicitudActividadModal = () => {
+    setShowSolicitudActividadModal(true)
+  }
+
+  const closeSolicitudActividadModal = () => {
+    setShowSolicitudActividadModal(false)
+    setSolicitudActividad({ taller: "", actividad: "", motivos: "" })
+  }
+
+  const handleSolicitudRecursosChange = (field, value) => {
+    setSolicitudRecursos((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
+  const handleSolicitudActividadChange = (field, value) => {
+    setSolicitudActividad((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
+  const generarPDFSolicitudRecursos = () => {
+    const doc = new jsPDF()
+    const tallerSeleccionado = misTalleres.find((t) => t.id.toString() === solicitudRecursos.taller)
+
+    // Configuración del documento
+    doc.setFontSize(20)
+    doc.setTextColor(40, 40, 40)
+
+    // Título
+    doc.text("SOLICITUD DE RECURSOS", 105, 30, { align: "center" })
+
+    // Línea decorativa
+    doc.setLineWidth(0.5)
+    doc.setDrawColor(34, 197, 94) // Color emerald
+    doc.line(20, 40, 190, 40)
+
+    // Información del profesor
+    doc.setFontSize(14)
+    doc.setTextColor(60, 60, 60)
+    doc.text("INFORMACIÓN DEL SOLICITANTE", 20, 55)
+
+    doc.setFontSize(12)
+    doc.setTextColor(80, 80, 80)
+    doc.text(`Profesor: ${user?.email || "No especificado"}`, 20, 70)
+    doc.text(`Fecha de solicitud: ${new Date().toLocaleDateString("es-ES")}`, 20, 80)
+
+    // Información del taller
+    doc.setFontSize(14)
+    doc.setTextColor(60, 60, 60)
+    doc.text("TALLER ASOCIADO", 20, 100)
+
+    doc.setFontSize(12)
+    doc.setTextColor(80, 80, 80)
+    doc.text(`Nombre del taller: ${tallerSeleccionado?.nombre || "No especificado"}`, 20, 115)
+    doc.text(`Descripción: ${tallerSeleccionado?.descripcion || "No especificado"}`, 20, 125)
+
+    // Material solicitado
+    doc.setFontSize(14)
+    doc.setTextColor(60, 60, 60)
+    doc.text("MATERIAL SOLICITADO", 20, 145)
+
+    doc.setFontSize(12)
+    doc.setTextColor(80, 80, 80)
+    const materialLines = doc.splitTextToSize(solicitudRecursos.material, 170)
+    doc.text(materialLines, 20, 160)
+
+    // Motivos
+    const motivosY = 160 + materialLines.length * 7 + 15
+    doc.setFontSize(14)
+    doc.setTextColor(60, 60, 60)
+    doc.text("MOTIVOS DE LA SOLICITUD", 20, motivosY)
+
+    doc.setFontSize(12)
+    doc.setTextColor(80, 80, 80)
+    const motivosLines = doc.splitTextToSize(solicitudRecursos.motivos, 170)
+    doc.text(motivosLines, 20, motivosY + 15)
+
+    // Firma
+    const firmaY = motivosY + 15 + motivosLines.length * 7 + 30
+    doc.setLineWidth(0.3)
+    doc.setDrawColor(120, 120, 120)
+    doc.line(20, firmaY, 80, firmaY)
+    doc.text("Firma del Profesor", 20, firmaY + 10)
+
+    // Pie de página
+    doc.setFontSize(10)
+    doc.setTextColor(120, 120, 120)
+    doc.text("Este documento fue generado automáticamente por el sistema de gestión de talleres", 105, 280, {
+      align: "center",
+    })
+
+    // Descargar el PDF
+    doc.save(
+      `Solicitud_Recursos_${tallerSeleccionado?.nombre || "Taller"}_${new Date().toISOString().split("T")[0]}.pdf`,
+    )
+
+    // Cerrar modal y mostrar mensaje
+    closeSolicitudRecursosModal()
+    alert("Solicitud de recursos generada y descargada exitosamente")
+  }
+
+  const generarPDFSolicitudActividad = () => {
+    const doc = new jsPDF()
+    const tallerSeleccionado = misTalleres.find((t) => t.id.toString() === solicitudActividad.taller)
+
+    // Configuración del documento
+    doc.setFontSize(20)
+    doc.setTextColor(40, 40, 40)
+
+    // Título
+    doc.text("SOLICITUD DE ACTIVIDAD", 105, 30, { align: "center" })
+
+    // Línea decorativa
+    doc.setLineWidth(0.5)
+    doc.setDrawColor(34, 197, 94) // Color emerald
+    doc.line(20, 40, 190, 40)
+
+    // Información del profesor
+    doc.setFontSize(14)
+    doc.setTextColor(60, 60, 60)
+    doc.text("INFORMACIÓN DEL SOLICITANTE", 20, 55)
+
+    doc.setFontSize(12)
+    doc.setTextColor(80, 80, 80)
+    doc.text(`Profesor: ${user?.email || "No especificado"}`, 20, 70)
+    doc.text(`Fecha de solicitud: ${new Date().toLocaleDateString("es-ES")}`, 20, 80)
+
+    // Información del taller
+    doc.setFontSize(14)
+    doc.setTextColor(60, 60, 60)
+    doc.text("TALLER ASOCIADO", 20, 100)
+
+    doc.setFontSize(12)
+    doc.setTextColor(80, 80, 80)
+    doc.text(`Nombre del taller: ${tallerSeleccionado?.nombre || "No especificado"}`, 20, 115)
+    doc.text(`Descripción: ${tallerSeleccionado?.descripcion || "No especificado"}`, 20, 125)
+
+    // Actividad solicitada
+    doc.setFontSize(14)
+    doc.setTextColor(60, 60, 60)
+    doc.text("ACTIVIDAD A REALIZAR", 20, 145)
+
+    doc.setFontSize(12)
+    doc.setTextColor(80, 80, 80)
+    const actividadLines = doc.splitTextToSize(solicitudActividad.actividad, 170)
+    doc.text(actividadLines, 20, 160)
+
+    // Motivos
+    const motivosY = 160 + actividadLines.length * 7 + 15
+    doc.setFontSize(14)
+    doc.setTextColor(60, 60, 60)
+    doc.text("MOTIVOS DE LA SOLICITUD", 20, motivosY)
+
+    doc.setFontSize(12)
+    doc.setTextColor(80, 80, 80)
+    const motivosLines = doc.splitTextToSize(solicitudActividad.motivos, 170)
+    doc.text(motivosLines, 20, motivosY + 15)
+
+    // Firma
+    const firmaY = motivosY + 15 + motivosLines.length * 7 + 30
+    doc.setLineWidth(0.3)
+    doc.setDrawColor(120, 120, 120)
+    doc.line(20, firmaY, 80, firmaY)
+    doc.text("Firma del Profesor", 20, firmaY + 10)
+
+    // Pie de página
+    doc.setFontSize(10)
+    doc.setTextColor(120, 120, 120)
+    doc.text("Este documento fue generado automáticamente por el sistema de gestión de talleres", 105, 280, {
+      align: "center",
+    })
+
+    // Descargar el PDF
+    doc.save(
+      `Solicitud_Actividad_${tallerSeleccionado?.nombre || "Taller"}_${new Date().toISOString().split("T")[0]}.pdf`,
+    )
+
+    // Cerrar modal y mostrar mensaje
+    closeSolicitudActividadModal()
+    alert("Solicitud de actividad generada y descargada exitosamente")
+  }
+
+  const handleSubmitSolicitudRecursos = () => {
+    // Validaciones
+    if (!solicitudRecursos.taller) {
+      alert("Por favor seleccione un taller")
+      return
+    }
+    if (!solicitudRecursos.material.trim()) {
+      alert("Por favor especifique el material solicitado")
+      return
+    }
+    if (!solicitudRecursos.motivos.trim()) {
+      alert("Por favor especifique los motivos de la solicitud")
+      return
+    }
+
+    // Generar PDF
+    generarPDFSolicitudRecursos()
+  }
+
+  const handleSubmitSolicitudActividad = () => {
+    // Validaciones
+    if (!solicitudActividad.taller) {
+      alert("Por favor seleccione un taller")
+      return
+    }
+    if (!solicitudActividad.actividad.trim()) {
+      alert("Por favor especifique la actividad a realizar")
+      return
+    }
+    if (solicitudActividad.actividad.length > 50) {
+      alert("La actividad no puede exceder 50 caracteres")
+      return
+    }
+    if (!solicitudActividad.motivos.trim()) {
+      alert("Por favor especifique los motivos de la solicitud")
+      return
+    }
+
+    // Generar PDF
+    generarPDFSolicitudActividad()
+  }
+
   const handleSubmitEvidencia = async () => {
     try {
+      const urlEvidencia = document.getElementById("urlEvidencia").value
+
+      // Validar que la URL esté presente
+      if (!urlEvidencia.trim()) {
+        alert("La URL de evidencia es obligatoria")
+        return
+      }
+
       // Obtener la participación del alumno seleccionado
       const { data: participacion } = await supabase
         .from("ParticipacionEstudiante")
@@ -234,8 +495,9 @@ export default function MisTalleresContent() {
         // Insertar la evidencia
         const { error } = await supabase.from("Evidencia").insert({
           id_participacion: participacion.id_participacion,
-          semana: Number.parseInt(selectedWeek), // Use the selected week value
+          semana: Number.parseInt(selectedWeek),
           descripcion: evidenciaText,
+          url_evidencia: urlEvidencia, // Agregar la URL de evidencia
           fecha_envio: new Date().toISOString(),
           validada_por_profesor: 1,
           observaciones: `Evidencia registrada por el profesor para ${selectedAlumno.nombre}`,
@@ -353,26 +615,46 @@ export default function MisTalleresContent() {
                 {user && <p className="text-sm text-gray-600">{user.email}</p>}
               </div>
             </div>
-            <button
-              onClick={logout}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-lg flex items-center transition-colors"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+            <div className="flex flex-col space-y-2">
+              <button
+                onClick={logout}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-1.5 px-3 rounded-lg flex items-center transition-colors text-sm"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                />
-              </svg>
-              Cerrar sesión
-            </button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-1"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                  />
+                </svg>
+                Cerrar sesión
+              </button>
+
+              {/* Botones de solicitud */}
+              <div className="flex space-x-2">
+                <button
+                  onClick={openSolicitudRecursosModal}
+                  className="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-medium py-2 px-3 rounded-lg flex items-center transition-colors text-sm"
+                >
+                  <Package className="h-4 w-4 mr-1" />
+                  Solicitud recursos
+                </button>
+                <button
+                  onClick={openSolicitudActividadModal}
+                  className="bg-teal-100 hover:bg-teal-200 text-teal-800 font-medium py-2 px-3 rounded-lg flex items-center transition-colors text-sm"
+                >
+                  <Calendar className="h-4 w-4 mr-1" />
+                  Solicitud Actividad
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -616,7 +898,7 @@ export default function MisTalleresContent() {
         </div>
       )}
 
-      {/* Modal para subir evidencias - SIN FONDO OSCURO */}
+      {/* Modal para subir evidencias */}
       {showEvidenciaModal && selectedTaller && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden border border-gray-200">
@@ -686,24 +968,16 @@ export default function MisTalleresContent() {
                   </div>
 
                   <div className="mb-6">
-                    <label htmlFor="archivo" className="block text-sm font-medium text-gray-700 mb-2">
-                      Adjuntar Archivo (opcional)
+                    <label htmlFor="urlEvidencia" className="block text-sm font-medium text-gray-700 mb-2">
+                      Adjuntar url evidencia (Obligatorio) *
                     </label>
-                    <div className="flex items-center justify-center w-full">
-                      <label
-                        htmlFor="archivo"
-                        className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
-                      >
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                          <Upload className="w-8 h-8 mb-3 text-gray-400" />
-                          <p className="mb-2 text-sm text-gray-500">
-                            <span className="font-semibold">Haga clic para cargar</span> o arrastre y suelte
-                          </p>
-                          <p className="text-xs text-gray-500">PDF, DOCX, JPG, PNG (MAX. 10MB)</p>
-                        </div>
-                        <input id="archivo" type="file" className="hidden" />
-                      </label>
-                    </div>
+                    <input
+                      id="urlEvidencia"
+                      type="url"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      placeholder="https://ejemplo.com/evidencia"
+                      required
+                    />
                   </div>
 
                   <div className="flex justify-end space-x-3">
@@ -716,7 +990,7 @@ export default function MisTalleresContent() {
                     <button
                       onClick={handleSubmitEvidencia}
                       className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center"
-                      disabled={!evidenciaText.trim()}
+                      disabled={!evidenciaText.trim() || !document.getElementById("urlEvidencia")?.value?.trim()}
                     >
                       <Check className="w-4 h-4 mr-2" />
                       Guardar Evidencia
@@ -729,7 +1003,7 @@ export default function MisTalleresContent() {
         </div>
       )}
 
-      {/* Modal para generar reporte - SIN FONDO OSCURO */}
+      {/* Modal para generar reporte */}
       {showReporteModal && selectedTaller && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden border border-gray-200">
@@ -871,6 +1145,205 @@ export default function MisTalleresContent() {
           </div>
         </div>
       )}
+
+      {/* Modal para solicitud de recursos */}
+      {showSolicitudRecursosModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden border border-gray-200">
+            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50 flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900">Solicitud de Recursos</h2>
+              <button onClick={closeSolicitudRecursosModal} className="text-gray-500 hover:text-gray-700">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-6">
+                <label htmlFor="profesorSolicitante" className="block text-sm font-medium text-gray-700 mb-2">
+                  Profesor Solicitante
+                </label>
+                <input
+                  id="profesorSolicitante"
+                  type="text"
+                  value={user?.email || ""}
+                  disabled
+                  className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                />
+              </div>
+
+              <div className="mb-6">
+                <label htmlFor="tallerSolicitud" className="block text-sm font-medium text-gray-700 mb-2">
+                  Taller *
+                </label>
+                <select
+                  id="tallerSolicitud"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  value={solicitudRecursos.taller}
+                  onChange={(e) => handleSolicitudRecursosChange("taller", e.target.value)}
+                  required
+                >
+                  <option value="">Seleccione un taller</option>
+                  {misTalleres
+                    .filter((t) => t.estado === "activo")
+                    .map((taller) => (
+                      <option key={taller.id} value={taller.id}>
+                        {taller.nombre}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="mb-6">
+                <label htmlFor="materialSolicitado" className="block text-sm font-medium text-gray-700 mb-2">
+                  Material Solicitado *
+                </label>
+                <textarea
+                  id="materialSolicitado"
+                  rows={4}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  placeholder="Describa detalladamente el material que necesita..."
+                  value={solicitudRecursos.material}
+                  onChange={(e) => handleSolicitudRecursosChange("material", e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="mb-6">
+                <label htmlFor="motivosSolicitud" className="block text-sm font-medium text-gray-700 mb-2">
+                  Motivos de la Solicitud *
+                </label>
+                <textarea
+                  id="motivosSolicitud"
+                  rows={4}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  placeholder="Explique por qué necesita estos recursos..."
+                  value={solicitudRecursos.motivos}
+                  onChange={(e) => handleSolicitudRecursosChange("motivos", e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={closeSolicitudRecursosModal}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSubmitSolicitudRecursos}
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center"
+                >
+                  <Package className="w-4 h-4 mr-2" />
+                  Generar Solicitud PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para solicitud de actividad */}
+      {showSolicitudActividadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden border border-gray-200">
+            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50 flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900">Solicitud de Actividad</h2>
+              <button onClick={closeSolicitudActividadModal} className="text-gray-500 hover:text-gray-700">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-6">
+                <label htmlFor="profesorSolicitanteActividad" className="block text-sm font-medium text-gray-700 mb-2">
+                  Profesor Solicitante
+                </label>
+                <input
+                  id="profesorSolicitanteActividad"
+                  type="text"
+                  value={user?.email || ""}
+                  disabled
+                  className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                />
+              </div>
+
+              <div className="mb-6">
+                <label htmlFor="tallerSolicitudActividad" className="block text-sm font-medium text-gray-700 mb-2">
+                  Taller *
+                </label>
+                <select
+                  id="tallerSolicitudActividad"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  value={solicitudActividad.taller}
+                  onChange={(e) => handleSolicitudActividadChange("taller", e.target.value)}
+                  required
+                >
+                  <option value="">Seleccione un taller</option>
+                  {misTalleres
+                    .filter((t) => t.estado === "activo")
+                    .map((taller) => (
+                      <option key={taller.id} value={taller.id}>
+                        {taller.nombre}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="mb-6">
+                <label htmlFor="actividadRealizar" className="block text-sm font-medium text-gray-700 mb-2">
+                  Actividad a realizar * (máximo 50 caracteres)
+                </label>
+                <input
+                  id="actividadRealizar"
+                  type="text"
+                  maxLength={50}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  placeholder="Describa brevemente la actividad..."
+                  value={solicitudActividad.actividad}
+                  onChange={(e) => handleSolicitudActividadChange("actividad", e.target.value)}
+                  required
+                />
+                <div className="text-right text-sm text-gray-500 mt-1">
+                  {solicitudActividad.actividad.length}/50 caracteres
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label htmlFor="motivosSolicitudActividad" className="block text-sm font-medium text-gray-700 mb-2">
+                  Motivos de la Solicitud *
+                </label>
+                <textarea
+                  id="motivosSolicitudActividad"
+                  rows={4}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  placeholder="Explique por qué necesita realizar esta actividad..."
+                  value={solicitudActividad.motivos}
+                  onChange={(e) => handleSolicitudActividadChange("motivos", e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={closeSolicitudActividadModal}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSubmitSolicitudActividad}
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center"
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Generar Solicitud PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+

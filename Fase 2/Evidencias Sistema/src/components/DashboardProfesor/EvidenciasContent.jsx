@@ -415,18 +415,7 @@ export default function EvidenciasContent() {
         {/* Contenido principal */}
         <main className="flex-1 overflow-y-auto">
           <div className="px-4 sm:px-6 lg:px-8 py-8">
-            {/* Controles superiores */}
-            <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-              <p className="text-gray-600">Gestiona las evidencias de progreso de tus alumnos</p>
 
-              <button
-                onClick={openUploadModal}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg flex items-center transition-colors"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Subir Evidencia
-              </button>
-            </div>
 
             {/* Filtros avanzados */}
             <div className="mb-6 bg-white rounded-xl shadow-sm p-4 border border-gray-200">
