@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { BookOpen, Users, TrendingUp, FileText, Eye, Menu, X, Award } from 'lucide-react'
+import { BookOpen, Users, TrendingUp, FileText, Eye, Menu, X, Award } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { useNavigate } from "react-router-dom"
 import DashboardProfeSidebar from "../shared/DashboardProfeSidebar"
@@ -133,8 +133,65 @@ export default function DashboardProfesor() {
             }
           })
 
-          // Calcular progreso promedio (simulado basado en participaciones activas)
-          const progreso = totalAlumnos > 0 ? Math.round((alumnosActivos / totalAlumnos) * 100) : 0
+          // Calcular progreso real basado en evidencias de estudiantes
+          let progresoReal = 0
+          if (participaciones && participaciones.length > 0) {
+            console.log(`Calculando progreso para taller: ${taller.nombre_publico}`)
+            console.log(`Participaciones encontradas: ${participaciones.length}`)
+
+            // Obtener todas las evidencias de los estudiantes en este taller
+            const { data: evidenciasDelTaller, error: errorEvidencias } = await supabase
+              .from("Evidencia")
+              .select(`
+                id_evidencia,
+                validada_por_profesor,
+                id_participacion
+              `)
+              .in(
+                "id_participacion",
+                participaciones.map((p) => p.id_participacion),
+              )
+
+            console.log(`Evidencias encontradas: ${evidenciasDelTaller?.length || 0}`)
+            console.log("Error en evidencias:", errorEvidencias)
+
+            if (evidenciasDelTaller && evidenciasDelTaller.length > 0) {
+              // Contar evidencias validadas
+              const evidenciasValidadas = evidenciasDelTaller.filter(
+                (evidencia) => evidencia.validada_por_profesor ,
+              )
+
+              console.log(`Evidencias validadas: ${evidenciasValidadas.length}`)
+
+              // Calcular progreso total del taller
+              const totalEstudiantes = participaciones.length
+              const evidenciasRequeridas = 16 // Cada estudiante necesita 16 evidencias
+              const totalEvidenciasRequeridas = totalEstudiantes * evidenciasRequeridas
+
+              console.log(`Total estudiantes: ${totalEstudiantes}`)
+              console.log(`Evidencias requeridas por estudiante: ${evidenciasRequeridas}`)
+              console.log(`Total evidencias requeridas: ${totalEvidenciasRequeridas}`)
+
+              // Calcular porcentaje de progreso
+              progresoReal =
+                totalEvidenciasRequeridas > 0
+                  ? Math.round((evidenciasValidadas.length / totalEvidenciasRequeridas) * 100)
+                  : 0
+
+              console.log(`Progreso calculado: ${progresoReal}%`)
+            } else {
+              console.log("No se encontraron evidencias para este taller")
+              progresoReal = 0
+            }
+
+            // Asegurar que no exceda 100%
+            progresoReal = Math.min(progresoReal, 100)
+          } else {
+            console.log("No hay participaciones para este taller")
+            progresoReal = 0
+          }
+
+          console.log(`Progreso final para ${taller.nombre_publico}: ${progresoReal}%`)
 
           // Formatear fecha de inicio
           const fechaInicio = taller.PeriodoAcademico?.fecha_inicio
@@ -176,7 +233,7 @@ export default function DashboardProfesor() {
             totalAlumnos: totalAlumnos,
             estado: taller.estado === "activo" ? "activo" : taller.estado,
             distribucionNiveles: distribucionNiveles,
-            progreso: progreso,
+            progreso: progresoReal,
             fechaInicio: fechaInicio,
             duracion: duracion,
             horarios: ["Lunes 14:00-16:00", "Miércoles 14:00-16:00"], // Datos simulados
@@ -244,7 +301,7 @@ export default function DashboardProfesor() {
           .from("TallerImpartido")
           .select("id_taller_impartido, nombre_publico")
           .eq("profesor_asignado", usuario.id_usuario)
-          .eq("estado", "activo")
+          .eq("estado", "ACTIVO")
 
         if (errorTalleres || !talleres || talleres.length === 0) {
           return []
@@ -289,7 +346,7 @@ export default function DashboardProfesor() {
       // Calcular puntuación de destacado para cada estudiante
       const estudiantesConPuntuacion = participaciones.map((participacion) => {
         const evidenciasEstudiante = participacion.Evidencia || []
-        const evidenciasValidadas = evidenciasEstudiante.filter((e) => e.validada_por_profesor === 1)
+        const evidenciasValidadas = evidenciasEstudiante
 
         // Calcular puntuación base por cantidad de evidencias
         let puntuacion = evidenciasEstudiante.length * 10
@@ -393,7 +450,7 @@ export default function DashboardProfesor() {
           .from("TallerImpartido")
           .select("id_taller_impartido, nombre_publico")
           .eq("profesor_asignado", usuario.id_usuario)
-          .eq("estado", "activo")
+          .eq("estado", "ACTIVO")
 
         if (errorTalleres || !talleres) {
           return []

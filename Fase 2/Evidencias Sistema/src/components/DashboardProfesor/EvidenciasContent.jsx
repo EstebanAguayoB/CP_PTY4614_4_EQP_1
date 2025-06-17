@@ -153,29 +153,8 @@ export default function EvidenciasContent() {
     navigate("/")
   }
 
-  // Datos de los talleres del profesor
-  const misTalleres = [
-    { id: 1, nombre: "Robótica" },
-    { id: 2, nombre: "Programación" },
-    { id: 3, nombre: "Diseño 3D" },
-  ]
 
-  // Datos de alumnos por taller
-  const alumnosPorTaller = {
-    1: [
-      { id: 1, nombre: "Laura Martínez", nivel: "Avanzado" },
-      { id: 2, nombre: "Carlos Sánchez", nivel: "Intermedio" },
-      { id: 3, nombre: "Ana García", nivel: "Básico" },
-    ],
-    2: [
-      { id: 4, nombre: "Miguel Torres", nivel: "Intermedio" },
-      { id: 5, nombre: "Sofía Rodríguez", nivel: "Avanzado" },
-    ],
-    3: [
-      { id: 6, nombre: "Diego Flores", nivel: "Intermedio" },
-      { id: 7, nombre: "Isabella Moreno", nivel: "Básico" },
-    ],
-  }
+
 
   const openUploadModal = () => {
     setShowUploadModal(true)
