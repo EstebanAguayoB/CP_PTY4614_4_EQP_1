@@ -520,20 +520,148 @@ export default function MisTalleresContent() {
   }
 
   const handleGenerarReporte = () => {
-    // Aquí iría la lógica para generar el reporte
-    console.log("Generando reporte para el taller:", selectedTaller.nombre)
+    const tipoReporte = document.querySelector('input[name="tipo-reporte"]:checked').id
 
-    // Simulamos que el reporte se ha generado después de 1 segundo
-    setTimeout(() => {
-      setReporteGenerado(true)
-    }, 1000)
-  }
+    const doc = new jsPDF()
 
-  const handleDescargarReporte = () => {
-    // Aquí iría la lógica para descargar el reporte
-    console.log("Descargando reporte para el taller:", selectedTaller.nombre)
-    alert(`Reporte de ${selectedTaller.nombre} descargado con éxito`)
-    closeReporteModal()
+    // Configuración del documento
+    doc.setFontSize(20)
+    doc.setTextColor(40, 40, 40)
+
+    // Título principal
+    doc.text(`REPORTE - ${selectedTaller.nombre.toUpperCase()}`, 105, 30, { align: "center" })
+
+    // Línea decorativa
+    doc.setLineWidth(0.5)
+    doc.setDrawColor(34, 197, 94)
+    doc.line(20, 40, 190, 40)
+
+    // Información general del taller
+    doc.setFontSize(14)
+    doc.setTextColor(60, 60, 60)
+    doc.text("INFORMACIÓN GENERAL", 20, 55)
+
+    doc.setFontSize(12)
+    doc.setTextColor(80, 80, 80)
+    doc.text(`Nombre: ${selectedTaller.nombre}`, 20, 70)
+    doc.text(`Descripción: ${selectedTaller.descripcion}`, 20, 80)
+    doc.text(`Estado: ${selectedTaller.estado}`, 20, 90)
+    doc.text(`Total de Alumnos: ${selectedTaller.totalAlumnos}`, 20, 100)
+    doc.text(`Fecha de generación: ${new Date().toLocaleDateString("es-ES")}`, 20, 110)
+
+    let currentY = 130
+
+    if (tipoReporte === "completo") {
+      // Reporte completo
+      doc.setFontSize(14)
+      doc.setTextColor(60, 60, 60)
+      doc.text("PROGRESO GENERAL", 20, currentY)
+      currentY += 15
+
+      doc.setFontSize(12)
+      doc.setTextColor(80, 80, 80)
+      doc.text(`Progreso promedio: ${selectedTaller.progreso}%`, 20, currentY)
+      doc.text(`Evidencias pendientes: ${selectedTaller.evidenciasPendientes}`, 20, currentY + 10)
+      currentY += 30
+
+      // Distribución por niveles
+      doc.setFontSize(14)
+      doc.setTextColor(60, 60, 60)
+      doc.text("DISTRIBUCIÓN POR NIVELES", 20, currentY)
+      currentY += 15
+
+      doc.setFontSize(12)
+      doc.setTextColor(80, 80, 80)
+      doc.text(`Básico: ${selectedTaller.distribucionNiveles.basico} alumnos`, 20, currentY)
+      doc.text(`Intermedio: ${selectedTaller.distribucionNiveles.intermedio} alumnos`, 20, currentY + 10)
+      doc.text(`Avanzado: ${selectedTaller.distribucionNiveles.avanzado} alumnos`, 20, currentY + 20)
+      currentY += 40
+
+      // Lista de alumnos
+      doc.setFontSize(14)
+      doc.setTextColor(60, 60, 60)
+      doc.text("LISTA DE ALUMNOS", 20, currentY)
+      currentY += 15
+
+      doc.setFontSize(10)
+      selectedTaller.alumnos.forEach((alumno, index) => {
+        if (currentY > 250) {
+          doc.addPage()
+          currentY = 30
+        }
+        doc.text(
+          `${index + 1}. ${alumno.nombre} - Nivel: ${alumno.nivel} - Progreso: ${alumno.progreso}%`,
+          20,
+          currentY,
+        )
+        currentY += 8
+      })
+    } else if (tipoReporte === "alumnos") {
+      // Solo alumnos y progreso
+      doc.setFontSize(14)
+      doc.setTextColor(60, 60, 60)
+      doc.text("ALUMNOS Y PROGRESO", 20, currentY)
+      currentY += 15
+
+      doc.setFontSize(12)
+      doc.setTextColor(80, 80, 80)
+      doc.text(`Progreso promedio del taller: ${selectedTaller.progreso}%`, 20, currentY)
+      currentY += 20
+
+      doc.setFontSize(10)
+      selectedTaller.alumnos.forEach((alumno, index) => {
+        if (currentY > 250) {
+          doc.addPage()
+          currentY = 30
+        }
+        doc.text(`${index + 1}. ${alumno.nombre}`, 20, currentY)
+        doc.text(`Nivel: ${alumno.nivel}`, 80, currentY)
+        doc.text(`Progreso: ${alumno.progreso}%`, 130, currentY)
+        doc.text(`Email: ${alumno.email}`, 20, currentY + 8)
+        currentY += 18
+      })
+    } else if (tipoReporte === "evidencias") {
+      // Solo evidencias recientes
+      doc.setFontSize(14)
+      doc.setTextColor(60, 60, 60)
+      doc.text("EVIDENCIAS RECIENTES", 20, currentY)
+      currentY += 15
+
+      doc.setFontSize(12)
+      doc.setTextColor(80, 80, 80)
+      doc.text(`Evidencias pendientes de revisión: ${selectedTaller.evidenciasPendientes}`, 20, currentY)
+      currentY += 20
+
+      doc.setFontSize(10)
+      doc.text("Estado de evidencias por alumno:", 20, currentY)
+      currentY += 15
+
+      selectedTaller.alumnos.forEach((alumno, index) => {
+        if (currentY > 250) {
+          doc.addPage()
+          currentY = 30
+        }
+        doc.text(`${index + 1}. ${alumno.nombre} - Nivel: ${alumno.nivel}`, 20, currentY)
+        doc.text(`Estado: Evidencias al día`, 20, currentY + 8)
+        currentY += 18
+      })
+    }
+
+    // Pie de página
+    const totalPages = doc.internal.getNumberOfPages()
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i)
+      doc.setFontSize(10)
+      doc.setTextColor(120, 120, 120)
+      doc.text(`Página ${i} de ${totalPages}`, 105, 285, { align: "center" })
+      doc.text("Generado automáticamente por el sistema de gestión de talleres", 105, 290, { align: "center" })
+    }
+
+    // Descargar el PDF
+    const tipoTexto = tipoReporte === "completo" ? "Completo" : tipoReporte === "alumnos" ? "Alumnos" : "Evidencias"
+    doc.save(`Reporte_${tipoTexto}_${selectedTaller.nombre}_${new Date().toISOString().split("T")[0]}.pdf`)
+
+    setReporteGenerado(true)
   }
 
   if (loading) {
@@ -1057,35 +1185,6 @@ export default function MisTalleresContent() {
                     </div>
                   </div>
 
-                  <div className="mb-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Formato</h3>
-                    <div className="flex space-x-4">
-                      <div className="flex items-center">
-                        <input
-                          id="pdf"
-                          name="formato"
-                          type="radio"
-                          className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
-                          defaultChecked
-                        />
-                        <label htmlFor="pdf" className="ml-2 block text-sm font-medium text-gray-700">
-                          PDF
-                        </label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          id="excel"
-                          name="formato"
-                          type="radio"
-                          className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
-                        />
-                        <label htmlFor="excel" className="ml-2 block text-sm font-medium text-gray-700">
-                          Excel
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
                   <div className="flex justify-end space-x-3">
                     <button
                       onClick={closeReporteModal}
@@ -1098,7 +1197,7 @@ export default function MisTalleresContent() {
                       className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center"
                     >
                       <FileText className="w-4 h-4 mr-2" />
-                      Generar Reporte
+                      Generar Reporte PDF
                     </button>
                   </div>
                 </>
@@ -1109,34 +1208,14 @@ export default function MisTalleresContent() {
                   </div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">¡Reporte generado con éxito!</h3>
                   <p className="text-gray-600 mb-6">
-                    El reporte para el taller {selectedTaller.nombre} ha sido generado correctamente.
+                    El reporte para el taller {selectedTaller.nombre} ha sido generado y descargado correctamente.
                   </p>
-                  <div className="flex justify-center space-x-3">
+                  <div className="flex justify-center">
                     <button
                       onClick={closeReporteModal}
-                      className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                      className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
                     >
                       Cerrar
-                    </button>
-                    <button
-                      onClick={handleDescargarReporte}
-                      className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4 mr-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                        />
-                      </svg>
-                      Descargar Reporte
                     </button>
                   </div>
                 </div>
@@ -1346,4 +1425,3 @@ export default function MisTalleresContent() {
     </div>
   )
 }
-

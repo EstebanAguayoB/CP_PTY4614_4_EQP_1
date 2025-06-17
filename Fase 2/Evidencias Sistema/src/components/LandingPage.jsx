@@ -11,10 +11,10 @@ export default function LandingPage() {
   }
 
   const handleGetStarted = () => {
-    console.log("Desplazándose al footer...")
-    const footer = document.getElementById("footer-section")
-    if (footer) {
-      footer.scrollIntoView({
+    console.log("Desplazándose a las funcionalidades...")
+    const featuresSection = document.getElementById("features-section")
+    if (featuresSection) {
+      featuresSection.scrollIntoView({
         behavior: "smooth",
         block: "start",
       })
@@ -40,8 +40,8 @@ export default function LandingPage() {
       {/* Hero Section mejorado */}
       <section className="relative z-10 px-6 py-24 lg:py-32">
         {/* Patrón decorativo mejorado */}
-        <div className="absolute inset-0 bg-dot-pattern opacity-10"></div>
-        <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
+        <div className="absolute inset-0 bg-dot-pattern opacity-10 pointer-events-none"></div>
+        <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
 
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
@@ -87,10 +87,10 @@ export default function LandingPage() {
               </div>
 
               {/* Botón CTA mejorado */}
-              <div className="pt-8">
+              <div className="pt-8 relative z-20">
                 <button
                   onClick={handleGetStarted}
-                  className="group inline-flex items-center px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                  className="group inline-flex items-center px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 relative z-30 cursor-pointer"
                 >
                   Más información
                   <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
@@ -141,16 +141,16 @@ export default function LandingPage() {
               </div>
 
               {/* Elementos flotantes mejorados */}
-              <div className="absolute -top-6 -right-6 w-20 h-20 bg-gradient-to-br from-emerald-300 to-emerald-400 rounded-full opacity-70 animate-float shadow-lg"></div>
-              <div className="absolute -bottom-6 -left-6 w-16 h-16 bg-gradient-to-br from-teal-300 to-teal-400 rounded-2xl opacity-70 animate-float-delayed shadow-lg"></div>
-              <div className="absolute top-1/2 -right-4 w-12 h-12 bg-gradient-to-br from-cyan-300 to-cyan-400 rounded-full opacity-60 animate-pulse-slow"></div>
+              <div className="absolute -top-6 -right-6 w-20 h-20 bg-gradient-to-br from-emerald-300 to-emerald-400 rounded-full opacity-70 animate-float shadow-lg pointer-events-none"></div>
+              <div className="absolute -bottom-6 -left-6 w-16 h-16 bg-gradient-to-br from-teal-300 to-teal-400 rounded-2xl opacity-70 animate-float-delayed shadow-lg pointer-events-none"></div>
+              <div className="absolute top-1/2 -right-4 w-12 h-12 bg-gradient-to-br from-cyan-300 to-cyan-400 rounded-full opacity-60 animate-pulse-slow pointer-events-none"></div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Features Section mejorado */}
-      <section className="relative z-10 px-6 py-24 lg:py-32">
+      <section id="features-section" className="relative z-10 px-6 py-24 lg:py-32">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-20 animate-fade-in-up">
             <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6 tracking-tight">
@@ -221,9 +221,9 @@ export default function LandingPage() {
         </div>
 
         {/* Elementos decorativos flotantes mejorados */}
-        <div className="absolute top-1/4 left-10 w-24 h-24 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-full opacity-30 animate-float shadow-lg"></div>
-        <div className="absolute bottom-1/4 right-10 w-20 h-20 bg-gradient-to-br from-teal-100 to-teal-200 rounded-2xl rotate-45 opacity-30 animate-float-delayed shadow-lg"></div>
-        <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-gradient-to-br from-cyan-100 to-cyan-200 rounded-full opacity-25 animate-pulse-slow"></div>
+        <div className="absolute top-1/4 left-10 w-24 h-24 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-full opacity-30 animate-float shadow-lg pointer-events-none"></div>
+        <div className="absolute bottom-1/4 right-10 w-20 h-20 bg-gradient-to-br from-teal-100 to-teal-200 rounded-2xl rotate-45 opacity-30 animate-float-delayed shadow-lg pointer-events-none"></div>
+        <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-gradient-to-br from-cyan-100 to-cyan-200 rounded-full opacity-25 animate-pulse-slow pointer-events-none"></div>
       </section>
 
       {/* Footer mejorado */}
