@@ -995,7 +995,7 @@ export function GestionTalleres() {
             )}
 
             {showPeriodoModal && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent">
                 <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
                   <h2 className="text-xl font-semibold mb-4">Nuevo Período Académico</h2>
                   <form
