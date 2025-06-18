@@ -64,15 +64,7 @@ export function TallerDetails({ taller, onEdit }) {
             </dd>
           </div>
 
-          <div className="sm:col-span-1">
-            <dt className="flex items-center text-sm font-medium text-gray-500">
-              <MapPin className="mr-2 h-5 w-5 text-emerald-500" />
-              Ubicación
-            </dt>
-            <dd className="mt-1 text-sm text-gray-900">
-              {taller.ubicacion || 'Por definir'}
-            </dd>
-          </div>
+
 
           <div className="sm:col-span-1">
             <dt className="flex items-center text-sm font-medium text-gray-500">
