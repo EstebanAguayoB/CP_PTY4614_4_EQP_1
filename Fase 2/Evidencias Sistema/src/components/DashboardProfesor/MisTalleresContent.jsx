@@ -17,9 +17,12 @@ export default function MisTalleresContent() {
   const [selectedTaller, setSelectedTaller] = useState(null)
   const [selectedAlumno, setSelectedAlumno] = useState(null)
   const [evidenciaText, setEvidenciaText] = useState("")
+  const [evidenciaUrl, setEvidenciaUrl] = useState("")
   const [reporteGenerado, setReporteGenerado] = useState(false)
   const [misTalleres, setMisTalleres] = useState([])
   const [loading, setLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
   const navigate = useNavigate()
 
   // Estados para solicitud de recursos
@@ -211,6 +214,7 @@ export default function MisTalleresContent() {
   const openEvidenciaModal = (taller) => {
     setSelectedTaller(taller)
     setShowEvidenciaModal(true)
+    setShowSuccessMessage(false)
   }
 
   const closeEvidenciaModal = () => {
@@ -218,6 +222,13 @@ export default function MisTalleresContent() {
     setSelectedTaller(null)
     setSelectedAlumno(null)
     setEvidenciaText("")
+    setEvidenciaUrl("")
+    setShowSuccessMessage(false)
+    // Limpiar también el select de semana
+    const semanaSelect = document.getElementById("semana")
+    if (semanaSelect) {
+      semanaSelect.value = ""
+    }
   }
 
   const openReporteModal = (taller) => {
@@ -470,52 +481,112 @@ export default function MisTalleresContent() {
     generarPDFSolicitudActividad()
   }
 
+  // Función corregida para guardar evidencia
   const handleSubmitEvidencia = async () => {
-    try {
-      const urlEvidencia = document.getElementById("urlEvidencia").value
+    if (isSubmitting) return // Prevenir múltiples envíos
 
-      // Validar que la URL esté presente
-      if (!urlEvidencia.trim()) {
+    try {
+      setIsSubmitting(true)
+
+      // Validar que todos los campos requeridos estén presentes
+      if (!selectedAlumno) {
+        alert("Por favor seleccione un alumno")
+        return
+      }
+
+      const semanaSelect = document.getElementById("semana")
+      const semanaValue = semanaSelect?.value
+
+      if (!semanaValue) {
+        alert("Por favor seleccione una semana")
+        return
+      }
+
+      if (!evidenciaText.trim()) {
+        alert("Por favor ingrese una descripción de la evidencia")
+        return
+      }
+
+      if (!evidenciaUrl.trim()) {
         alert("La URL de evidencia es obligatoria")
         return
       }
 
+      // Validar que la URL tenga un formato válido
+      try {
+        new URL(evidenciaUrl)
+      } catch (e) {
+        alert("Por favor ingrese una URL válida (debe incluir http:// o https://)")
+        return
+      }
+
+      console.log("Iniciando proceso de guardado de evidencia...")
+      console.log("Alumno seleccionado:", selectedAlumno)
+      console.log("Taller seleccionado:", selectedTaller)
+
       // Obtener la participación del alumno seleccionado
-      const { data: participacion } = await supabase
+      const { data: participacion, error: participacionError } = await supabase
         .from("ParticipacionEstudiante")
         .select("id_participacion")
         .eq("id_estudiante", selectedAlumno.id)
         .eq("id_taller_impartido", selectedTaller.id)
         .single()
 
-      // Get the selected week from the form
-      const selectedWeek = document.getElementById("semana").value
-
-      if (participacion) {
-        // Insertar la evidencia
-        const { error } = await supabase.from("Evidencia").insert({
-          id_participacion: participacion.id_participacion,
-          semana: Number.parseInt(selectedWeek),
-          descripcion: evidenciaText,
-          url_evidencia: urlEvidencia, // Agregar la URL de evidencia
-          fecha_envio: new Date().toISOString(),
-          validada_por_profesor: 1,
-          observaciones: `Evidencia registrada por el profesor para ${selectedAlumno.nombre}`,
-        })
-
-        if (error) {
-          console.error("Error guardando evidencia:", error)
-          alert("Error al guardar la evidencia")
-        } else {
-          alert(`Evidencia guardada con éxito para ${selectedAlumno.nombre}`)
-          // Refrescar los datos
-          await fetchMisTalleres(user.email)
-          closeEvidenciaModal()
-        }
+      if (participacionError || !participacion) {
+        console.error("Error al obtener participación:", participacionError)
+        alert("Error al encontrar la participación del alumno en este taller")
+        return
       }
+
+      console.log("Participación encontrada:", participacion)
+
+      // Preparar los datos para insertar
+      const evidenciaData = {
+        id_participacion: participacion.id_participacion,
+        semana: Number.parseInt(semanaValue, 10),
+        descripcion: evidenciaText.trim(),
+        archivo_url: evidenciaUrl.trim(),
+        fecha_envio: new Date().toISOString(),
+        validada_por_profesor: 1, // Marcada como validada por el profesor
+        observaciones: `Evidencia registrada por el profesor ${user?.email || "Sistema"} para el alumno ${selectedAlumno.nombre}`,
+      }
+
+      console.log("Datos a insertar:", evidenciaData)
+
+      // Insertar la evidencia
+      const { data: insertedData, error: insertError } = await supabase.from("Evidencia").insert(evidenciaData).select()
+
+      if (insertError) {
+        console.error("Error guardando evidencia:", insertError)
+        alert(`Error al guardar la evidencia: ${insertError.message}`)
+        return
+      }
+
+      console.log("Evidencia guardada exitosamente:", insertedData)
+
+      // Mostrar mensaje de éxito
+      setShowSuccessMessage(true)
+
+      // Refrescar los datos de talleres para actualizar contadores
+      await fetchMisTalleres(user.email)
+
+      // Limpiar el formulario
+      setEvidenciaText("")
+      setEvidenciaUrl("")
+      setSelectedAlumno(null)
+      if (semanaSelect) {
+        semanaSelect.value = ""
+      }
+
+      // Auto-cerrar el modal después de 2 segundos
+      setTimeout(() => {
+        closeEvidenciaModal()
+      }, 2000)
     } catch (error) {
-      console.error("Error:", error)
-      alert("Error al guardar la evidencia")
+      console.error("Error inesperado:", error)
+      alert("Error inesperado al guardar la evidencia. Por favor, inténtelo de nuevo.")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -1026,9 +1097,9 @@ export default function MisTalleresContent() {
         </div>
       )}
 
-      {/* Modal para subir evidencias */}
+      {/* Modal para subir evidencias - MEJORADO */}
       {showEvidenciaModal && selectedTaller && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: "transparent" }}>
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden border border-gray-200">
             <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50 flex justify-between items-center">
               <h2 className="text-xl font-semibold text-gray-900">Subir Evidencia - {selectedTaller.nombre}</h2>
@@ -1038,92 +1109,133 @@ export default function MisTalleresContent() {
             </div>
 
             <div className="p-6">
-              <div className="mb-6">
-                <label htmlFor="alumno" className="block text-sm font-medium text-gray-700 mb-2">
-                  Seleccionar Alumno
-                </label>
-                <select
-                  id="alumno"
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  value={selectedAlumno ? selectedAlumno.id : ""}
-                  onChange={(e) => {
-                    const alumnoId = Number.parseInt(e.target.value)
-                    const alumno = selectedTaller.alumnos.find((a) => a.id === alumnoId)
-                    setSelectedAlumno(alumno)
-                  }}
-                >
-                  <option value="">Seleccione un alumno</option>
-                  {selectedTaller.alumnos.map((alumno) => (
-                    <option key={alumno.id} value={alumno.id}>
-                      {alumno.nombre} - {alumno.nivel}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Mensaje de éxito */}
+              {showSuccessMessage && (
+                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center">
+                    <Check className="h-5 w-5 text-green-600 mr-2" />
+                    <div>
+                      <h3 className="text-sm font-medium text-green-800">¡Evidencia guardada exitosamente!</h3>
+                      <p className="text-sm text-green-700 mt-1">
+                        La evidencia para {selectedAlumno?.nombre} ha sido registrada correctamente en la base de datos.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-              {selectedAlumno && (
+              {!showSuccessMessage && (
                 <>
                   <div className="mb-6">
-                    <label htmlFor="semana" className="block text-sm font-medium text-gray-700 mb-2">
-                      Semana *
+                    <label htmlFor="alumno" className="block text-sm font-medium text-gray-700 mb-2">
+                      Seleccionar Alumno *
                     </label>
                     <select
-                      id="semana"
+                      id="alumno"
                       className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                      required
+                      value={selectedAlumno ? selectedAlumno.id : ""}
+                      onChange={(e) => {
+                        const alumnoId = Number.parseInt(e.target.value)
+                        const alumno = selectedTaller.alumnos.find((a) => a.id === alumnoId)
+                        setSelectedAlumno(alumno)
+                      }}
+                      disabled={isSubmitting}
                     >
-                      <option value="">Seleccionar semana</option>
-                      {[...Array(16)].map((_, i) => (
-                        <option key={i + 1} value={i + 1}>
-                          Semana {i + 1}
+                      <option value="">Seleccione un alumno</option>
+                      {selectedTaller.alumnos.map((alumno) => (
+                        <option key={alumno.id} value={alumno.id}>
+                          {alumno.nombre} - {alumno.nivel}
                         </option>
                       ))}
                     </select>
                   </div>
 
-                  <div className="mb-6">
-                    <label htmlFor="evidencia" className="block text-sm font-medium text-gray-700 mb-2">
-                      Descripción de la Evidencia
-                    </label>
-                    <textarea
-                      id="evidencia"
-                      rows={5}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                      placeholder="Describa los avances y logros del alumno..."
-                      value={evidenciaText}
-                      onChange={(e) => setEvidenciaText(e.target.value)}
-                    ></textarea>
-                  </div>
+                  {selectedAlumno && (
+                    <>
+                      <div className="mb-6">
+                        <label htmlFor="semana" className="block text-sm font-medium text-gray-700 mb-2">
+                          Semana *
+                        </label>
+                        <select
+                          id="semana"
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                          required
+                          disabled={isSubmitting}
+                        >
+                          <option value="">Seleccionar semana</option>
+                          {[...Array(16)].map((_, i) => (
+                            <option key={i + 1} value={i + 1}>
+                              Semana {i + 1}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
 
-                  <div className="mb-6">
-                    <label htmlFor="urlEvidencia" className="block text-sm font-medium text-gray-700 mb-2">
-                      Adjuntar url evidencia (Obligatorio) *
-                    </label>
-                    <input
-                      id="urlEvidencia"
-                      type="url"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                      placeholder="https://ejemplo.com/evidencia"
-                      required
-                    />
-                  </div>
+                      <div className="mb-6">
+                        <label htmlFor="evidencia" className="block text-sm font-medium text-gray-700 mb-2">
+                          Descripción de la Evidencia *
+                        </label>
+                        <textarea
+                          id="evidencia"
+                          rows={4}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                          placeholder="Describa los avances y logros del alumno..."
+                          value={evidenciaText}
+                          onChange={(e) => setEvidenciaText(e.target.value)}
+                          disabled={isSubmitting}
+                          maxLength={500}
+                        />
+                        <p className="text-sm text-gray-500 mt-1">{evidenciaText.length}/500 caracteres</p>
+                      </div>
 
-                  <div className="flex justify-end space-x-3">
-                    <button
-                      onClick={closeEvidenciaModal}
-                      className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      onClick={handleSubmitEvidencia}
-                      className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center"
-                      disabled={!evidenciaText.trim() || !document.getElementById("urlEvidencia")?.value?.trim()}
-                    >
-                      <Check className="w-4 h-4 mr-2" />
-                      Guardar Evidencia
-                    </button>
-                  </div>
+                      <div className="mb-6">
+                        <label htmlFor="urlEvidencia" className="block text-sm font-medium text-gray-700 mb-2">
+                          URL de Evidencia *
+                        </label>
+                        <input
+                          id="urlEvidencia"
+                          type="url"
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                          placeholder="https://ejemplo.com/evidencia"
+                          value={evidenciaUrl}
+                          onChange={(e) => setEvidenciaUrl(e.target.value)}
+                          required
+                          disabled={isSubmitting}
+                        />
+                        <p className="text-sm text-gray-500 mt-1">
+                          Ingrese la URL completa donde se encuentra alojada la evidencia (debe incluir http:// o
+                          https://)
+                        </p>
+                      </div>
+
+                      <div className="flex justify-end space-x-3">
+                        <button
+                          onClick={closeEvidenciaModal}
+                          className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                          disabled={isSubmitting}
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          onClick={handleSubmitEvidencia}
+                          className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={!evidenciaText.trim() || !evidenciaUrl.trim() || isSubmitting}
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                              Guardando...
+                            </>
+                          ) : (
+                            <>
+                              <Check className="w-4 h-4 mr-2" />
+                              Guardar Evidencia
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -1252,53 +1364,48 @@ export default function MisTalleresContent() {
 
               <div className="mb-6">
                 <label htmlFor="tallerSolicitud" className="block text-sm font-medium text-gray-700 mb-2">
-                  Taller *
+                  Taller
                 </label>
                 <select
                   id="tallerSolicitud"
                   className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   value={solicitudRecursos.taller}
                   onChange={(e) => handleSolicitudRecursosChange("taller", e.target.value)}
-                  required
                 >
                   <option value="">Seleccione un taller</option>
-                  {misTalleres
-                    .filter((t) => t.estado === "activo")
-                    .map((taller) => (
-                      <option key={taller.id} value={taller.id}>
-                        {taller.nombre}
-                      </option>
-                    ))}
+                  {misTalleres.map((taller) => (
+                    <option key={taller.id} value={taller.id}>
+                      {taller.nombre}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div className="mb-6">
-                <label htmlFor="materialSolicitado" className="block text-sm font-medium text-gray-700 mb-2">
-                  Material Solicitado *
+                <label htmlFor="materialSolicitud" className="block text-sm font-medium text-gray-700 mb-2">
+                  Material Solicitado
                 </label>
                 <textarea
-                  id="materialSolicitado"
+                  id="materialSolicitud"
                   rows={4}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  placeholder="Describa detalladamente el material que necesita..."
+                  placeholder="Describa el material que necesita..."
                   value={solicitudRecursos.material}
                   onChange={(e) => handleSolicitudRecursosChange("material", e.target.value)}
-                  required
                 />
               </div>
 
               <div className="mb-6">
                 <label htmlFor="motivosSolicitud" className="block text-sm font-medium text-gray-700 mb-2">
-                  Motivos de la Solicitud *
+                  Motivos de la Solicitud
                 </label>
                 <textarea
                   id="motivosSolicitud"
                   rows={4}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  placeholder="Explique por qué necesita estos recursos..."
+                  placeholder="Explique por qué necesita este material..."
                   value={solicitudRecursos.motivos}
                   onChange={(e) => handleSolicitudRecursosChange("motivos", e.target.value)}
-                  required
                 />
               </div>
 
@@ -1349,57 +1456,50 @@ export default function MisTalleresContent() {
 
               <div className="mb-6">
                 <label htmlFor="tallerSolicitudActividad" className="block text-sm font-medium text-gray-700 mb-2">
-                  Taller *
+                  Taller
                 </label>
                 <select
                   id="tallerSolicitudActividad"
                   className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   value={solicitudActividad.taller}
                   onChange={(e) => handleSolicitudActividadChange("taller", e.target.value)}
-                  required
                 >
                   <option value="">Seleccione un taller</option>
-                  {misTalleres
-                    .filter((t) => t.estado === "activo")
-                    .map((taller) => (
-                      <option key={taller.id} value={taller.id}>
-                        {taller.nombre}
-                      </option>
-                    ))}
+                  {misTalleres.map((taller) => (
+                    <option key={taller.id} value={taller.id}>
+                      {taller.nombre}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div className="mb-6">
-                <label htmlFor="actividadRealizar" className="block text-sm font-medium text-gray-700 mb-2">
-                  Actividad a realizar * (máximo 50 caracteres)
+                <label htmlFor="actividadSolicitud" className="block text-sm font-medium text-gray-700 mb-2">
+                  Actividad a Realizar (máx. 50 caracteres)
                 </label>
                 <input
-                  id="actividadRealizar"
+                  id="actividadSolicitud"
                   type="text"
                   maxLength={50}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  placeholder="Describa brevemente la actividad..."
+                  placeholder="Nombre de la actividad..."
                   value={solicitudActividad.actividad}
                   onChange={(e) => handleSolicitudActividadChange("actividad", e.target.value)}
-                  required
                 />
-                <div className="text-right text-sm text-gray-500 mt-1">
-                  {solicitudActividad.actividad.length}/50 caracteres
-                </div>
+                <p className="text-sm text-gray-500 mt-1">{solicitudActividad.actividad.length}/50 caracteres</p>
               </div>
 
               <div className="mb-6">
-                <label htmlFor="motivosSolicitudActividad" className="block text-sm font-medium text-gray-700 mb-2">
-                  Motivos de la Solicitud *
+                <label htmlFor="motivosActividad" className="block text-sm font-medium text-gray-700 mb-2">
+                  Motivos de la Solicitud
                 </label>
                 <textarea
-                  id="motivosSolicitudActividad"
+                  id="motivosActividad"
                   rows={4}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   placeholder="Explique por qué necesita realizar esta actividad..."
                   value={solicitudActividad.motivos}
                   onChange={(e) => handleSolicitudActividadChange("motivos", e.target.value)}
-                  required
                 />
               </div>
 
