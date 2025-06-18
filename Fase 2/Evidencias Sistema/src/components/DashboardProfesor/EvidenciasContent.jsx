@@ -34,6 +34,14 @@ export default function EvidenciasContent() {
   const [evidencias, setEvidencias] = useState([])
   const [profesorActual, setProfesorActual] = useState(null)
 
+  // Agregar estos estados después de los estados existentes (línea ~45)
+  const [misTalleres, setMisTalleres] = useState([])
+  const [alumnosPorTaller, setAlumnosPorTaller] = useState({})
+
+  // Agregar estos estados después de alumnosPorTaller
+  const [nivelesDisponibles, setNivelesDisponibles] = useState([])
+  const [semanasDisponibles, setSemanasDisponibles] = useState([])
+
   useEffect(() => {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser()
@@ -45,7 +53,7 @@ export default function EvidenciasContent() {
           .from("Usuario")
           .select("id_usuario, nombre, apellido, correo")
           .eq("correo", data.user.email)
-          .eq("rol", "Profesor")
+          .eq("rol", "PROFESOR")
           .single()
 
         if (profesorData && !error) {
@@ -55,6 +63,10 @@ export default function EvidenciasContent() {
             ...prev,
             validadoPor: `${profesorData.nombre} ${profesorData.apellido}`,
           }))
+
+          // Cargar datos del profesor
+          await cargarMisTalleres()
+          await cargarNivelesDisponibles()
         } else {
           // Fallback al email si no se encuentra en la base de datos
           setFormData((prev) => ({
@@ -64,7 +76,8 @@ export default function EvidenciasContent() {
         }
 
         // Cargar historial de evidencias
-        cargarEvidencias()
+        await cargarEvidencias()
+
         // Simular carga de datos
         setTimeout(() => {
           setLoading(false)
@@ -75,6 +88,13 @@ export default function EvidenciasContent() {
     }
     getUser()
   }, [navigate])
+
+  // Agregar este useEffect después del useEffect principal
+  useEffect(() => {
+    if (profesorActual) {
+      cargarMisTalleres()
+    }
+  }, [profesorActual])
 
   const cargarEvidencias = async () => {
     try {
@@ -113,7 +133,9 @@ export default function EvidenciasContent() {
           idTaller: taller?.id_taller_impartido,
           tallerNombre: nombreTaller,
           alumno: estudiante ? `${estudiante.nombre} ${estudiante.apellido}` : "Desconocido",
-          nivel: evidencia.ParticipacionEstudiante?.nivel_actual || "No especificado",
+          nivel: evidencia.ParticipacionEstudiante?.nivel_actual
+            ? `Nivel ${evidencia.ParticipacionEstudiante.nivel_actual}`
+            : "No especificado",
           semana: evidencia.semana,
           descripcion: evidencia.descripcion || "Sin descripción",
           tipo: evidencia.archivo_url ? evidencia.archivo_url.split(".").pop() || "Documento" : "Documento",
@@ -134,6 +156,158 @@ export default function EvidenciasContent() {
     }
   }
 
+  // Agregar esta función después de cargarEvidencias (línea ~120)
+  const cargarMisTalleres = async () => {
+    try {
+      if (!profesorActual) return
+
+      // Obtener talleres asignados al profesor actual
+      const { data: talleresData, error } = await supabase
+        .from("TallerImpartido")
+        .select(`
+          id_taller_impartido,
+          nombre_publico,
+          descripcion_publica,
+          estado,
+          TallerDefinido:id_taller_definido (
+            nombre,
+            descripcion,
+            objetivos,
+            requisitos,
+            niveles_totales
+          )
+        `)
+        .eq("profesor_asignado", profesorActual.id_usuario)
+        .eq("estado", "ACTIVO")
+
+      if (error) {
+        console.error("Error al cargar talleres:", error)
+        return
+      }
+
+      // Transformar datos al formato esperado
+      const talleresFormateados = talleresData.map((taller) => ({
+        id: taller.id_taller_impartido,
+        nombre: taller.nombre_publico || taller.TallerDefinido?.nombre || "Sin nombre",
+        descripcion: taller.descripcion_publica || taller.TallerDefinido?.descripcion || "",
+        objetivos: taller.TallerDefinido?.objetivos || "",
+        requisitos: taller.TallerDefinido?.requisitos || "",
+        nivelesTotal: taller.TallerDefinido?.niveles_totales || 1,
+        estado: taller.estado,
+      }))
+
+      setMisTalleres(talleresFormateados)
+
+      // Cargar alumnos para cada taller
+      await cargarAlumnosPorTaller(talleresFormateados)
+      await cargarNivelesDisponibles()
+    } catch (error) {
+      console.error("Error al cargar talleres:", error)
+    }
+  }
+
+  // Agregar esta función después de cargarMisTalleres
+  const cargarAlumnosPorTaller = async (talleres) => {
+    try {
+      const alumnosData = {}
+
+      for (const taller of talleres) {
+        // Obtener estudiantes inscritos en cada taller
+        const { data: participaciones, error } = await supabase
+          .from("ParticipacionEstudiante")
+          .select(`
+            id_participacion,
+            nivel_actual,
+            estado,
+            Estudiante:id_estudiante (
+              id_estudiante,
+              nombre,
+              apellido,
+              rut,
+              correo_apoderado
+            ),
+            Nivel:nivel_actual (
+              numero_nivel,
+              descripcion
+            )
+          `)
+          .eq("id_taller_impartido", taller.id)
+          .in("estado", ["INSCRITO", "EN_PROGRESO"])
+
+        if (error) {
+          console.error(`Error al cargar alumnos del taller ${taller.id}:`, error)
+          continue
+        }
+
+        // Transformar datos de estudiantes
+        const estudiantesFormateados = participaciones.map((participacion) => {
+          const estudiante = participacion.Estudiante
+          const nivel = participacion.Nivel
+
+          return {
+            id: estudiante.id_estudiante,
+            nombre: `${estudiante.nombre} ${estudiante.apellido}`,
+            rut: estudiante.rut,
+            correoApoderado: estudiante.correo_apoderado,
+            nivel: nivel && nivel.numero_nivel ? `Nivel ${nivel.numero_nivel}` : "Nivel 1",
+            nivelDescripcion: nivel?.descripcion || "",
+            estado: participacion.estado,
+            idParticipacion: participacion.id_participacion,
+          }
+        })
+
+        alumnosData[taller.id] = estudiantesFormateados
+      }
+
+      setAlumnosPorTaller(alumnosData)
+    } catch (error) {
+      console.error("Error al cargar alumnos por taller:", error)
+    }
+  }
+
+  const cargarNivelesDisponibles = async () => {
+    try {
+      // Obtener todos los niveles únicos de los talleres del profesor
+      const { data: niveles, error } = await supabase
+        .from("Nivel")
+        .select(`
+        numero_nivel,
+        descripcion,
+        TallerDefinido:id_taller_definido (
+          TallerImpartido!inner (
+            profesor_asignado
+          )
+        )
+      `)
+        .eq("TallerDefinido.TallerImpartido.profesor_asignado", profesorActual?.id_usuario)
+
+      if (error) {
+        console.error("Error al cargar niveles:", error)
+        return
+      }
+
+      // Procesar y formatear los niveles únicos
+      const nivelesUnicos = [...new Set(niveles.map((n) => `Nivel ${n.numero_nivel}`))].sort((a, b) => {
+        const numA = Number.parseInt(a.split(" ")[1])
+        const numB = Number.parseInt(b.split(" ")[1])
+        return numA - numB
+      })
+
+      setNivelesDisponibles(nivelesUnicos)
+    } catch (error) {
+      console.error("Error al cargar niveles disponibles:", error)
+    }
+  }
+
+  const cargarSemanasDisponibles = () => {
+    // Obtener semanas únicas de las evidencias y ordenarlas
+    const semanas = [...new Set(evidencias.map((e) => e.semana))]
+      .filter((semana) => semana && semana !== "")
+      .sort((a, b) => Number.parseInt(a) - Number.parseInt(b))
+
+    setSemanasDisponibles(semanas)
+  }
+
   useEffect(() => {
     // Cuando cambia el taller seleccionado, resetear el alumno seleccionado
     if (formData.idTaller) {
@@ -144,6 +318,11 @@ export default function EvidenciasContent() {
     }
   }, [formData.idTaller])
 
+  // Agregar este useEffect después del useEffect existente de formData.idTaller
+  useEffect(() => {
+    cargarSemanasDisponibles()
+  }, [evidencias])
+
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen)
   }
@@ -152,9 +331,6 @@ export default function EvidenciasContent() {
     await supabase.auth.signOut()
     navigate("/")
   }
-
-
-
 
   const openUploadModal = () => {
     setShowUploadModal(true)
@@ -302,15 +478,22 @@ export default function EvidenciasContent() {
   }
 
   const getNivelColor = (nivel) => {
-    switch (nivel) {
-      case "Básico":
-        return "bg-blue-100 text-blue-800"
-      case "Intermedio":
-        return "bg-yellow-100 text-yellow-800"
-      case "Avanzado":
-        return "bg-green-100 text-green-800"
-      default:
-        return "bg-gray-100 text-gray-800"
+    // Convertir a string y manejar casos null/undefined
+    const nivelStr = String(nivel || "").toLowerCase()
+
+    if (nivelStr.includes("1") || nivelStr.includes("básico") || nivelStr.includes("basico")) {
+      return "bg-blue-100 text-blue-800"
+    } else if (nivelStr.includes("2") || nivelStr.includes("intermedio")) {
+      return "bg-yellow-100 text-yellow-800"
+    } else if (
+      nivelStr.includes("3") ||
+      nivelStr.includes("4") ||
+      nivelStr.includes("5") ||
+      nivelStr.includes("avanzado")
+    ) {
+      return "bg-green-100 text-green-800"
+    } else {
+      return "bg-gray-100 text-gray-800"
     }
   }
 
@@ -448,9 +631,11 @@ export default function EvidenciasContent() {
                     className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   >
                     <option value="">Todos los niveles</option>
-                    <option value="Básico">Básico</option>
-                    <option value="Intermedio">Intermedio</option>
-                    <option value="Avanzado">Avanzado</option>
+                    {nivelesDisponibles.map((nivel) => (
+                      <option key={nivel} value={nivel}>
+                        {nivel}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -464,13 +649,11 @@ export default function EvidenciasContent() {
                     className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   >
                     <option value="">Todas las semanas</option>
-                    {Array.from(new Set(evidencias.map((e) => e.semana)))
-                      .sort()
-                      .map((semana) => (
-                        <option key={semana} value={semana}>
-                          {semana}
-                        </option>
-                      ))}
+                    {semanasDisponibles.map((semana) => (
+                      <option key={semana} value={semana}>
+                        Semana {semana}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="flex-1">
