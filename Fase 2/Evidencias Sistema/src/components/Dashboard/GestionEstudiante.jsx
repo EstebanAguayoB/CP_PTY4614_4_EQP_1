@@ -87,45 +87,46 @@ export default function GestionEstudiante() {
     navigate("/")
   }
 
-  // Al cargar los alumnos desde la base de datos:
-  useEffect(() => {
-    const fetchAlumnos = async () => {
-      try {
-        setLoading(true)
-        const { data: alumnosDb, error } = await supabase.from("Estudiante").select(`
-            id_estudiante,
-            nombre,
-            apellido,
-            correo_apoderado,
+  const fetchAlumnos = async () => {
+    try {
+      setLoading(true)
+      const { data: alumnosDb, error } = await supabase.from("Estudiante").select(`
+          id_estudiante,
+          nombre,
+          apellido,
+          correo_apoderado,
+          estado,
+          ParticipacionEstudiante:ParticipacionEstudiante(
+            id_taller_impartido,
+            nivel_actual,
             estado,
-            ParticipacionEstudiante:ParticipacionEstudiante(
-              id_taller_impartido,
-              nivel_actual,
-              estado,
-              TallerImpartido(
-                nombre_publico
-              ),
-              Nivel(
-                numero_nivel
-              )
+            TallerImpartido(
+              nombre_publico
+            ),
+            Nivel(
+              numero_nivel
             )
-          `)
-        if (error) {
-          setError(error.message)
-        } else {
-          const alumnosProcesados = alumnosDb.map((alumno) => ({
-            ...alumno,
-            progreso: calcularProgreso(alumno), // Usa una función real, no Math.random()
-          }))
-          setAlumnos(alumnosProcesados)
-          setError(null)
-        }
-      } catch (err) {
-        setError(err.message)
-      } finally {
-        setLoading(false)
+          )
+        `)
+      if (error) {
+        setError(error.message)
+      } else {
+        const alumnosProcesados = alumnosDb.map((alumno) => ({
+          ...alumno,
+          progreso: calcularProgreso(alumno),
+        }))
+        setAlumnos(alumnosProcesados)
+        setError(null)
       }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
+  }
+
+
+  useEffect(() => {
     fetchAlumnos()
   }, [])
 
