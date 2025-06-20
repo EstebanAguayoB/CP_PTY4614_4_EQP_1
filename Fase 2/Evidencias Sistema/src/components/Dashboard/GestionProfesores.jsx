@@ -71,11 +71,7 @@ export default function GestionProfesores() {
   useEffect(() => {
     const getUsuarioDb = async () => {
       if (user && user.id) {
-        const { data: usuarioDb } = await supabase
-          .from("Usuario")
-          .select("id_usuario")
-          .eq("uid", user.id)
-          .single()
+        const { data: usuarioDb } = await supabase.from("Usuario").select("id_usuario").eq("uid", user.id).single()
         if (usuarioDb) {
           setUser((prev) => ({ ...prev, id_usuario: usuarioDb.id_usuario }))
         }
@@ -111,19 +107,19 @@ export default function GestionProfesores() {
         return
       }
 
-// ...dentro del useEffect o función que procesa los datos...
-const profesoresProcesados = profesoresData.map((profesor) => ({
-  id: profesor.id_usuario,
-  nombre: profesor.Usuario?.nombre || "",
-  apellido: profesor.Usuario?.apellido || "",
-  nombreCompleto: `${profesor.Usuario?.nombre || ""} ${profesor.Usuario?.apellido || ""}`,
-  correo: profesor.Usuario?.correo || "",
-  especialidad: profesor.especialidad,
-  nivel_educativo: profesor.nivel_educativo,
-  estado: profesor.activo ? "Activo" : "No Activo",
-  usuario: profesor.Usuario,
-}))
-setProfesores(profesoresProcesados)
+      // ...dentro del useEffect o función que procesa los datos...
+      const profesoresProcesados = profesoresData.map((profesor) => ({
+        id: profesor.id_usuario,
+        nombre: profesor.Usuario?.nombre || "",
+        apellido: profesor.Usuario?.apellido || "",
+        nombreCompleto: `${profesor.Usuario?.nombre || ""} ${profesor.Usuario?.apellido || ""}`,
+        correo: profesor.Usuario?.correo || "",
+        especialidad: profesor.especialidad,
+        nivel_educativo: profesor.nivel_educativo,
+        estado: profesor.activo ? "Activo" : "No Activo",
+        usuario: profesor.Usuario,
+      }))
+      setProfesores(profesoresProcesados)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -303,7 +299,7 @@ setProfesores(profesoresProcesados)
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  // Manejar envío del formulario
+  // Manejar envío del formulario - SOLUCIÓN ALTERNATIVA SIN PERMISOS ADMIN
   const handleSubmit = async (e) => {
     e.preventDefault()
     setFormError("")
@@ -318,7 +314,16 @@ setProfesores(profesoresProcesados)
     }
 
     try {
-      // 1. Registrar usuario en auth.users (Supabase Auth)
+      // GUARDAR LA INFORMACIÓN DE SESIÓN ACTUAL DEL COORDINADOR
+      const { data: currentSession } = await supabase.auth.getSession()
+      const coordinadorSession = currentSession.session
+      const coordinadorUser = coordinadorSession?.user
+
+      if (!coordinadorSession || !coordinadorUser) {
+        throw new Error("No se pudo obtener la sesión del coordinador")
+      }
+
+      // 1. Crear el nuevo usuario (esto cambiará temporalmente la sesión)
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: form.correo,
         password: form.contrasena,
@@ -337,7 +342,23 @@ setProfesores(profesoresProcesados)
       const uid = signUpData.user?.id
       if (!uid) throw new Error("No se pudo obtener el ID del usuario autenticado.")
 
-      // 2. Insertar en la tabla Usuario usando el uid de auth.users
+      // 2. INMEDIATAMENTE CERRAR LA SESIÓN DEL NUEVO USUARIO
+      await supabase.auth.signOut()
+
+      // 3. RESTAURAR LA SESIÓN DEL COORDINADOR
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: coordinadorSession.access_token,
+        refresh_token: coordinadorSession.refresh_token,
+      })
+
+      if (sessionError) {
+        console.error("Error restaurando sesión:", sessionError)
+        // Si no se puede restaurar la sesión, recargar la página
+        window.location.reload()
+        return
+      }
+
+      // 4. Insertar en la tabla Usuario usando el uid de auth.users
       const { data: usuario, error: errorUsuario } = await supabase
         .from("Usuario")
         .insert([
@@ -346,7 +367,7 @@ setProfesores(profesoresProcesados)
             nombre: form.nombre,
             apellido: form.apellido,
             correo: form.correo,
-            contrasena: form.contrasena, // Aquí se guarda la contraseña ingresada
+            contrasena: form.contrasena,
             rol: "PROFESOR",
             estado: "ACTIVO",
           },
@@ -356,7 +377,7 @@ setProfesores(profesoresProcesados)
 
       if (errorUsuario) throw new Error("Error al crear usuario en la base de datos: " + errorUsuario.message)
 
-      // 3. Crear detalle de profesor
+      // 5. Crear detalle de profesor
       const { error: errorDetalle } = await supabase.from("ProfesorDetalle").insert([
         {
           id_usuario: usuario.id_usuario,
@@ -368,6 +389,7 @@ setProfesores(profesoresProcesados)
 
       if (errorDetalle) throw new Error("Error al crear detalle de profesor: " + errorDetalle.message)
 
+      // 6. Crear asignación de taller
       const { error: errorAsignacion } = await supabase.from("AsignacionProfesor").insert([
         {
           id_usuario: usuario.id_usuario,
@@ -379,7 +401,7 @@ setProfesores(profesoresProcesados)
 
       if (errorAsignacion) throw new Error("Error al asignar taller: " + errorAsignacion.message)
 
-      // Registrar acción en el log
+      // 7. Registrar acción en el log
       await registrarAccion({
         id_usuario: user.id_usuario,
         accion: "Crear Profesor",
@@ -400,6 +422,13 @@ setProfesores(profesoresProcesados)
       await fetchProfesores()
     } catch (err) {
       setFormError(err.message)
+
+      // VERIFICAR Y RESTAURAR SESIÓN EN CASO DE ERROR
+      const { data: currentSession } = await supabase.auth.getSession()
+      if (!currentSession.session || currentSession.session.user.id !== user.id) {
+        console.error("Sesión perdida, recargando página...")
+        window.location.reload()
+      }
     }
     setIsSubmitting(false)
   }
