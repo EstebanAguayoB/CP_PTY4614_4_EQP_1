@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
-import { Search, UserPlus, Edit, ArrowLeft, Menu, UserCheck, ToggleRight, Loader2 } from "lucide-react"
+import { Search, UserPlus, Edit, ArrowLeft, Menu, UserCheck, ToggleRight, Loader2, Eye } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { useNavigate } from "react-router-dom"
 import DashboardSidebar from "../shared/DashboardSidebar"
@@ -55,6 +55,11 @@ export default function GestionProfesores() {
     especialidad: "",
     nivel_educativo: "",
   })
+
+  // Estado para talleres asociados y modal
+  const [talleresProfesor, setTalleresProfesor] = useState([])
+  const [showTalleresModal, setShowTalleresModal] = useState(false)
+  const [profesorSeleccionado, setProfesorSeleccionado] = useState(null)
 
   const navigate = useNavigate()
 
@@ -286,6 +291,9 @@ export default function GestionProfesores() {
     }
   }
 
+  // Nuevo estado para la pestaña activa
+  const [activeTab, setActiveTab] = useState("activos")
+
   // Filtro de búsqueda
   const filteredProfesores = profesores.filter(
     (prof) =>
@@ -293,6 +301,10 @@ export default function GestionProfesores() {
       prof.correo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       prof.especialidad?.toLowerCase().includes(searchTerm.toLowerCase()),
   )
+
+  // Filtrar por estado según la pestaña
+  const profesoresActivos = filteredProfesores.filter((prof) => prof.estado === "Activo")
+  const profesoresInactivos = filteredProfesores.filter((prof) => prof.estado === "No Activo")
 
   // Manejar cambios en el formulario
   const handleChange = (e) => {
@@ -464,6 +476,27 @@ export default function GestionProfesores() {
     "Orientación y Convivencia Escolar",
   ]
   const nivelesEducativos = ["BASICA", "MEDIA"]
+
+  // Función para obtener talleres asociados a un profesor
+  const handleVerTalleres = async (profesor) => {
+    setProfesorSeleccionado(profesor)
+    setShowTalleresModal(true)
+    setTalleresProfesor([]) // Limpia antes de cargar
+    try {
+      const { data, error } = await supabase
+        .from("AsignacionProfesor")
+        .select("id_taller_impartido, TallerImpartido(nombre_publico)")
+        .eq("id_usuario", profesor.id)
+        .eq("estado_asignacion", "ACTIVA")
+      if (error) {
+        setTalleresProfesor([])
+      } else {
+        setTalleresProfesor(data)
+      }
+    } catch {
+      setTalleresProfesor([])
+    }
+  }
 
   if (showAddForm) {
     return (
@@ -683,6 +716,30 @@ export default function GestionProfesores() {
                   </button>
                 </div>
 
+                {/* Pestañas */}
+                <div className="flex space-x-4 mb-4">
+                  <button
+                    className={`px-4 py-2 rounded-t-lg font-medium ${
+                      activeTab === "activos"
+                        ? "bg-emerald-100 text-emerald-800 border-b-2 border-emerald-500"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
+                    onClick={() => setActiveTab("activos")}
+                  >
+                    Activos
+                  </button>
+                  <button
+                    className={`px-4 py-2 rounded-t-lg font-medium ${
+                      activeTab === "inactivos"
+                        ? "bg-emerald-100 text-emerald-800 border-b-2 border-emerald-500"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
+                    onClick={() => setActiveTab("inactivos")}
+                  >
+                    Inactivos
+                  </button>
+                </div>
+
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
@@ -703,178 +760,367 @@ export default function GestionProfesores() {
                 <div className="text-red-600 text-sm bg-red-50 p-3 rounded mx-6 mb-6">Error: {error}</div>
               )}
 
-              {/* Tabla de profesores */}
+              {/* Tabla de profesores según la pestaña */}
               {!loading && (
                 <div className="overflow-x-auto">
-                  {filteredProfesores.length > 0 ? (
-                    <table className="w-full">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Nombre
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Email
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Especialidad
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Nivel Educativo
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Estado
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Acciones
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {filteredProfesores.map((prof) => (
-                          <tr key={prof.id} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                  {prof.nombreCompleto.charAt(0)}
-                                </div>
-                                <div className="ml-4">
-                                  {editingProfesor === prof.id ? (
-                                    <div className="flex space-x-2">
-                                      <input
-                                        type="text"
-                                        value={editForm.nombre}
-                                        onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
-                                        className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 w-20"
-                                        disabled={isSubmitting}
-                                      />
-                                      <input
-                                        type="text"
-                                        value={editForm.apellido}
-                                        onChange={(e) => setEditForm({ ...editForm, apellido: e.target.value })}
-                                        className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 w-20"
-                                        disabled={isSubmitting}
-                                      />
-                                    </div>
-                                  ) : (
-                                    <div className="text-sm font-medium text-gray-900">{prof.nombreCompleto}</div>
-                                  )}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {editingProfesor === prof.id ? (
-                                // Solo mostrar el correo, sin permitir editar
-                                <div className="text-sm text-gray-500">{editForm.correo}</div>
-                              ) : (
-                                <div className="text-sm text-gray-500">{prof.correo}</div>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {editingProfesor === prof.id ? (
-                                <select
-                                  value={editForm.especialidad}
-                                  onChange={(e) => setEditForm({ ...editForm, especialidad: e.target.value })}
-                                  className="text-sm border border-gray-300 rounded px-2 py-1"
-                                  disabled={isSubmitting}
-                                >
-                                  {especialidades.map((especialidad) => (
-                                    <option key={especialidad} value={especialidad}>
-                                      {especialidad}
-                                    </option>
-                                  ))}
-                                </select>
-                              ) : (
-                                <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                                  {prof.especialidad}
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {editingProfesor === prof.id ? (
-                                <select
-                                  value={editForm.nivel_educativo}
-                                  onChange={(e) => setEditForm({ ...editForm, nivel_educativo: e.target.value })}
-                                  className="text-sm border border-gray-300 rounded px-2 py-1"
-                                  disabled={isSubmitting}
-                                >
-                                  {nivelesEducativos.map((nivel) => (
-                                    <option key={nivel} value={nivel}>
-                                      {nivel}
-                                    </option>
-                                  ))}
-                                </select>
-                              ) : (
-                                <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                                  {prof.nivel_educativo}
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span
-                                className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                  prof.estado === "Activo"
-                                    ? "bg-emerald-100 text-emerald-800"
-                                    : "bg-gray-100 text-gray-800"
-                                }`}
-                              >
-                                {prof.estado}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                              {editingProfesor === prof.id ? (
-                                <div className="flex space-x-2">
-                                  <button
-                                    onClick={handleSaveEdit}
-                                    className="text-emerald-600 hover:text-emerald-900 transition-colors px-2 py-1 border border-emerald-600 rounded text-xs flex items-center"
-                                    disabled={isSubmitting}
-                                  >
-                                    {isSubmitting && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
-                                    {isSubmitting ? "..." : "Guardar"}
-                                  </button>
-                                  <button
-                                    onClick={handleCancelEdit}
-                                    className="text-gray-600 hover:text-gray-900 transition-colors px-2 py-1 border border-gray-600 rounded text-xs"
-                                    disabled={isSubmitting}
-                                  >
-                                    Cancelar
-                                  </button>
-                                </div>
-                              ) : (
-                                <div className="flex space-x-2">
-                                  <button
-                                    className="text-blue-600 hover:text-blue-900 transition-colors"
-                                    title="Editar"
-                                    onClick={() => handleEditProfesor(prof)}
-                                    disabled={isSubmitting}
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    className="text-gray-600 hover:text-gray-900 transition-colors"
-                                    title="Cambiar estado"
-                                    onClick={() => handleToggleEstado(prof)}
-                                    disabled={isSubmitting}
-                                  >
-                                    <ToggleRight className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              )}
-                            </td>
+                  {activeTab === "activos" ? (
+                    profesoresActivos.length > 0 ? (
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Nombre
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Email
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Especialidad
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Nivel Educativo
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Estado
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Acciones
+                            </th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {profesoresActivos.map((prof) => (
+                            <tr key={prof.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                    {prof.nombreCompleto.charAt(0)}
+                                  </div>
+                                  <div className="ml-4">
+                                    {editingProfesor === prof.id ? (
+                                      <div className="flex space-x-2">
+                                        <input
+                                          type="text"
+                                          value={editForm.nombre}
+                                          onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
+                                          className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 w-20"
+                                          disabled={isSubmitting}
+                                        />
+                                        <input
+                                          type="text"
+                                          value={editForm.apellido}
+                                          onChange={(e) => setEditForm({ ...editForm, apellido: e.target.value })}
+                                          className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 w-20"
+                                          disabled={isSubmitting}
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div className="text-sm font-medium text-gray-900">{prof.nombreCompleto}</div>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {editingProfesor === prof.id ? (
+                                  // Solo mostrar el correo, sin permitir editar
+                                  <div className="text-sm text-gray-500">{editForm.correo}</div>
+                                ) : (
+                                  <div className="text-sm text-gray-500">{prof.correo}</div>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {editingProfesor === prof.id ? (
+                                  <select
+                                    value={editForm.especialidad}
+                                    onChange={(e) => setEditForm({ ...editForm, especialidad: e.target.value })}
+                                    className="text-sm border border-gray-300 rounded px-2 py-1"
+                                    disabled={isSubmitting}
+                                  >
+                                    {especialidades.map((especialidad) => (
+                                      <option key={especialidad} value={especialidad}>
+                                        {especialidad}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                                    {prof.especialidad}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {editingProfesor === prof.id ? (
+                                  <select
+                                    value={editForm.nivel_educativo}
+                                    onChange={(e) => setEditForm({ ...editForm, nivel_educativo: e.target.value })}
+                                    className="text-sm border border-gray-300 rounded px-2 py-1"
+                                    disabled={isSubmitting}
+                                  >
+                                    {nivelesEducativos.map((nivel) => (
+                                      <option key={nivel} value={nivel}>
+                                        {nivel}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                                    {prof.nivel_educativo}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span
+                                  className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                    prof.estado === "Activo"
+                                      ? "bg-emerald-100 text-emerald-800"
+                                      : "bg-gray-100 text-gray-800"
+                                  }`}
+                                >
+                                  {prof.estado}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                {editingProfesor === prof.id ? (
+                                  <div className="flex space-x-2">
+                                    <button
+                                      onClick={handleSaveEdit}
+                                      className="text-emerald-600 hover:text-emerald-900 transition-colors px-2 py-1 border border-emerald-600 rounded text-xs flex items-center"
+                                      disabled={isSubmitting}
+                                    >
+                                      {isSubmitting && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
+                                      {isSubmitting ? "..." : "Guardar"}
+                                    </button>
+                                    <button
+                                      onClick={handleCancelEdit}
+                                      className="text-gray-600 hover:text-gray-900 transition-colors px-2 py-1 border border-gray-600 rounded text-xs"
+                                      disabled={isSubmitting}
+                                    >
+                                      Cancelar
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="flex space-x-2">
+                                    <button
+                                      className="text-blue-600 hover:text-blue-900 transition-colors"
+                                      title="Editar"
+                                      onClick={() => handleEditProfesor(prof)}
+                                      disabled={isSubmitting}
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      className="text-gray-600 hover:text-gray-900 transition-colors"
+                                      title="Cambiar estado"
+                                      onClick={() => handleToggleEstado(prof)}
+                                      disabled={isSubmitting}
+                                    >
+                                      <ToggleRight className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      className="text-emerald-600 hover:text-emerald-900 transition-colors"
+                                      title="Ver talleres asignados"
+                                      onClick={() => handleVerTalleres(prof)}
+                                      disabled={isSubmitting}
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div className="text-center py-12">
+                        <UserCheck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No hay profesores activos</h3>
+                        <p className="text-gray-500">
+                          {searchTerm
+                            ? "No se encontraron profesores activos que coincidan con tu búsqueda."
+                            : "Los profesores activos aparecerán aquí cuando se agreguen al sistema."}
+                        </p>
+                      </div>
+                    )
                   ) : (
-                    <div className="text-center py-12">
-                      <UserCheck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No hay profesores disponibles</h3>
-                      <p className="text-gray-500">
-                        {searchTerm
-                          ? "No se encontraron profesores que coincidan con tu búsqueda."
-                          : "Los profesores aparecerán aquí cuando se agreguen al sistema."}
-                      </p>
-                    </div>
+                    profesoresInactivos.length > 0 ? (
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Nombre
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Email
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Especialidad
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Nivel Educativo
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Estado
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Acciones
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {profesoresInactivos.map((prof) => (
+                            <tr key={prof.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                    {prof.nombreCompleto.charAt(0)}
+                                  </div>
+                                  <div className="ml-4">
+                                    {editingProfesor === prof.id ? (
+                                      <div className="flex space-x-2">
+                                        <input
+                                          type="text"
+                                          value={editForm.nombre}
+                                          onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
+                                          className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 w-20"
+                                          disabled={isSubmitting}
+                                        />
+                                        <input
+                                          type="text"
+                                          value={editForm.apellido}
+                                          onChange={(e) => setEditForm({ ...editForm, apellido: e.target.value })}
+                                          className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 w-20"
+                                          disabled={isSubmitting}
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div className="text-sm font-medium text-gray-900">{prof.nombreCompleto}</div>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {editingProfesor === prof.id ? (
+                                  // Solo mostrar el correo, sin permitir editar
+                                  <div className="text-sm text-gray-500">{editForm.correo}</div>
+                                ) : (
+                                  <div className="text-sm text-gray-500">{prof.correo}</div>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {editingProfesor === prof.id ? (
+                                  <select
+                                    value={editForm.especialidad}
+                                    onChange={(e) => setEditForm({ ...editForm, especialidad: e.target.value })}
+                                    className="text-sm border border-gray-300 rounded px-2 py-1"
+                                    disabled={isSubmitting}
+                                  >
+                                    {especialidades.map((especialidad) => (
+                                      <option key={especialidad} value={especialidad}>
+                                        {especialidad}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                                    {prof.especialidad}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {editingProfesor === prof.id ? (
+                                  <select
+                                    value={editForm.nivel_educativo}
+                                    onChange={(e) => setEditForm({ ...editForm, nivel_educativo: e.target.value })}
+                                    className="text-sm border border-gray-300 rounded px-2 py-1"
+                                    disabled={isSubmitting}
+                                  >
+                                    {nivelesEducativos.map((nivel) => (
+                                      <option key={nivel} value={nivel}>
+                                        {nivel}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                                    {prof.nivel_educativo}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span
+                                  className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                    prof.estado === "Activo"
+                                      ? "bg-emerald-100 text-emerald-800"
+                                      : "bg-gray-100 text-gray-800"
+                                  }`}
+                                >
+                                  {prof.estado}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                {editingProfesor === prof.id ? (
+                                  <div className="flex space-x-2">
+                                    <button
+                                      onClick={handleSaveEdit}
+                                      className="text-emerald-600 hover:text-emerald-900 transition-colors px-2 py-1 border border-emerald-600 rounded text-xs flex items-center"
+                                      disabled={isSubmitting}
+                                    >
+                                      {isSubmitting && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
+                                      {isSubmitting ? "..." : "Guardar"}
+                                    </button>
+                                    <button
+                                      onClick={handleCancelEdit}
+                                      className="text-gray-600 hover:text-gray-900 transition-colors px-2 py-1 border border-gray-600 rounded text-xs"
+                                      disabled={isSubmitting}
+                                    >
+                                      Cancelar
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="flex space-x-2">
+                                    <button
+                                      className="text-blue-600 hover:text-blue-900 transition-colors"
+                                      title="Editar"
+                                      onClick={() => handleEditProfesor(prof)}
+                                      disabled={isSubmitting}
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      className="text-gray-600 hover:text-gray-900 transition-colors"
+                                      title="Cambiar estado"
+                                      onClick={() => handleToggleEstado(prof)}
+                                      disabled={isSubmitting}
+                                    >
+                                      <ToggleRight className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      className="text-emerald-600 hover:text-emerald-900 transition-colors"
+                                      title="Ver talleres asignados"
+                                      onClick={() => handleVerTalleres(prof)}
+                                      disabled={isSubmitting}
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div className="text-center py-12">
+                        <UserCheck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No hay profesores inactivos</h3>
+                        <p className="text-gray-500">
+                          {searchTerm
+                            ? "No se encontraron profesores inactivos que coincidan con tu búsqueda."
+                            : "Los profesores inactivos aparecerán aquí cuando se cambie su estado."}
+                        </p>
+                      </div>
+                    )
                   )}
                 </div>
               )}
@@ -882,6 +1128,34 @@ export default function GestionProfesores() {
           </div>
         </main>
       </div>
+
+      {/* Modal para mostrar talleres */}
+      {showTalleresModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">
+              Talleres asignados a {profesorSeleccionado?.nombreCompleto}
+            </h3>
+            {talleresProfesor.length > 0 ? (
+              <ul className="list-disc pl-5 space-y-1">
+                {talleresProfesor.map((t) => (
+                  <li key={t.id_taller_impartido}>
+                    {t.TallerImpartido?.nombre_publico || "Sin nombre"}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-600">No tiene talleres asignados.</p>
+            )}
+            <button
+              className="mt-6 px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
+              onClick={() => setShowTalleresModal(false)}
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
