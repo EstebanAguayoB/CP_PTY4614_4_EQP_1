@@ -65,11 +65,7 @@ export default function GestionEstudiante() {
   useEffect(() => {
     const getUsuarioDb = async () => {
       if (user && user.id) {
-        const { data: usuarioDb } = await supabase
-          .from("Usuario")
-          .select("id_usuario")
-          .eq("uid", user.id)
-          .single()
+        const { data: usuarioDb } = await supabase.from("Usuario").select("id_usuario").eq("uid", user.id).single()
         if (usuarioDb) {
           setUser((prev) => ({ ...prev, id_usuario: usuarioDb.id_usuario }))
         }
@@ -91,23 +87,29 @@ export default function GestionEstudiante() {
     try {
       setLoading(true)
       const { data: alumnosDb, error } = await supabase.from("Estudiante").select(`
-          id_estudiante,
-          nombre,
-          apellido,
-          correo_apoderado,
-          estado,
-          ParticipacionEstudiante:ParticipacionEstudiante(
-            id_taller_impartido,
-            nivel_actual,
-            estado,
-            TallerImpartido(
-              nombre_publico
-            ),
-            Nivel(
-              numero_nivel
-            )
-          )
-        `)
+    id_estudiante,
+    nombre,
+    apellido,
+    correo_apoderado,
+    estado,
+    ParticipacionEstudiante:ParticipacionEstudiante(
+      id_participacion,
+      id_taller_impartido,
+      nivel_actual,
+      estado,
+      TallerImpartido(
+        nombre_publico
+      ),
+      Nivel(
+        numero_nivel
+      ),
+      Evidencia:Evidencia(
+        id_evidencia,
+        semana,
+        validada_por_profesor
+      )
+    )
+  `)
       if (error) {
         setError(error.message)
       } else {
@@ -124,7 +126,6 @@ export default function GestionEstudiante() {
       setLoading(false)
     }
   }
-
 
   useEffect(() => {
     fetchAlumnos()
@@ -244,7 +245,11 @@ export default function GestionEstudiante() {
 
     try {
       setSubmitting(true)
-      const { data, error } = await supabase.from("Estudiante").insert([{ ...form, estado: "ACTIVO" }]).select().single()
+      const { data, error } = await supabase
+        .from("Estudiante")
+        .insert([{ ...form, estado: "ACTIVO" }])
+        .select()
+        .single()
       if (!error && data) {
         // REGISTRO EN LOGACCION
         await registrarAccion({
@@ -630,14 +635,21 @@ export default function GestionEstudiante() {
 }
 
 function calcularProgreso(alumno) {
-  // Lógica real para calcular el progreso del alumno
-  // Por ejemplo, basado en sus participaciones y el estado actual
+  // Obtener la participación activa del alumno
   const participaciones = alumno.ParticipacionEstudiante || []
-  const totalTalleres = participaciones.length
-  const talleresCompletados = participaciones.filter(
-    (p) => p.estado === "FINALIZADO" || p.estado === "CERTIFICADO",
-  ).length
+  const participacionActiva =
+    participaciones.find((p) => p.estado === "EN_PROGRESO" || p.estado === "INSCRITO") || participaciones[0]
 
-  // Retorna un porcentaje
-  return totalTalleres > 0 ? Math.floor((talleresCompletados / totalTalleres) * 100) : 0
+  if (!participacionActiva) {
+    return 0
+  }
+
+  // Contar las evidencias de la participación activa
+  const evidencias = participacionActiva.Evidencia || []
+  const totalEvidencias = evidencias.length
+
+  // Calcular progreso basado en 16 evidencias para el 100%
+  const progreso = Math.min(Math.floor((totalEvidencias / 16) * 100), 100)
+
+  return progreso
 }
