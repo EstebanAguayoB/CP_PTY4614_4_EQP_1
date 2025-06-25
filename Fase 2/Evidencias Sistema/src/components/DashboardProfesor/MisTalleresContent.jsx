@@ -121,14 +121,26 @@ export default function MisTalleresContent() {
 
           // Procesar alumnos
           const alumnos =
-            participaciones?.map((participacion) => {
+            participaciones?.map(async (participacion) => {
               const estudiante = participacion.Estudiante
               const nivelActual = participacion.Nivel
 
+              // Reemplazar esta sección:
               // Calcular progreso basado en el nivel actual vs niveles totales
-              const progresoCalculado = nivelActual
-                ? Math.round((nivelActual.numero_nivel / taller.TallerDefinido.niveles_totales) * 100)
-                : 0
+              // const progresoCalculado = nivelActual
+              //   ? Math.round((nivelActual.numero_nivel / taller.TallerDefinido.niveles_totales) * 100)
+              //   : 0
+
+              // Por esta nueva lógica:
+              // Obtener evidencias validadas para este alumno
+              const { data: evidenciasValidadas } = await supabase
+                .from("Evidencia")
+                .select("id_evidencia")
+                .eq("id_participacion", participacion.id_participacion)
+                .eq("validada_por_profesor", 1)
+
+              const evidenciasCompletadas = evidenciasValidadas?.length || 0
+              const progresoCalculado = Math.round((evidenciasCompletadas / 16) * 100)
 
               return {
                 id: estudiante.id_estudiante,
@@ -139,31 +151,47 @@ export default function MisTalleresContent() {
               }
             }) || []
 
+          const alumnosResolved = await Promise.all(alumnos)
+
           // Calcular distribución por niveles
           const distribucionNiveles = {
-            basico: alumnos.filter((a) => a.nivel === "Básico").length,
-            intermedio: alumnos.filter((a) => a.nivel === "Intermedio").length,
-            avanzado: alumnos.filter((a) => a.nivel === "Avanzado").length,
+            basico: alumnosResolved.filter((a) => a.nivel === "Básico").length,
+            intermedio: alumnosResolved.filter((a) => a.nivel === "Intermedio").length,
+            avanzado: alumnosResolved.filter((a) => a.nivel === "Avanzado").length,
           }
 
+          // Reemplazar:
           // Calcular progreso promedio del taller
+          // const progresoPromedio =
+          //   alumnos.length > 0
+          //     ? Math.round(alumnos.reduce((sum, alumno) => sum + alumno.progreso, 0) / alumnos.length)
+          //     : 0
+
+          // Por:
+          // Calcular progreso promedio del taller basado en evidencias
+          const totalEvidenciasEsperadas = alumnosResolved.length * 16
+          const { data: todasEvidenciasValidadas } = await supabase
+            .from("Evidencia")
+            .select("id_evidencia")
+            .in("id_participacion", participaciones?.map((p) => p.id_participacion) || [])
+            .eq("validada_por_profesor", 1)
+
+          const totalEvidenciasCompletadas = todasEvidenciasValidadas?.length || 0
           const progresoPromedio =
-            alumnos.length > 0
-              ? Math.round(alumnos.reduce((sum, alumno) => sum + alumno.progreso, 0) / alumnos.length)
-              : 0
+            totalEvidenciasEsperadas > 0 ? Math.round((totalEvidenciasCompletadas / totalEvidenciasEsperadas) * 100) : 0
 
           return {
             id: taller.id_taller_impartido,
             nombre: taller.nombre_publico || taller.TallerDefinido.nombre,
             descripcion: taller.descripcion_publica || taller.TallerDefinido.descripcion,
             niveles: getNivelesLabels(taller.TallerDefinido.niveles_totales),
-            totalAlumnos: alumnos.length,
+            totalAlumnos: alumnosResolved.length,
             evidenciasPendientes: evidenciasPendientes?.length || 0,
             estado: taller.estado === "activo" ? "activo" : "inactivo",
             distribucionNiveles,
             progreso: progresoPromedio,
             proximasActividades: [], // Esto se puede implementar más adelante
-            alumnos,
+            alumnos: alumnosResolved,
           }
         }),
       )
@@ -1099,7 +1127,10 @@ export default function MisTalleresContent() {
 
       {/* Modal para subir evidencias - MEJORADO */}
       {showEvidenciaModal && selectedTaller && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: "transparent" }}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: "transparent" }}
+        >
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden border border-gray-200">
             <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50 flex justify-between items-center">
               <h2 className="text-xl font-semibold text-gray-900">Subir Evidencia - {selectedTaller.nombre}</h2>
