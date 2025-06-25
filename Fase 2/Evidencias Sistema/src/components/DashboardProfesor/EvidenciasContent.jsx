@@ -403,27 +403,33 @@ export default function EvidenciasContent() {
   }
 
   // Filtrar evidencias
-  const evidenciasFiltradas = evidencias.filter((evidencia) => {
-    const matchesTab = activeTab === "pendientes" ? evidencia.estado === "Pendiente" : evidencia.estado === "Aprobado"
+  const evidenciasFiltradas = evidencias
+    .filter((evidencia) => {
+      const matchesTab = activeTab === "pendientes" ? evidencia.estado === "Pendiente" : evidencia.estado === "Aprobado"
 
-    const matchesSearch =
-      evidencia.alumno.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      evidencia.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      evidencia.tallerNombre.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesSearch =
+        evidencia.alumno.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        evidencia.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        evidencia.tallerNombre.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesTaller = filterTaller === "" || evidencia.idTaller === Number.parseInt(filterTaller)
-    const matchesNivel = filterNivel === "" || evidencia.nivel === filterNivel
-    const matchesSemana = filterSemana === "" || evidencia.semana === filterSemana
-    const matchesFecha = filterFecha === "" || evidencia.fecha.includes(filterFecha)
+      const matchesTaller = filterTaller === "" || evidencia.idTaller === Number.parseInt(filterTaller)
+      const matchesNivel = filterNivel === "" || evidencia.nivel === filterNivel
+      const matchesSemana = filterSemana === "" || evidencia.semana === filterSemana
+      const matchesFecha = filterFecha === "" || evidencia.fecha.includes(filterFecha)
 
-    return matchesSearch && matchesTab && matchesTaller && matchesNivel && matchesSemana && matchesFecha
-  })
+      return matchesSearch && matchesTab && matchesTaller && matchesNivel && matchesSemana && matchesFecha
+    })
+    .map((evidencia) => ({
+      ...evidencia,
+      estado: "Aprobada", // Fuerza el estado visual a "Aprobada"
+    }))
 
   const getEstadoColor = (estado) => {
     switch (estado) {
       case "Pendiente":
         return "bg-yellow-100 text-yellow-800"
       case "Aprobado":
+      case "Aprobada": // Añade esta línea
         return "bg-green-100 text-green-800 border-green-300"
       default:
         return "bg-gray-100 text-gray-800"
@@ -651,18 +657,9 @@ export default function EvidenciasContent() {
                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                     }`}
                   >
-                    Pendientes ({evidenciasPendientes})
+                    Aprobadas ({evidenciasPendientes})
                   </button>
-                  <button
-                    onClick={() => setActiveTab("aprobadas")}
-                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === "aprobadas"
-                        ? "border-emerald-500 text-emerald-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    Aprobadas ({evidenciasAprobadas})
-                  </button>
+                  {/* Elimina o comenta la otra pestaña si quieres */}
                 </nav>
               </div>
             </div>
@@ -671,12 +668,10 @@ export default function EvidenciasContent() {
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
               <div className="p-6 border-b border-gray-200">
                 <h2 className="text-xl font-semibold text-gray-900">
-                  {activeTab === "pendientes" ? "Evidencias Pendientes" : "Evidencias Aprobadas"}
+                  Evidencias Aprobadas
                 </h2>
                 <p className="text-gray-600">
-                  {activeTab === "pendientes"
-                    ? "Evidencias que requieren revisión y aprobación"
-                    : "Evidencias que ya han sido revisadas y aprobadas"}
+                  Evidencias que ya han sido aprobadas
                 </p>
               </div>
 
@@ -778,12 +773,10 @@ export default function EvidenciasContent() {
                       <FileText className="h-8 w-8 text-gray-400" />
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No hay evidencias {activeTab === "pendientes" ? "pendientes" : "aprobadas"}
+                      No hay evidencias aprobadas
                     </h3>
                     <p className="text-gray-500 max-w-md">
-                      {activeTab === "pendientes"
-                        ? "No tienes evidencias pendientes de revisión en este momento."
-                        : "No hay evidencias aprobadas para mostrar."}
+                      No hay evidencias aprobadas para mostrar.
                     </p>
                     {evidencias.length === 0 && (
                       <div className="mt-4 text-sm text-gray-400">
