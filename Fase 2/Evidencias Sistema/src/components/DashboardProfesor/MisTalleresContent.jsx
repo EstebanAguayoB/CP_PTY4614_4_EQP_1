@@ -125,11 +125,11 @@ export default function MisTalleresContent() {
               const estudiante = participacion.Estudiante
               const nivelActual = participacion.Nivel
 
-              // Reemplazar esta sección:
-              // Calcular progreso basado en el nivel actual vs niveles totales
-              // const progresoCalculado = nivelActual
-              //   ? Math.round((nivelActual.numero_nivel / taller.TallerDefinido.niveles_totales) * 100)
-              //   : 0
+                // Reemplazar esta sección:
+                // Calcular progreso basado en el nivel actual vs niveles totales
+                // const progresoCalculado = nivelActual
+                //   ? Math.round((nivelActual.numero_nivel / taller.TallerDefinido.niveles_totales) * 100)
+                //   : 0
 
               // Por esta nueva lógica:
               // Obtener evidencias validadas para este alumno
@@ -372,7 +372,7 @@ export default function MisTalleresContent() {
     // Pie de página
     doc.setFontSize(10)
     doc.setTextColor(120, 120, 120)
-    doc.text("Este documento fue generado automáticamente por el sistema de gestión de talleres", 105, 280, {
+    doc.text("Este documento fue generado automáticamente por Skiltrack©", 105, 280, {
       align: "center",
     })
 
@@ -453,7 +453,7 @@ export default function MisTalleresContent() {
     // Pie de página
     doc.setFontSize(10)
     doc.setTextColor(120, 120, 120)
-    doc.text("Este documento fue generado automáticamente por el sistema de gestión de talleres", 105, 280, {
+    doc.text("Este documento fue generado automáticamente por Skiltrack©", 105, 280, {
       align: "center",
     })
 
@@ -609,8 +609,7 @@ export default function MisTalleresContent() {
       // Auto-cerrar el modal después de 2 segundos
       setTimeout(() => {
         closeEvidenciaModal()
-      }, 2000)
-    } catch (error) {
+      }, 2000)    } catch (error) {
       console.error("Error inesperado:", error)
       alert("Error inesperado al guardar la evidencia. Por favor, inténtelo de nuevo.")
     } finally {
@@ -618,10 +617,30 @@ export default function MisTalleresContent() {
     }
   }
 
-  const handleGenerarReporte = () => {
-    const tipoReporte = document.querySelector('input[name="tipo-reporte"]:checked').id
+  const handleGenerarReporte = async () => {
+    try {
+      // Validar que selectedTaller esté disponible
+      if (!selectedTaller) {
+        console.error("No hay taller seleccionado")
+        alert("Error: No se ha seleccionado un taller")
+        return
+      }
 
-    const doc = new jsPDF()
+      // Validar que selectedTaller tenga la estructura necesaria
+      if (!selectedTaller.alumnos || !Array.isArray(selectedTaller.alumnos)) {
+        console.error("El taller seleccionado no tiene alumnos válidos:", selectedTaller)
+        alert("Error: El taller seleccionado no tiene información de alumnos")
+        return
+      }
+
+      const tipoReporte = document.querySelector('input[name="tipo-reporte"]:checked')?.id
+      
+      if (!tipoReporte) {
+        alert("Por favor seleccione un tipo de reporte")
+        return
+      }
+
+      const doc = new jsPDF()
 
     // Configuración del documento
     doc.setFontSize(20)
@@ -744,6 +763,109 @@ export default function MisTalleresContent() {
         doc.text(`Estado: Evidencias al día`, 20, currentY + 8)
         currentY += 18
       })
+    }    // Guardar reportes en la base de datos ANTES de generar el PDF
+    try {
+      console.log("Iniciando guardado de reportes en base de datos...")
+      console.log("Taller seleccionado:", selectedTaller)
+      console.log("Tipo de reporte:", tipoReporte)
+      
+      // Preparar el resumen del reporte basado en el tipo
+      let resumenSemana = ""
+      let recomendaciones = ""
+      
+      if (tipoReporte === "completo") {
+        resumenSemana = `Reporte completo del taller ${selectedTaller.nombre}. Progreso promedio: ${selectedTaller.progreso}%. Total de alumnos: ${selectedTaller.totalAlumnos}. Evidencias pendientes: ${selectedTaller.evidenciasPendientes}.`
+        recomendaciones = "Se recomienda mantener seguimiento constante del progreso de los estudiantes y revisar las evidencias pendientes."
+      } else if (tipoReporte === "alumnos") {
+        resumenSemana = `Reporte de alumnos y progreso del taller ${selectedTaller.nombre}. Se incluye el estado de ${selectedTaller.totalAlumnos} estudiantes con progreso promedio del ${selectedTaller.progreso}%.`
+        recomendaciones = "Considerar apoyo adicional para estudiantes con progreso menor al promedio del grupo."
+      } else if (tipoReporte === "evidencias") {
+        resumenSemana = `Reporte de evidencias del taller ${selectedTaller.nombre}. Total de evidencias pendientes: ${selectedTaller.evidenciasPendientes}.`
+        recomendaciones = "Priorizar la revisión de evidencias pendientes para mantener el seguimiento actualizado del progreso estudiantil."
+      }
+
+      console.log("Resumen preparado:", resumenSemana)
+      console.log("Recomendaciones preparadas:", recomendaciones)
+      console.log("Total de alumnos a procesar:", selectedTaller.alumnos.length)
+
+      // Crear reportes para cada alumno del taller
+      const reportesPromises = selectedTaller.alumnos.map(async (alumno, index) => {
+        console.log(`Procesando alumno ${index + 1}/${selectedTaller.alumnos.length}: ${alumno.nombre}`)
+        
+        try {
+          // Obtener la participación del alumno
+          const { data: participacion, error: participacionError } = await supabase
+            .from("ParticipacionEstudiante")
+            .select("id_participacion")
+            .eq("id_estudiante", alumno.id)
+            .eq("id_taller_impartido", selectedTaller.id)
+            .single()
+
+          if (participacionError) {
+            console.error(`Error al obtener participación para alumno ${alumno.nombre}:`, participacionError)
+            return { success: false, alumno: alumno.nombre, error: participacionError.message }
+          }
+
+          if (!participacion) {
+            console.error(`No se encontró participación para alumno ${alumno.nombre}`)
+            return { success: false, alumno: alumno.nombre, error: "Participación no encontrada" }
+          }
+
+          console.log(`Participación encontrada para ${alumno.nombre}:`, participacion.id_participacion)
+
+          // Preparar datos del reporte específico para este alumno
+          const reporteData = {
+            id_participacion: participacion.id_participacion,
+            fecha_generacion: new Date().toISOString().split('T')[0],
+            resumen_semana: `${resumenSemana} Alumno: ${alumno.nombre}, Nivel: ${alumno.nivel}, Progreso individual: ${alumno.progreso}%.`,
+            recomendaciones: `${recomendaciones} Estudiante: ${alumno.nombre} - ${alumno.progreso < 50 ? 'Requiere atención especial para mejorar su progreso.' : 'Mantiene buen ritmo de aprendizaje.'}`,
+            entregado: 1 // Marcado como entregado al generar el PDF
+          }
+
+          console.log(`Datos del reporte para ${alumno.nombre}:`, reporteData)
+
+          // Insertar el reporte en la base de datos
+          const { data: reporteInsertado, error: reporteError } = await supabase
+            .from("ReporteDesempeno")
+            .insert(reporteData)
+            .select()
+
+          if (reporteError) {
+            console.error(`Error al guardar reporte para alumno ${alumno.nombre}:`, reporteError)
+            return { success: false, alumno: alumno.nombre, error: reporteError.message }
+          }
+
+          console.log(`Reporte guardado exitosamente para ${alumno.nombre}:`, reporteInsertado)
+          return { success: true, alumno: alumno.nombre, data: reporteInsertado }
+
+        } catch (error) {
+          console.error(`Error inesperado para alumno ${alumno.nombre}:`, error)
+          return { success: false, alumno: alumno.nombre, error: error.message }
+        }
+      })
+
+      // Esperar a que se procesen todos los reportes
+      const resultados = await Promise.all(reportesPromises)
+      const reportesExitosos = resultados.filter(resultado => resultado.success)
+      const reportesFallidos = resultados.filter(resultado => !resultado.success)
+      
+      console.log(`RESUMEN DEL GUARDADO:`)
+      console.log(`- Reportes exitosos: ${reportesExitosos.length}`)
+      console.log(`- Reportes fallidos: ${reportesFallidos.length}`)
+      console.log(`- Total procesado: ${resultados.length}`)
+      
+      if (reportesFallidos.length > 0) {
+        console.error("Reportes que fallaron:", reportesFallidos)
+      }      // Mostrar mensaje al usuario
+      if (reportesExitosos.length > 0) {
+        console.log(`✅ Se guardaron ${reportesExitosos.length} reportes de ${selectedTaller.alumnos?.length || 0} alumnos en la base de datos.`)
+      } else {
+        console.warn("⚠️ No se pudo guardar ningún reporte en la base de datos.")
+      }
+      
+    } catch (error) {
+      console.error("Error general al guardar reportes en la base de datos:", error)
+      // No interrumpir la generación del PDF aunque haya error en la BD
     }
 
     // Pie de página
@@ -753,14 +875,17 @@ export default function MisTalleresContent() {
       doc.setFontSize(10)
       doc.setTextColor(120, 120, 120)
       doc.text(`Página ${i} de ${totalPages}`, 105, 285, { align: "center" })
-      doc.text("Generado automáticamente por el sistema de gestión de talleres", 105, 290, { align: "center" })
-    }
-
-    // Descargar el PDF
+      doc.text("Este documento fue generado automáticamente por Skiltrack©", 105, 290, { align: "center" })
+    }    // Descargar el PDF
     const tipoTexto = tipoReporte === "completo" ? "Completo" : tipoReporte === "alumnos" ? "Alumnos" : "Evidencias"
     doc.save(`Reporte_${tipoTexto}_${selectedTaller.nombre}_${new Date().toISOString().split("T")[0]}.pdf`)
 
     setReporteGenerado(true)
+    
+    } catch (error) {
+      console.error("Error en handleGenerarReporte:", error)
+      alert("Error al generar el reporte. Por favor, inténtelo de nuevo.")
+    }
   }
 
   if (loading) {
