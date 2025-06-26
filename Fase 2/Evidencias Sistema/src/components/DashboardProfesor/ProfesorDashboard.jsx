@@ -696,8 +696,8 @@ export default function DashboardProfesor() {
               <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Reportes Pendientes</p>
-                    <p className="text-3xl font-bold text-gray-900">8</p>
+                    <p className="text-sm font-medium text-gray-600">Reportes</p>
+                    <p className="text-3xl font-bold text-gray-900">0</p>
                     <p className="text-sm text-orange-600">+2 en la última semana</p>
                   </div>
                   <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">

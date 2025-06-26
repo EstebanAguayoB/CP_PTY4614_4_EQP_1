@@ -1,68 +1,16 @@
 import { useState, useEffect } from "react"
-import { BookOpen, Users, TrendingUp, FileText, Eye, Menu, Loader2, X } from "lucide-react"
+import { BookOpen, Users, TrendingUp, FileText, Menu, Loader2, X } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { useNavigate } from "react-router-dom"
 import DashboardSidebar from "../shared/DashboardSidebar"
-import UserInfoBar from '../shared/UserInfoBar'
-
-// Datos estáticos
-const PROFESORES = [
-  {
-    id: 1,
-    nombre: "Juan Pérez",
-    email: "juan.perez@example.com",
-    talleres: "Taller de React, Taller de Node.js",
-    alumnos: 25,
-    especialidad: "Desarrollo Web",
-  },
-  {
-    id: 2,
-    nombre: "María Gómez",
-    email: "maria.gomez@example.com",
-    talleres: "Taller de Angular, Taller de PHP",
-    alumnos: 30,
-    especialidad: "Desarrollo Web",
-  },
-  {
-    id: 3,
-    nombre: "Luis Rodríguez",
-    email: "luis.rodriguez@example.com",
-    talleres: "Taller de Python, Taller de Django",
-    alumnos: 20,
-    especialidad: "Desarrollo Web",
-  },
-  {
-    id: 4,
-    nombre: "Ana Martínez",
-    email: "ana.martinez@example.com",
-    talleres: "Taller de Java, Taller de Spring",
-    alumnos: 28,
-    especialidad: "Desarrollo Web",
-  },
-  {
-    id: 5,
-    nombre: "Carlos Fernández",
-    email: "carlos.fernandez@example.com",
-    talleres: "Taller de C#, Taller de .NET",
-    alumnos: 22,
-    especialidad: "Desarrollo Web",
-  },
-  {
-    id: 6,
-    nombre: "Laura López",
-    email: "laura.lopez@example.com",
-    talleres: "Taller de Swift, Taller de iOS",
-    alumnos: 18,
-    especialidad: "Desarrollo Móvil",
-  },
-]
+import UserInfoBar from "../shared/UserInfoBar"
 
 export default function DashboardCoordinador() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [user, setUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [taller_impartido, setTaller_impartido] = useState([]);
-  const [profesores, setProfesores] = useState([]);
+  const [taller_impartido, setTaller_impartido] = useState([])
+  const [profesores, setProfesores] = useState([])
   const [profesoresActivos, setProfesoresActivos] = useState([])
   const [loadingProfesores, setLoadingProfesores] = useState(true)
   const [errorProfesores, setErrorProfesores] = useState(null)
@@ -70,6 +18,10 @@ export default function DashboardCoordinador() {
   const [error, setError] = useState(null)
   const [profesorSeleccionado, setProfesorSeleccionado] = useState(null)
   const [showDetallesModal, setShowDetallesModal] = useState(false)
+  const [totalTalleres, setTotalTalleres] = useState(0)
+  const [totalEvidencias, setTotalEvidencias] = useState(0)
+  const [totalProfesoresActivos, setTotalProfesoresActivos] = useState(0)
+  const [loadingStats, setLoadingStats] = useState(true)
   const navigate = useNavigate()
 
   // Efecto para cargar el usuario
@@ -108,44 +60,40 @@ export default function DashboardCoordinador() {
   useEffect(() => {
     const profesores = async () => {
       try {
-        let { data, error } = await supabase
-          .from("TallerImpartido")
-          .select(`
+        const { data, error } = await supabase.from("TallerImpartido").select(`
             *,
             Usuario(nombre, apellido),
             TallerDefinido(id_taller_definido, nombre, niveles_totales, Nivel(numero_nivel, descripcion)),
             ParticipacionEstudiante(id_participacion, estado)
-          `);;
-        if (error) setError(error);
-        else setProfesores(data);
+          `)
+        if (error) setError(error)
+        else setProfesores(data)
       } catch (err) {
-        setError(err);
+        setError(err)
       }
-    };
-    profesores();
-  }, []);
+    }
+    profesores()
+  }, [])
 
   //efecto para profesores
   // Efecto para cargar talleres
   useEffect(() => {
     const taller_impartido = async () => {
       try {
-        let { data, error } = await supabase.from("TallerImpartido").select("*, Usuario(nombre, apellido)");;
-        if (error) setError(error);
-        else setTaller_impartido(data);
+        const { data, error } = await supabase.from("TallerImpartido").select("*, Usuario(nombre, apellido)")
+        if (error) setError(error)
+        else setTaller_impartido(data)
       } catch (err) {
-        setError(err);
+        setError(err)
       }
-    };
-    taller_impartido();
-  }, []);
+    }
+    taller_impartido()
+  }, [])
 
   useEffect(() => {
     const fetchProfesoresActivos = async () => {
       setLoadingProfesores(true)
-      const { data, error } = await supabase
-        .from('TallerImpartido')
-        .select(`
+      const { data, error } = await supabase.from("TallerImpartido").select(`
           profesor_asignado,
           Usuario (
             id_usuario,
@@ -199,6 +147,47 @@ export default function DashboardCoordinador() {
     fetchProfesoresActivos()
   }, [])
 
+  // Efecto para cargar estadísticas del dashboard
+  useEffect(() => {
+    const fetchEstadisticas = async () => {
+      setLoadingStats(true)
+      try {
+        // Obtener total de talleres impartidos
+        const { data: talleresData, error: talleresError } = await supabase
+          .from("TallerImpartido")
+          .select("id_taller_impartido", { count: "exact" })
+
+        if (talleresError) throw talleresError
+        setTotalTalleres(talleresData?.length || 0)
+
+        // Obtener total de evidencias (avances de nivel)
+        const { data: evidenciasData, error: evidenciasError } = await supabase
+          .from("Evidencia")
+          .select("id_evidencia", { count: "exact" })
+
+        if (evidenciasError) throw evidenciasError
+        setTotalEvidencias(evidenciasData?.length || 0)
+
+        // Obtener profesores activos
+        const { data: profesoresData, error: profesoresError } = await supabase
+          .from("Usuario")
+          .select("id_usuario", { count: "exact" })
+          .eq("rol", "PROFESOR")
+          .eq("estado", "ACTIVO")
+
+        if (profesoresError) throw profesoresError
+        setTotalProfesoresActivos(profesoresData?.length || 0)
+      } catch (err) {
+        console.error("Error al cargar estadísticas:", err)
+        setError(err.message)
+      } finally {
+        setLoadingStats(false)
+      }
+    }
+
+    fetchEstadisticas()
+  }, [])
+
   const logout = async () => {
     try {
       await supabase.auth.signOut()
@@ -227,12 +216,14 @@ export default function DashboardCoordinador() {
         .order("fecha_hora", { ascending: false })
         .limit(10)
       if (!error && data) {
-        setActividadReciente(data.map(a => ({
-          id: a.id_log,
-          accion: a.accion,
-          tiempo: calcularTiempoTranscurrido(a.fecha_hora),
-          usuario: a.Usuario ? `${a.Usuario.nombre} ${a.Usuario.apellido}` : "Sistema"
-        })))
+        setActividadReciente(
+          data.map((a) => ({
+            id: a.id_log,
+            accion: a.accion,
+            tiempo: calcularTiempoTranscurrido(a.fecha_hora),
+            usuario: a.Usuario ? `${a.Usuario.nombre} ${a.Usuario.apellido}` : "Sistema",
+          })),
+        )
       }
     }
     fetchActividadReciente()
@@ -254,7 +245,7 @@ export default function DashboardCoordinador() {
   const talleresProcesados = taller_impartido.map((taller) => {
     // Contar alumnos inscritos/en progreso
     const alumnos = (taller.ParticipacionEstudiante || []).filter(
-      (p) => p.estado === "INSCRITO" || p.estado === "EN_PROGRESO"
+      (p) => p.estado === "INSCRITO" || p.estado === "EN_PROGRESO",
     ).length
 
     // Obtener niveles (array de objetos)
@@ -262,9 +253,9 @@ export default function DashboardCoordinador() {
     const niveles =
       nivelesArray.length > 0
         ? nivelesArray
-          .sort((a, b) => a.numero_nivel - b.numero_nivel)
-          .map((n) => `Nivel ${n.numero_nivel}: ${n.descripcion}`)
-          .join(", ")
+            .sort((a, b) => a.numero_nivel - b.numero_nivel)
+            .map((n) => `Nivel ${n.numero_nivel}: ${n.descripcion}`)
+            .join(", ")
         : "-"
 
     return {
@@ -338,8 +329,6 @@ export default function DashboardCoordinador() {
                 <h1 className="text-2xl font-bold text-gray-900">Dashboard Coordinador</h1>
               </div>
             </div>
-
-
           </div>
         </header>
 
@@ -354,7 +343,7 @@ export default function DashboardCoordinador() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Total Talleres</p>
-                    <p className="text-3xl font-bold text-gray-900">12</p>
+                    <p className="text-3xl font-bold text-gray-900">{loadingStats ? "..." : totalTalleres}</p>
                     <p className="text-sm text-emerald-600">desde el último periodo</p>
                   </div>
                   <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
@@ -367,7 +356,7 @@ export default function DashboardCoordinador() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Avances de Nivel</p>
-                    <p className="text-3xl font-bold text-gray-900">245</p>
+                    <p className="text-3xl font-bold text-gray-900">{loadingStats ? "..." : totalEvidencias}</p>
                     <p className="text-sm text-emerald-600">+32 desde el último periodo</p>
                   </div>
                   <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
@@ -379,7 +368,7 @@ export default function DashboardCoordinador() {
               <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Reportes Pendientes</p>
+                    <p className="text-sm font-medium text-gray-600">Reportes </p>
                     <p className="text-3xl font-bold text-gray-900">8</p>
                     <p className="text-sm text-orange-600">desde el último periodo</p>
                   </div>
@@ -393,7 +382,7 @@ export default function DashboardCoordinador() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Profesores Activos</p>
-                    <p className="text-3xl font-bold text-gray-900">6</p>
+                    <p className="text-3xl font-bold text-gray-900">{loadingStats ? "..." : totalProfesoresActivos}</p>
                     <p className="text-sm text-emerald-600">desde el último periodo</p>
                   </div>
                   <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -414,7 +403,10 @@ export default function DashboardCoordinador() {
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {talleresProcesados.map((taller) => (
-                    <div key={taller.id_taller_impartido} className="bg-gray-50 rounded-lg p-6 hover:shadow-md transition-shadow">
+                    <div
+                      key={taller.id_taller_impartido}
+                      className="bg-gray-50 rounded-lg p-6 hover:shadow-md transition-shadow"
+                    >
                       <div className="flex justify-between items-start mb-4">
                         <h3 className="text-lg font-semibold text-gray-900">{taller.nombre_publico}</h3>
                         <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs rounded-full">Activo</span>
@@ -423,7 +415,9 @@ export default function DashboardCoordinador() {
                       <div className="space-y-2 mb-4">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Profesor:</span>
-                          <span className="text-gray-900">{taller.Usuario?.nombre} {taller.Usuario?.apellido}</span>
+                          <span className="text-gray-900">
+                            {taller.Usuario?.nombre} {taller.Usuario?.apellido}
+                          </span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Alumnos:</span>
@@ -449,10 +443,15 @@ export default function DashboardCoordinador() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {profesoresActivos.map((prof) => (
-                      <div key={prof.id_usuario} className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 flex flex-col justify-between">
+                      <div
+                        key={prof.id_usuario}
+                        className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 flex flex-col justify-between"
+                      >
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-lg font-semibold text-gray-900">{prof.nombre} {prof.apellido}</h3>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {prof.nombre} {prof.apellido}
+                            </h3>
                           </div>
                           <div className="text-sm text-gray-500 mb-2">
                             <span className="font-medium text-gray-700">Email:</span> {prof.correo}
@@ -464,7 +463,8 @@ export default function DashboardCoordinador() {
                             <span className="font-medium text-gray-700">Especialidad:</span> {prof.especialidad}
                           </div>
                           <div className="text-sm text-gray-500 mb-2">
-                            <span className="font-medium text-gray-700">Cantidad de talleres:</span> {prof.cantidad_talleres}
+                            <span className="font-medium text-gray-700">Cantidad de talleres:</span>{" "}
+                            {prof.cantidad_talleres}
                           </div>
                           <div className="text-sm text-gray-500 mb-2">
                             <span className="font-medium text-gray-700">Talleres:</span> {prof.nombres_talleres}
@@ -513,22 +513,31 @@ export default function DashboardCoordinador() {
       {showDetallesModal && profesorSeleccionado && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">
-            <button
-              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
-              onClick={handleCerrarModal}
-            >
+            <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600" onClick={handleCerrarModal}>
               <X className="w-6 h-6" />
             </button>
             <h2 className="text-2xl font-bold mb-2">{profesorSeleccionado.nombre}</h2>
-            <span className={`inline-block mb-4 px-3 py-1 rounded-full text-xs font-semibold ${profesorSeleccionado.estado === "Activo" ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-800"}`}>
+            <span
+              className={`inline-block mb-4 px-3 py-1 rounded-full text-xs font-semibold ${profesorSeleccionado.estado === "Activo" ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-800"}`}
+            >
               {profesorSeleccionado.estado}
             </span>
             <div className="space-y-2">
-              <div><span className="font-medium">Email:</span> {profesorSeleccionado.correo}</div>
-              <div><span className="font-medium">Especialidad:</span> {profesorSeleccionado.especialidad}</div>
-              <div><span className="font-medium">Nivel educativo:</span> {profesorSeleccionado.nivel_educativo}</div>
-              <div><span className="font-medium">Talleres:</span> {profesorSeleccionado.talleres || "-"}</div>
-              <div><span className="font-medium">Alumnos asignados:</span> {profesorSeleccionado.alumnos ?? "-"}</div>
+              <div>
+                <span className="font-medium">Email:</span> {profesorSeleccionado.correo}
+              </div>
+              <div>
+                <span className="font-medium">Especialidad:</span> {profesorSeleccionado.especialidad}
+              </div>
+              <div>
+                <span className="font-medium">Nivel educativo:</span> {profesorSeleccionado.nivel_educativo}
+              </div>
+              <div>
+                <span className="font-medium">Talleres:</span> {profesorSeleccionado.talleres || "-"}
+              </div>
+              <div>
+                <span className="font-medium">Alumnos asignados:</span> {profesorSeleccionado.alumnos ?? "-"}
+              </div>
               {/* Puedes agregar más información relevante aquí */}
             </div>
             {/* Si tienes más detalles, puedes agregarlos aquí */}
