@@ -6,16 +6,17 @@ import DashboardProfeSidebar from "../shared/DashboardProfeSidebar"
 
 export default function DashboardProfesor() {
   const [activeTab, setActiveTab] = useState("miTaller")
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [user, setUser] = useState(null)
   const [showDetallesModal, setShowDetallesModal] = useState(false)
   const [selectedTaller, setSelectedTaller] = useState(null)
   const [misTalleres, setMisTalleres] = useState([])
-  const [loading, setLoading] = useState(true)
-  const navigate = useNavigate()
   const [alumnosDestacados, setAlumnosDestacados] = useState([])
   const [actividadReciente, setActividadReciente] = useState([])
+  const [totalReportes, setTotalReportes] = useState(0)
+  const [loading, setLoading] = useState(true)
   const [actualizando, setActualizando] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const navigate = useNavigate()
 
   useEffect(() => {
     const getUser = async () => {
@@ -29,6 +30,85 @@ export default function DashboardProfesor() {
     }
     getUser()
   }, [navigate])
+
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      if (user) {
+        setLoading(true)
+        await obtenerTalleresProfesor(user.email)
+        await obtenerAlumnosDestacados(user.email)
+        await obtenerActividadReciente(user.email)
+        await obtenerTotalReportes(user.email)
+        setLoading(false)
+      }
+    }
+    fetchInitialData()
+  }, [user])
+
+  const obtenerTotalReportes = async (profesorEmail) => {
+    try {
+      const { data: usuario, error: errorUsuario } = await supabase
+        .from("Usuario")
+        .select("id_usuario")
+        .eq("correo", profesorEmail)
+        .eq("rol", "PROFESOR")
+        .single()
+
+      if (errorUsuario || !usuario) {
+        console.error("Error obteniendo usuario:", errorUsuario)
+        return
+      }
+
+      const { data: talleres, error: errorTalleres } = await supabase
+        .from("TallerImpartido")
+        .select("id_taller_impartido")
+        .eq("profesor_asignado", usuario.id_usuario)
+
+      if (errorTalleres) {
+        console.error("Error obteniendo talleres:", errorTalleres)
+        return
+      }
+
+      const tallerIds = talleres.map((t) => t.id_taller_impartido)
+
+      if (tallerIds.length === 0) {
+        setTotalReportes(0)
+        return
+      }
+
+      const { data: participaciones, error: errorParticipaciones } = await supabase
+        .from("ParticipacionEstudiante")
+        .select("id_participacion")
+        .in("id_taller_impartido", tallerIds)
+
+      if (errorParticipaciones) {
+        console.error("Error obteniendo participaciones:", errorParticipaciones)
+        return
+      }
+
+      const participacionIds = participaciones.map((p) => p.id_participacion)
+
+      if (participacionIds.length === 0) {
+        setTotalReportes(0)
+        return
+      }
+
+      const { count, error: errorReportes } = await supabase
+        .from("ReporteDesempeno")
+        .select("*", { count: "exact", head: true })
+        .in("id_participacion", participacionIds)
+
+      if (errorReportes) {
+        console.error("Error contando reportes:", errorReportes)
+        setTotalReportes(0)
+      } else {
+        setTotalReportes(count || 0)
+      }
+    } catch (error) {
+      console.error("Error general obteniendo total de reportes:", error)
+      setTotalReportes(0)
+    }
+  }
 
   const obtenerTalleresProfesor = async (email) => {
     try {
@@ -697,8 +777,8 @@ export default function DashboardProfesor() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Reportes</p>
-                    <p className="text-3xl font-bold text-gray-900">0</p>
-                    <p className="text-sm text-orange-600">+2 en la última semana</p>
+                    <p className="text-3xl font-bold text-gray-900">{totalReportes}</p>
+                    <p className="text-sm text-orange-600">Generados por ti</p>
                   </div>
                   <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
                     <FileText className="w-6 h-6 text-orange-600" />
