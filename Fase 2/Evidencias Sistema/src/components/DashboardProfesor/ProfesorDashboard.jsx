@@ -829,16 +829,6 @@ export default function DashboardProfesor() {
                     </button>
                   </li>
                   <li>
-                    <button
-                      onClick={() => setActiveTab("actividad")}
-                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                        activeTab === "actividad"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                      }`}
-                    >
-                      Actividad Reciente
-                    </button>
                   </li>
                 </ul>
               </nav>
@@ -980,47 +970,7 @@ export default function DashboardProfesor() {
               </div>
             )}
 
-            {activeTab === "actividad" && (
-              <div className="bg-white rounded-xl shadow-md overflow-hidden">
-                <div className="p-6 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-900">Actividad Reciente</h2>
-                  <p className="text-gray-600">Últimas actividades en tus talleres</p>
-                </div>
 
-                <div className="p-6">
-                  <div className="space-y-4">
-                    {actividadReciente.length === 0 ? (
-                      <div className="text-center py-12">
-                        <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">No hay actividad reciente</h3>
-                        <p className="text-gray-600">Las actividades aparecerán aquí cuando haya nuevas acciones.</p>
-                      </div>
-                    ) : (
-                      actividadReciente.map((actividad) => (
-                        <div
-                          key={actividad.id}
-                          className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                        >
-                          <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2"></div>
-                          <div className="flex-1">
-                            <p className="text-gray-900 font-medium">{actividad.accion}</p>
-                            <div className="flex items-center space-x-2 text-sm text-gray-500">
-                              <span>
-                                {actividad.tiempo} por {actividad.usuario}
-                              </span>
-                              <span>•</span>
-                              <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                                {actividad.taller}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </main>
       </div>

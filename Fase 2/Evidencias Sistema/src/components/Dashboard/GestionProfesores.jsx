@@ -430,6 +430,9 @@ export default function GestionProfesores() {
         contrasena: "",
       })
 
+      // Cerrar el formulario de añadir profesor
+      setShowAddForm(false)
+
       // Recargar profesores
       await fetchProfesores()
     } catch (err) {
@@ -629,7 +632,7 @@ export default function GestionProfesores() {
                       name="contrasena"
                       value={form.contrasena}
                       onChange={handleChange}
-                      placeholder="Contraseña temporal"
+                      placeholder="Contraseña"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                       autoComplete="new-password"
                       disabled={isSubmitting}

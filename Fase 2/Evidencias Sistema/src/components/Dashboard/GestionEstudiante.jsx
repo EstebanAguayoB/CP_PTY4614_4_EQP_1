@@ -138,13 +138,13 @@ export default function GestionEstudiante() {
   const alumnosProcesados = alumnos.map((alumno) => {
     // Toma la primera participación activa o la más reciente
     const participacion =
-      alumno.ParticipacionEstudiante?.find((p) => p.estado === "EN_PROGRESO" || p.estado === "INSCRITO") ||
+      alumno.ParticipacionEstudiante?.find((p) => p.estado === "EN PROGRESO" || p.estado === "INSCRITO") ||
       alumno.ParticipacionEstudiante?.[0]
     return {
       ...alumno,
-      taller: participacion?.TallerImpartido?.nombre_publico || "No asignado",
-      nivel: participacion?.Nivel?.numero_nivel ? `Nivel ${participacion.Nivel.numero_nivel}` : "No asignado",
-      estado: participacion?.estado || "No asignado",
+      taller: participacion?.TallerImpartido?.nombre_publico || "NO ASIGNADO",
+      nivel: participacion?.Nivel?.numero_nivel ? `Nivel ${participacion.Nivel.numero_nivel}` : "NO ASIGNADO",
+      estado: participacion?.estado || "NO ASIGNADO",
       progreso: calcularProgreso(alumno), // Implementa esta función según  reglas de negocio
     }
   })
@@ -566,7 +566,9 @@ export default function GestionEstudiante() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className="px-2 py-1 text-xs font-medium bg-emerald-100 text-emerald-800 rounded-full">
-                                {alumno.estado}
+                                {alumno.estado === "EN_PROGRESO"
+                                  ? "EN PROGRESO"
+                                  : alumno.estado?.replaceAll("_", " ") || "NO ASIGNADO"}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -598,14 +600,7 @@ export default function GestionEstudiante() {
                                   >
                                     <Edit className="w-4 h-4" />
                                   </button>
-                                  <button
-                                    onClick={() => handleDeleteStudent(alumno.id_estudiante)}
-                                    className="text-red-600 hover:text-red-900 transition-colors p-1 rounded hover:bg-red-50"
-                                    title="Eliminar estudiante"
-                                    disabled={submitting}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
+                                  {/* Botón de eliminar eliminado */}
                                 </div>
                               )}
                             </td>
@@ -638,7 +633,7 @@ function calcularProgreso(alumno) {
   // Obtener la participación activa del alumno
   const participaciones = alumno.ParticipacionEstudiante || []
   const participacionActiva =
-    participaciones.find((p) => p.estado === "EN_PROGRESO" || p.estado === "INSCRITO") || participaciones[0]
+    participaciones.find((p) => p.estado === "EN PROGRESO" || p.estado === "INSCRITO") || participaciones[0]
 
   if (!participacionActiva) {
     return 0

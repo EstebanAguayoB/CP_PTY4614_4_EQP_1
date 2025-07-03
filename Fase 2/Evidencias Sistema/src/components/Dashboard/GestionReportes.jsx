@@ -17,7 +17,26 @@ import {
   Award,
   TrendingUp,
   Activity,
+  Loader2,
 } from "lucide-react"
+
+// Componente de Loading Animation
+const LoadingSpinner = ({ message = "Cargando información..." }) => {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 space-y-4">
+      <div className="relative">
+        <Loader2 className="h-8 w-8 text-emerald-600 animate-spin" />
+        <div className="absolute inset-0 h-8 w-8 border-2 border-emerald-200 rounded-full animate-pulse"></div>
+      </div>
+      <p className="text-gray-600 text-sm font-medium">{message}</p>
+      <div className="flex space-x-1">
+        <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"></div>
+        <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
+        <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+      </div>
+    </div>
+  )
+}
 
 export default function GestionReportes() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -161,8 +180,9 @@ export default function GestionReportes() {
           return {
             id: reporte.id_reporte,
             nombre: tallerImpartido.nombre_publico || "Taller no especificado",
-            profesor: `${tallerImpartido.Usuario?.nombre || "Profesor"} ${tallerImpartido.Usuario?.apellido || "No asignado"
-              }`,
+            profesor: `${tallerImpartido.Usuario?.nombre || "Profesor"} ${
+              tallerImpartido.Usuario?.apellido || "No asignado"
+            }`,
             alumnos: totalAlumnos, // Usar el valor calculado
             fecha: new Date(reporte.fecha_generacion).toLocaleDateString(),
             fechaCompleta: new Date(reporte.fecha_generacion).toLocaleString(),
@@ -207,40 +227,11 @@ export default function GestionReportes() {
       reporte.profesor.toLowerCase().includes(searchTerm.toLowerCase()) ||
       reporte.contenido.resumen.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (reporte.contenido.alumnosDetalles &&
-        reporte.contenido.alumnosDetalles.some(alumno =>
-          alumno.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+        reporte.contenido.alumnosDetalles.some((alumno) =>
+          alumno.nombre.toLowerCase().includes(searchTerm.toLowerCase()),
         ))
     return matchesSearch
   })
-
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-100">
-        <div className="text-center">
-          <div
-            className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-            role="status"
-          >
-            <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
-              Loading...
-            </span>
-          </div>
-          <h2 className="mt-4 text-lg font-semibold text-gray-700">Cargando reportes...</h2>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-100">
-        <div className="text-center text-red-500">
-          <h2 className="text-lg font-semibold">Error</h2>
-          <p>{error}</p>
-        </div>
-      </div>
-    )
-  }
 
   const handlePreviewReport = (reporte) => {
     setPreviewReport(reporte)
@@ -539,7 +530,7 @@ export default function GestionReportes() {
 
       {/* Contenido Principal */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <UserInfoBar user={user} logout={logout} toggleSidebar={toggleSidebar} />
+        <UserInfoBar user={user} onLogout={logout} toggleSidebar={toggleSidebar} />
 
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-transparent p-6">
           <div className="container mx-auto">
@@ -547,48 +538,60 @@ export default function GestionReportes() {
               <h1 className="text-3xl font-bold text-gray-800">Gestión de Reportes</h1>
             </div>
 
-            {/* Barra de Búsqueda */}
-            <div className="mb-6">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar por nombre de reporte, área o profesor..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-shadow"
-                />
-              </div>
-            </div>
+            {/* Loading y errores */}
+            {loading && <LoadingSpinner message="Cargando reportes..." />}
 
-            {/* Grid de Reportes */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredReportes.map((reporte) => (
-                <div
-                  key={reporte.id}
-                  className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden"
-                >
-                  <div className="p-5">
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="text-sm text-gray-500">{reporte.fechaCompleta}</p>
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-800 mb-2 truncate">{reporte.nombre}</h3>
-                    <p className="text-sm text-gray-600 mb-4 flex items-center">
-                      <User className="w-4 h-4 mr-2 text-gray-400" />
-                      {reporte.profesor}
-                    </p>
-                    <div className="flex justify-end">
-                      <button
-                        onClick={() => handlePreviewReport(reporte)}
-                        className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200"
-                      >
-                        Ver Reporte
-                      </button>
-                    </div>
+            {error && !loading && (
+              <div className="text-red-600 text-sm bg-red-50 p-3 rounded mx-6 mb-6">Error: {error}</div>
+            )}
+
+            {/* Contenido principal solo se muestra cuando no está cargando */}
+            {!loading && (
+              <>
+                {/* Barra de Búsqueda */}
+                <div className="mb-6">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Buscar por nombre de reporte, área o profesor..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-shadow"
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
+
+                {/* Grid de Reportes */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {filteredReportes.map((reporte) => (
+                    <div
+                      key={reporte.id}
+                      className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden"
+                    >
+                      <div className="p-5">
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-sm text-gray-500">{reporte.fechaCompleta}</p>
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-800 mb-2 truncate">{reporte.nombre}</h3>
+                        <p className="text-sm text-gray-600 mb-4 flex items-center">
+                          <User className="w-4 h-4 mr-2 text-gray-400" />
+                          {reporte.profesor}
+                        </p>
+                        <div className="flex justify-end">
+                          <button
+                            onClick={() => handlePreviewReport(reporte)}
+                            className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200"
+                          >
+                            Ver Reporte
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </main>
       </div>

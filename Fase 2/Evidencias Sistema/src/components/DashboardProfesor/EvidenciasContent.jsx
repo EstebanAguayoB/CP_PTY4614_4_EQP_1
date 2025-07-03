@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { FileText, Plus, Search, Eye, Check, X, Menu, Upload, Calendar, ClipboardList } from "lucide-react"
+import { FileText, Plus, Search, Eye, Check, X, Menu, Upload, Calendar, ClipboardList } from 'lucide-react'
 import { useNavigate } from "react-router-dom"
 import { supabase } from "../../lib/supabase"
 import DashboardProfeSidebar from "../shared/DashboardProfeSidebar"
@@ -536,9 +536,10 @@ export default function EvidenciasContent() {
   if (loading) {
     return (
       <div className="flex h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/40">
+        <DashboardProfeSidebar sidebarOpen={sidebarOpen} toggleSidebar={toggleSidebar} userRole="Profesor" />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
+            <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-gray-600">Cargando evidencias...</p>
           </div>
         </div>
@@ -573,19 +574,6 @@ export default function EvidenciasContent() {
                 <FileText className="w-5 h-5 text-white" />
               </div>
               <h1 className="text-2xl font-bold text-gray-900">Evidencias y Reportes</h1>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <input
-                  type="text"
-                  placeholder="Buscar evidencias o reportes..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 w-64"
-                />
-              </div>
             </div>
           </div>
         </header>
@@ -675,9 +663,13 @@ export default function EvidenciasContent() {
                     className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   >
                     <option value="">Todos los niveles</option>
-                    <option value="Básico">Básico</option>
-                    <option value="Intermedio">Intermedio</option>
-                    <option value="Avanzado">Avanzado</option>
+                    {Array.from(new Set(evidencias.map((e) => e.nivel)))
+                      .sort()
+                      .map((nivel) => (
+                        <option key={nivel} value={nivel}>
+                          {nivel}
+                        </option>
+                      ))}
                   </select>
                 </div>
                 <div className="flex-1">
