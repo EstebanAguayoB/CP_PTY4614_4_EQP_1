@@ -19,10 +19,7 @@ export default function AlumnosContent() {
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
-  // Estados para solicitud de cambio
-  const [selectedStudents, setSelectedStudents] = useState([])
-  const [newWorkshopName, setNewWorkshopName] = useState("")
-  const [changeReason, setChangeReason] = useState("")
+
 
   // Estados para el formulario
   const [formData, setFormData] = useState({
@@ -331,105 +328,7 @@ export default function AlumnosContent() {
     }
   }
 
-  const generateChangeRequestReport = async () => {
-    if (selectedStudents.length === 0 || !newWorkshopName.trim()) {
-      alert("Por favor, seleccione al menos un estudiante e ingrese el nombre del nuevo taller")
-      return
-    }
 
-    // Importar jsPDF dinámicamente
-    const { jsPDF } = await import("jspdf")
-
-    const doc = new jsPDF()
-    const currentDate = new Date().toLocaleDateString("es-CL")
-
-    // Configurar fuente y título
-    doc.setFontSize(18)
-    doc.setFont(undefined, "bold")
-    doc.text("SOLICITUD DE CAMBIO DE TALLER", 20, 30)
-
-    // Información general
-    doc.setFontSize(12)
-    doc.setFont(undefined, "normal")
-    doc.text(`Fecha: ${currentDate}`, 20, 50)
-    doc.text(`Profesor: ${user?.email}`, 20, 60)
-
-    // Título de estudiantes
-    doc.setFont(undefined, "bold")
-    doc.text("ESTUDIANTES SOLICITADOS PARA CAMBIO:", 20, 80)
-
-    // Lista de estudiantes
-    doc.setFont(undefined, "normal")
-    let yPosition = 95
-
-    selectedStudents.forEach((student, index) => {
-      if (yPosition > 250) {
-        doc.addPage()
-        yPosition = 30
-      }
-
-      doc.text(`${index + 1}. Estudiante: ${student.Estudiante?.nombre} ${student.Estudiante?.apellido}`, 25, yPosition)
-      yPosition += 8
-      doc.text(`   RUT: ${student.Estudiante?.rut}`, 25, yPosition)
-      yPosition += 8
-      doc.text(`   Taller Actual: ${student.TallerImpartido?.nombre_publico}`, 25, yPosition)
-      yPosition += 8
-      doc.text(`   Nivel Actual: ${student.Nivel?.descripcion || `Nivel ${student.nivel_actual}`}`, 25, yPosition)
-      yPosition += 8
-      doc.text(`   Estado: ${student.estado}`, 25, yPosition)
-      yPosition += 15
-    })
-
-    // Taller destino
-    if (yPosition > 230) {
-      doc.addPage()
-      yPosition = 30
-    }
-
-    doc.setFont(undefined, "bold")
-    doc.text("TALLER DESTINO SOLICITADO:", 20, yPosition)
-    yPosition += 10
-    doc.setFont(undefined, "normal")
-    doc.text(newWorkshopName, 20, yPosition)
-    yPosition += 20
-
-    // Motivo
-    if (changeReason.trim()) {
-      if (yPosition > 220) {
-        doc.addPage()
-        yPosition = 30
-      }
-
-      doc.setFont(undefined, "bold")
-      doc.text("MOTIVO DE LA SOLICITUD:", 20, yPosition)
-      yPosition += 10
-      doc.setFont(undefined, "normal")
-
-      // Dividir el texto largo en líneas
-      const splitReason = doc.splitTextToSize(changeReason, 170)
-      doc.text(splitReason, 20, yPosition)
-      yPosition += splitReason.length * 6 + 10
-    }
-
-    // Pie de página
-    if (yPosition > 240) {
-      doc.addPage()
-      yPosition = 30
-    }
-
-    doc.setFontSize(10)
-    doc.text("---", 20, yPosition)
-    yPosition += 8
-    doc.text("Esta solicitud requiere aprobación administrativa.", 20, yPosition)
-    yPosition += 6
-    doc.text(`Generado automáticamente el ${currentDate}`, 20, yPosition)
-
-    // Descargar el PDF
-    doc.save(`solicitud_cambio_taller_${currentDate.replace(/\//g, "-")}.pdf`)
-
-    alert("Informe de solicitud de cambio generado y descargado exitosamente")
-    closeChangeRequestModal()
-  }
 
   const openDeleteModal = (alumno) => {
     setDeletingAlumno(alumno)
@@ -810,13 +709,6 @@ export default function AlumnosContent() {
 
               <div className="flex space-x-3">
                 <button
-                  onClick={openChangeRequestModal}
-                  className="bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded-lg flex items-center transition-colors"
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Solicitud Cambio
-                </button>
-                <button
                   onClick={openAddModal}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg flex items-center transition-colors"
                 >
@@ -1027,118 +919,6 @@ export default function AlumnosContent() {
           </div>
         </main>
       </div>
-
-      {/* Modal para solicitud de cambio */}
-      {showChangeRequestModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl overflow-hidden border border-gray-200 max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50 flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">Solicitud de Cambio de Taller</h2>
-              <button onClick={closeChangeRequestModal} className="text-gray-500 hover:text-gray-700">
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-
-            <div className="p-6">
-              <div className="mb-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Seleccionar Estudiantes</h3>
-                <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg">
-                  {alumnosFiltrados.map((alumno) => (
-                    <div
-                      key={alumno.id_participacion}
-                      className="flex items-center p-3 border-b border-gray-100 last:border-b-0"
-                    >
-                      <input
-                        type="checkbox"
-                        id={`student-${alumno.id_participacion}`}
-                        checked={selectedStudents.some((s) => s.id_participacion === alumno.id_participacion)}
-                        onChange={(e) => handleStudentSelection(alumno, e.target.checked)}
-                        className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
-                      />
-                      <label htmlFor={`student-${alumno.id_participacion}`} className="ml-3 flex-1 cursor-pointer">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              {alumno.Estudiante?.nombre} {alumno.Estudiante?.apellido}
-                            </p>
-                            <p className="text-sm text-gray-500">RUT: {alumno.Estudiante?.rut}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-medium text-gray-900">
-                              Taller Actual: {alumno.TallerImpartido?.nombre_publico}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Nivel: {alumno.Nivel?.descripcion || `Nivel ${alumno.nivel_actual}`}
-                            </p>
-                          </div>
-                        </div>
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="newWorkshopName" className="block text-sm font-medium text-gray-700 mb-2">
-                    Nuevo Taller Solicitado *
-                  </label>
-                  <input
-                    type="text"
-                    id="newWorkshopName"
-                    value={newWorkshopName}
-                    onChange={(e) => setNewWorkshopName(e.target.value)}
-                    placeholder="Ingrese el nombre del taller destino"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Estudiantes Seleccionados</label>
-                  <div className="p-3 border border-gray-300 rounded-lg bg-gray-50 min-h-[3rem]">
-                    {selectedStudents.length === 0 ? (
-                      <p className="text-sm text-gray-500">Ningún estudiante seleccionado</p>
-                    ) : (
-                      <p className="text-sm text-gray-700">{selectedStudents.length} estudiante(s) seleccionado(s)</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="md:col-span-2">
-                  <label htmlFor="changeReason" className="block text-sm font-medium text-gray-700 mb-2">
-                    Motivo de la Solicitud
-                  </label>
-                  <textarea
-                    id="changeReason"
-                    value={changeReason}
-                    onChange={(e) => setChangeReason(e.target.value)}
-                    rows={4}
-                    placeholder="Explique el motivo de la solicitud de cambio de taller..."
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  onClick={closeChangeRequestModal}
-                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={generateChangeRequestReport}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Generar y Descargar Solicitud
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Modal para añadir/editar alumno */}
       {showAddModal && (

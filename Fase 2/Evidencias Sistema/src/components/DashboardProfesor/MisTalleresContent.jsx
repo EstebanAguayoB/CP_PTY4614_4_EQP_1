@@ -330,7 +330,7 @@ export default function MisTalleresContent() {
     doc.setFontSize(12)
     doc.setTextColor(80, 80, 80)
     doc.text(`Profesor: ${user?.email || "No especificado"}`, 20, 70)
-    doc.text(`Fecha de solicitud: ${new Date().toLocaleDateString("es-ES")}`, 20, 80)
+    doc.text(`Fecha de solicitud: ${new Date().toLocaleDateString("es-CL")} - ${new Date().toLocaleTimeString("es-CL")}`, 20, 80)
 
     // Información del taller
     doc.setFontSize(14)
@@ -379,7 +379,7 @@ export default function MisTalleresContent() {
 
     // Descargar el PDF
     doc.save(
-      `Solicitud_Recursos_${tallerSeleccionado?.nombre || "Taller"}_${new Date().toISOString().split("T")[0]}.pdf`,
+      `Solicitud_Recursos_${tallerSeleccionado?.nombre || "Taller"}_${new Date().toISOString().replace(/:/g, '-').split('.')[0]}.pdf`,
     )
 
     // Cerrar modal y mostrar mensaje
@@ -411,7 +411,7 @@ export default function MisTalleresContent() {
     doc.setFontSize(12)
     doc.setTextColor(80, 80, 80)
     doc.text(`Profesor: ${user?.email || "No especificado"}`, 20, 70)
-    doc.text(`Fecha de solicitud: ${new Date().toLocaleDateString("es-ES")}`, 20, 80)
+    doc.text(`Fecha de solicitud: ${new Date().toLocaleDateString("es-CL")} - ${new Date().toLocaleTimeString("es-CL")}`, 20, 80)
 
     // Información del taller
     doc.setFontSize(14)
@@ -460,7 +460,7 @@ export default function MisTalleresContent() {
 
     // Descargar el PDF
     doc.save(
-      `Solicitud_Actividad_${tallerSeleccionado?.nombre || "Taller"}_${new Date().toISOString().split("T")[0]}.pdf`,
+      `Solicitud_Actividad_${tallerSeleccionado?.nombre || "Taller"}_${new Date().toISOString().replace(/:/g, '-').split('.')[0]}.pdf`,
     )
 
     // Cerrar modal y mostrar mensaje
@@ -666,7 +666,7 @@ export default function MisTalleresContent() {
     doc.text(`Descripción: ${selectedTaller.descripcion}`, 20, 80)
     doc.text(`Estado: ${selectedTaller.estado}`, 20, 90)
     doc.text(`Total de Alumnos: ${selectedTaller.totalAlumnos}`, 20, 100)
-    doc.text(`Fecha de generación: ${new Date().toLocaleDateString("es-ES")}`, 20, 110)
+    doc.text(`Fecha de generación: ${new Date().toLocaleDateString("es-CL")} - ${new Date().toLocaleTimeString("es-CL")}`, 20, 110)
 
     let currentY = 130
 
@@ -817,7 +817,7 @@ export default function MisTalleresContent() {
           // Preparar datos del reporte específico para este alumno
           const reporteData = {
             id_participacion: participacion.id_participacion,
-            fecha_generacion: new Date().toISOString().split('T')[0],
+            fecha_generacion: new Date().toISOString(),
             resumen_semana: `${resumenSemana} Alumno: ${alumno.nombre}, Nivel: ${alumno.nivel}, Progreso individual: ${alumno.progreso}%.`,
             recomendaciones: `${recomendaciones} Estudiante: ${alumno.nombre} - ${alumno.progreso < 50 ? 'Requiere atención especial para mejorar su progreso.' : 'Mantiene buen ritmo de aprendizaje.'}`,
             entregado: 1 // Marcado como entregado al generar el PDF
@@ -879,7 +879,7 @@ export default function MisTalleresContent() {
       doc.text("Este documento fue generado automáticamente por Skiltrack©", 105, 290, { align: "center" })
     }    // Descargar el PDF
     const tipoTexto = tipoReporte === "completo" ? "Completo" : tipoReporte === "alumnos" ? "Alumnos" : "Evidencias"
-    doc.save(`Reporte_${tipoTexto}_${selectedTaller.nombre}_${new Date().toISOString().split("T")[0]}.pdf`)
+    doc.save(`Reporte_${tipoTexto}_${selectedTaller.nombre}_${new Date().toISOString().replace(/:/g, '-').split('.')[0]}.pdf`)
 
     setReporteGenerado(true)
     

@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react"
-import { FileText, Plus, Search, Eye, Check, X, Menu, Upload, Calendar } from "lucide-react"
+import { FileText, Plus, Search, Eye, Check, X, Menu, Upload, Calendar, ClipboardList } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "../../lib/supabase"
 import DashboardProfeSidebar from "../shared/DashboardProfeSidebar"
+import jsPDF from "jspdf"
 
 export default function EvidenciasContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -11,7 +12,9 @@ export default function EvidenciasContent() {
   const [activeTab, setActiveTab] = useState("pendientes")
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
+  const [showReportModal, setShowReportModal] = useState(false)
   const [selectedEvidencia, setSelectedEvidencia] = useState(null)
+  const [selectedReporte, setSelectedReporte] = useState(null)
   const [searchTerm, setSearchTerm] = useState("")
   const navigate = useNavigate()
 
@@ -22,9 +25,11 @@ export default function EvidenciasContent() {
 
   // Estados para datos de la base de datos
   const [evidencias, setEvidencias] = useState([])
+  const [reportes, setReportes] = useState([])
   const [misTalleres, setMisTalleres] = useState([])
   const [alumnosPorTaller, setAlumnosPorTaller] = useState({})
   const [loading, setLoading] = useState(true)
+
   // Estados para el formulario de subir evidencia
   const [formData, setFormData] = useState({
     idTaller: "",
@@ -104,6 +109,7 @@ export default function EvidenciasContent() {
         setMisTalleres([])
         setAlumnosPorTaller({})
         setEvidencias([])
+        setReportes([])
         setLoading(false)
         return
       }
@@ -148,6 +154,7 @@ export default function EvidenciasContent() {
         console.log("No se encontraron participaciones")
         setAlumnosPorTaller({})
         setEvidencias([])
+        setReportes([])
         setLoading(false)
         return
       }
@@ -251,6 +258,47 @@ export default function EvidenciasContent() {
         console.log("Evidencias formateadas:", evidenciasFormateadas)
         setEvidencias(evidenciasFormateadas)
 
+        // PASO 11: Obtener reportes de desempeño creados por este profesor
+        const { data: reportesData, error: reportesError } = await supabase
+          .from("ReporteDesempeno")
+          .select(`
+            *,
+            ParticipacionEstudiante!inner(
+              id_estudiante,
+              TallerImpartido!inner(
+                profesor_asignado,
+                id_taller_definido,
+                nombre_publico
+              )
+            )
+          `)
+          .eq("ParticipacionEstudiante.TallerImpartido.profesor_asignado", currentUserId)
+          .order("fecha_generacion", { ascending: false })
+
+        console.log("Reportes del profesor encontrados:", reportesData, reportesError)
+
+        if (!reportesError && reportesData) {
+          const reportesFormateados = reportesData.map((reporte) => {
+            const participacion = participacionesData.find((p) => p.id_participacion === reporte.id_participacion)
+            const taller = talleres.find((t) => t.id === participacion?.id_taller_impartido)
+            const estudiante = estudiantesData?.find((e) => e.id_estudiante === participacion?.id_estudiante)
+
+            return {
+              id: reporte.id_reporte,
+              idParticipacion: reporte.id_participacion,
+              tallerNombre: taller?.nombre || "Taller desconocido",
+              alumno: estudiante ? `${estudiante.nombre} ${estudiante.apellido}` : "Estudiante desconocido",
+              fechaGeneracion: reporte.fecha_generacion,
+              resumenSemana: reporte.resumen_semana || "",
+              recomendaciones: reporte.recomendaciones || "",
+              entregado: reporte.entregado === 1,
+            }
+          })
+
+          console.log("Reportes formateados del profesor:", reportesFormateados)
+          setReportes(reportesFormateados)
+        }
+
         // Contar por estado
         const pendientes = evidenciasFormateadas.filter((e) => e.estado === "Pendiente").length
         const aprobadas = evidenciasFormateadas.filter((e) => e.estado === "Aprobado").length
@@ -258,6 +306,7 @@ export default function EvidenciasContent() {
       } else {
         console.log("No hay IDs de participaciones")
         setEvidencias([])
+        setReportes([])
       }
 
       console.log("=== CARGA DE DATOS COMPLETADA ===")
@@ -314,6 +363,16 @@ export default function EvidenciasContent() {
   const closeViewModal = () => {
     setShowViewModal(false)
     setSelectedEvidencia(null)
+  }
+
+  const openReportModal = (reporte) => {
+    setSelectedReporte(reporte)
+    setShowReportModal(true)
+  }
+
+  const closeReportModal = () => {
+    setShowReportModal(false)
+    setSelectedReporte(null)
   }
 
   const handleInputChange = (e) => {
@@ -424,6 +483,19 @@ export default function EvidenciasContent() {
       estado: "Aprobada", // Fuerza el estado visual a "Aprobada"
     }))
 
+  // Filtrar reportes
+  const reportesFiltrados = reportes.filter((reporte) => {
+    const matchesSearch =
+      reporte.alumno.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      reporte.resumenSemana.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      reporte.tallerNombre.toLowerCase().includes(searchTerm.toLowerCase())
+
+    const matchesTaller = filterTaller === "" || reporte.tallerNombre.includes(filterTaller)
+    const matchesFecha = filterFecha === "" || reporte.fechaGeneracion.includes(filterFecha)
+
+    return matchesSearch && matchesTaller && matchesFecha
+  })
+
   const getEstadoColor = (estado) => {
     switch (estado) {
       case "Pendiente":
@@ -431,6 +503,8 @@ export default function EvidenciasContent() {
       case "Aprobado":
       case "Aprobada": // Añade esta línea
         return "bg-green-100 text-green-800 border-green-300"
+      case "Entregado":
+        return "bg-blue-100 text-blue-800 border-blue-300"
       default:
         return "bg-gray-100 text-gray-800"
     }
@@ -456,6 +530,8 @@ export default function EvidenciasContent() {
 
   const evidenciasPendientes = evidencias.filter((e) => e.estado === "Pendiente").length
   const evidenciasAprobadas = evidencias.filter((e) => e.estado === "Aprobado").length
+  const reportesEntregados = reportes.filter((r) => r.entregado).length
+  const reportesPendientes = reportes.filter((r) => !r.entregado).length
 
   if (loading) {
     return (
@@ -496,7 +572,7 @@ export default function EvidenciasContent() {
               <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
                 <FileText className="w-5 h-5 text-white" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">Evidencias</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Evidencias y Reportes</h1>
             </div>
 
             <div className="flex items-center space-x-4">
@@ -504,7 +580,7 @@ export default function EvidenciasContent() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <input
                   type="text"
-                  placeholder="Buscar evidencias..."
+                  placeholder="Buscar evidencias o reportes..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 w-64"
@@ -554,7 +630,9 @@ export default function EvidenciasContent() {
           <div className="px-4 sm:px-6 lg:px-8 py-8">
             {/* Controles superiores */}
             <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-              <p className="text-gray-600">Gestiona las evidencias de progreso de tus alumnos</p>
+              <p className="text-gray-600">
+                Gestiona las evidencias de progreso y reportes de desempeño de tus alumnos
+              </p>
 
               <button
                 onClick={openUploadModal}
@@ -657,136 +735,230 @@ export default function EvidenciasContent() {
                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                     }`}
                   >
-                    Aprobadas ({evidenciasPendientes})
+                    Evidencias Aprobadas ({evidenciasPendientes})
                   </button>
-                  {/* Elimina o comenta la otra pestaña si quieres */}
+                  <button
+                    onClick={() => setActiveTab("reportes")}
+                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === "reportes"
+                        ? "border-emerald-500 text-emerald-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    Historial de Reportes ({reportes.length})
+                  </button>
                 </nav>
               </div>
             </div>
 
-            {/* Tabla de evidencias */}
-            <div className="bg-white rounded-xl shadow-md overflow-hidden">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Evidencias Aprobadas
-                </h2>
-                <p className="text-gray-600">
-                  Evidencias que ya han sido aprobadas
-                </p>
-              </div>
+            {/* Contenido de las tabs */}
+            {activeTab === "pendientes" ? (
+              /* Tabla de evidencias */
+              <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                <div className="p-6 border-b border-gray-200">
+                  <h2 className="text-xl font-semibold text-gray-900">Evidencias Aprobadas</h2>
+                  <p className="text-gray-600">Evidencias que ya han sido aprobadas</p>
+                </div>
 
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Alumno
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Taller
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Nivel
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Semana
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Descripción
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Fecha
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Estado
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Acciones
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {evidenciasFiltradas.map((evidencia) => (
-                      <tr key={evidencia.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                              <span className="text-emerald-600 font-medium text-sm">{evidencia.alumno.charAt(0)}</span>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Alumno
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Taller
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Nivel
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Semana
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Descripción
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Fecha
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Estado
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Acciones
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {evidenciasFiltradas.map((evidencia) => (
+                        <tr key={evidencia.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-10 w-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                                <span className="text-emerald-600 font-medium text-sm">
+                                  {evidencia.alumno.charAt(0)}
+                                </span>
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900">{evidencia.alumno}</div>
+                              </div>
                             </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{evidencia.alumno}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {evidencia.tallerNombre}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getNivelColor(evidencia.nivel)}`}
+                            >
+                              {evidencia.nivel}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{evidencia.semana}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-xs truncate">
+                            {evidencia.descripcion}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatDate(evidencia.fecha)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${getEstadoColor(evidencia.estado)}`}
+                            >
+                              {evidencia.estado}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => openViewModal(evidencia)}
+                                className="text-emerald-600 hover:text-emerald-900 p-1 rounded transition-colors"
+                                title="Ver detalles"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                              {evidencia.estado === "Pendiente" && (
+                                <button
+                                  onClick={() => handleAprobar(evidencia.id)}
+                                  className="text-green-600 hover:text-green-900 p-1 rounded transition-colors"
+                                  title="Aprobar evidencia"
+                                >
+                                  <Check className="h-4 w-4" />
+                                </button>
+                              )}
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{evidencia.tallerNombre}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getNivelColor(evidencia.nivel)}`}
-                          >
-                            {evidencia.nivel}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{evidencia.semana}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-xs truncate">
-                          {evidencia.descripcion}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(evidencia.fecha)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${getEstadoColor(evidencia.estado)}`}
-                          >
-                            {evidencia.estado}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex space-x-2">
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {evidenciasFiltradas.length === 0 && (
+                  <div className="p-8 text-center">
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <FileText className="h-8 w-8 text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No hay evidencias aprobadas</h3>
+                      <p className="text-gray-500 max-w-md">No hay evidencias aprobadas para mostrar.</p>
+                      {evidencias.length === 0 && (
+                        <div className="mt-4 text-sm text-gray-400">
+                          Total de evidencias cargadas: {evidencias.length}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Tabla de reportes */
+              <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                <div className="p-6 border-b border-gray-200">
+                  <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                    <ClipboardList className="w-5 h-5 mr-2" />
+                    Historial de Reportes de Desempeño
+                  </h2>
+                  <p className="text-gray-600">
+                    Reportes generados para el seguimiento del progreso de los estudiantes
+                  </p>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Alumno
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Taller
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Fecha Generación
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Resumen
+                        </th>
+
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Acciones
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {reportesFiltrados.map((reporte) => (
+                        <tr key={reporte.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span className="text-blue-600 font-medium text-sm">{reporte.alumno.charAt(0)}</span>
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900">{reporte.alumno}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{reporte.tallerNombre}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatDate(reporte.fechaGeneracion)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-xs truncate">
+                            {reporte.resumenSemana}
+                          </td>
+
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <button
-                              onClick={() => openViewModal(evidencia)}
-                              className="text-emerald-600 hover:text-emerald-900 p-1 rounded transition-colors"
-                              title="Ver detalles"
+                              onClick={() => openReportModal(reporte)}
+                              className="text-blue-600 hover:text-blue-900 p-1 rounded transition-colors"
+                              title="Ver detalles del reporte"
                             >
                               <Eye className="h-4 w-4" />
                             </button>
-                            {evidencia.estado === "Pendiente" && (
-                              <button
-                                onClick={() => handleAprobar(evidencia.id)}
-                                className="text-green-600 hover:text-green-900 p-1 rounded transition-colors"
-                                title="Aprobar evidencia"
-                              >
-                                <Check className="h-4 w-4" />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {evidenciasFiltradas.length === 0 && (
-                <div className="p-8 text-center">
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                      <FileText className="h-8 w-8 text-gray-400" />
-                    </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No hay evidencias aprobadas
-                    </h3>
-                    <p className="text-gray-500 max-w-md">
-                      No hay evidencias aprobadas para mostrar.
-                    </p>
-                    {evidencias.length === 0 && (
-                      <div className="mt-4 text-sm text-gray-400">
-                        Total de evidencias cargadas: {evidencias.length}
-                      </div>
-                    )}
-                  </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              )}
-            </div>
+
+                {reportesFiltrados.length === 0 && (
+                  <div className="p-8 text-center">
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <ClipboardList className="h-8 w-8 text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No hay reportes generados</h3>
+                      <p className="text-gray-500 max-w-md">No se han generado reportes de desempeño para mostrar.</p>
+                      {reportes.length === 0 && (
+                        <div className="mt-4 text-sm text-gray-400">Total de reportes: {reportes.length}</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </main>
       </div>
@@ -1068,6 +1240,117 @@ export default function EvidenciasContent() {
                     Aprobar Evidencia
                   </button>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para ver detalles de reporte */}
+      {showReportModal && selectedReporte && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl overflow-hidden border border-gray-200">
+            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                <ClipboardList className="w-5 h-5 mr-2" />
+                Detalles del Reporte de Desempeño
+              </h2>
+              <button onClick={closeReportModal} className="text-gray-500 hover:text-gray-700">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-1">Alumno</h3>
+                  <p className="text-gray-900 font-medium">{selectedReporte.alumno}</p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-1">Taller</h3>
+                  <p className="text-gray-900">{selectedReporte.tallerNombre}</p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-1">Fecha de Generación</h3>
+                  <p className="text-gray-900 flex items-center">
+                    <Calendar className="w-4 h-4 mr-2 text-gray-400" />
+                    {formatDate(selectedReporte.fechaGeneracion)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Resumen Semanal</h3>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-gray-900 leading-relaxed">
+                      {selectedReporte.resumenSemana || "No hay resumen disponible"}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Recomendaciones</h3>
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <p className="text-gray-900 leading-relaxed">
+                      {selectedReporte.recomendaciones || "No hay recomendaciones disponibles"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-8">
+                <button
+                  onClick={closeReportModal}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Cerrar
+                </button>
+                <button
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+                  onClick={() => {
+                    // Crear PDF usando jsPDF
+                    const doc = new jsPDF()
+
+                    // Configurar fuente y título
+                    doc.setFontSize(20)
+                    doc.text("REPORTE DE DESEMPEÑO", 20, 30)
+
+                    // Información del estudiante
+                    doc.setFontSize(12)
+                    doc.text(`Alumno: ${selectedReporte.alumno}`, 20, 50)
+                    doc.text(`Taller: ${selectedReporte.tallerNombre}`, 20, 60)
+                    doc.text(`Fecha de Generación: ${formatDate(selectedReporte.fechaGeneracion)}`, 20, 70)
+
+                    // Resumen semanal
+                    doc.setFontSize(14)
+                    doc.text("RESUMEN SEMANAL:", 20, 90)
+                    doc.setFontSize(10)
+
+                    const resumenText = selectedReporte.resumenSemana || "No hay resumen disponible"
+                    const resumenLines = doc.splitTextToSize(resumenText, 170)
+                    doc.text(resumenLines, 20, 100)
+
+                    // Recomendaciones
+                    const yPosition = 100 + resumenLines.length * 5 + 10
+                    doc.setFontSize(14)
+                    doc.text("RECOMENDACIONES:", 20, yPosition)
+                    doc.setFontSize(10)
+
+                    const recomendacionesText = selectedReporte.recomendaciones || "No hay recomendaciones disponibles"
+                    const recomendacionesLines = doc.splitTextToSize(recomendacionesText, 170)
+                    doc.text(recomendacionesLines, 20, yPosition + 10)
+
+                    // Descargar el PDF
+                    const fileName = `Reporte_${selectedReporte.alumno.replace(/\s+/g, "_")}_${formatDate(selectedReporte.fechaGeneracion).replace(/\//g, "-")}.pdf`
+                    doc.save(fileName)
+                  }}
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Descargar Reporte
+                </button>
               </div>
             </div>
           </div>

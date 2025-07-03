@@ -161,11 +161,11 @@ export default function GestionReportes() {
           return {
             id: reporte.id_reporte,
             nombre: tallerImpartido.nombre_publico || "Taller no especificado",
-            profesor: `${tallerImpartido.Usuario?.nombre || "Profesor"} ${
-              tallerImpartido.Usuario?.apellido || "No asignado"
-            }`,
+            profesor: `${tallerImpartido.Usuario?.nombre || "Profesor"} ${tallerImpartido.Usuario?.apellido || "No asignado"
+              }`,
             alumnos: totalAlumnos, // Usar el valor calculado
             fecha: new Date(reporte.fecha_generacion).toLocaleDateString(),
+            fechaCompleta: new Date(reporte.fecha_generacion).toLocaleString(),
             contenido: {
               resumen: resumen,
               recomendaciones: recomendacionesRaw,
@@ -204,7 +204,12 @@ export default function GestionReportes() {
   const filteredReportes = reportes.filter((reporte) => {
     const matchesSearch =
       reporte.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      reporte.profesor.toLowerCase().includes(searchTerm.toLowerCase())
+      reporte.profesor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      reporte.contenido.resumen.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (reporte.contenido.alumnosDetalles &&
+        reporte.contenido.alumnosDetalles.some(alumno =>
+          alumno.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+        ))
     return matchesSearch
   })
 
@@ -302,7 +307,7 @@ export default function GestionReportes() {
 
       // Información básica
       addText("INFORMACIÓN GENERAL", 14, true, [16, 185, 129])
-      addText(`Fecha de Generación: ${reporte.fecha}`, 10)
+      addText(`Fecha de Generación: ${reporte.fechaCompleta}`, 10)
       addText(`Profesor Responsable: ${reporte.profesor}`, 10)
       addText(`Estudiantes Participantes: ${reporte.alumnos}`, 10)
       yPosition += 5
@@ -453,7 +458,7 @@ export default function GestionReportes() {
                   </div>
                   <div className="flex items-center">
                     <Calendar className="w-4 h-4 mr-2" />
-                    <span>{previewReport.fecha}</span>
+                    <span>{previewReport.fechaCompleta}</span>
                   </div>
                   <div className="flex items-center">
                     <Users className="w-4 h-4 mr-2" />
@@ -565,7 +570,7 @@ export default function GestionReportes() {
                 >
                   <div className="p-5">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="text-sm text-gray-500">{reporte.fecha}</p>
+                      <p className="text-sm text-gray-500">{reporte.fechaCompleta}</p>
                     </div>
                     <h3 className="text-lg font-bold text-gray-800 mb-2 truncate">{reporte.nombre}</h3>
                     <p className="text-sm text-gray-600 mb-4 flex items-center">
