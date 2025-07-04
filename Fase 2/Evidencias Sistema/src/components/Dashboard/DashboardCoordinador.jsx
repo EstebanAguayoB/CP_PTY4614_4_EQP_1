@@ -227,41 +227,7 @@ export default function DashboardCoordinador() {
     setSidebarOpen(!sidebarOpen)
   }
 
-  useEffect(() => {
-    const fetchActividadReciente = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("LogAccion")
-          .select(`
-            id_log,
-            accion,
-            fecha_hora,
-            detalle,
-            Usuario:Usuario(id_usuario, nombre, apellido)
-          `)
-          .order("fecha_hora", { ascending: false })
-          .limit(10)
-        
-        if (!error && data) {
-          setActividadReciente(
-            data.map((a) => ({
-              id: a.id_log,
-              accion: a.accion || 'Acción no especificada',
-              tiempo: calcularTiempoTranscurrido(a.fecha_hora),
-              usuario: a.Usuario ? `${a.Usuario.nombre || ''} ${a.Usuario.apellido || ''}`.trim() || "Usuario desconocido" : "Sistema",
-            })),
-          )
-        } else if (error) {
-          console.error("Error al cargar actividad reciente:", error)
-          setActividadReciente([])
-        }
-      } catch (err) {
-        console.error("Error en fetchActividadReciente:", err)
-        setActividadReciente([])
-      }
-    }
-    fetchActividadReciente()
-  }, [])
+ 
 
   // Función para mostrar tiempo relativo
   function calcularTiempoTranscurrido(fecha) {
@@ -553,28 +519,6 @@ export default function DashboardCoordinador() {
               <div className="p-6 border-b border-gray-200">
                 <h2 className="text-xl font-semibold text-gray-900">Actividad Reciente</h2>
                 <p className="text-gray-600">Últimas actividades en el sistema</p>
-              </div>
-
-              <div className="p-6">
-                {actividadReciente.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500">No hay actividad reciente registrada</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {actividadReciente.map((actividad) => (
-                      <div key={actividad.id || `actividad-${Math.random()}`} className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
-                        <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2"></div>
-                        <div className="flex-1">
-                          <p className="text-gray-900 font-medium">{actividad.accion}</p>
-                          <p className="text-sm text-gray-500">
-                            {actividad.tiempo} por {actividad.usuario}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           </div>
