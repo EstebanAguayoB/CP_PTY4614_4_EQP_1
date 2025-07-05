@@ -30,17 +30,12 @@ export default function EvidenciasContent() {
   const [alumnosPorTaller, setAlumnosPorTaller] = useState({})
   const [loading, setLoading] = useState(true)
 
-  // Estados para el formulario de subir evidencia
-  const [formData, setFormData] = useState({
-    idTaller: "",
-    alumno: "",
-    semana: "",
-    descripcion: "",
-    archivoUrl: "",
-    fecha: "",
-    validadoPor: "",
-    observaciones: "",
-  })
+  // Estados para paginación
+  const [evidenciasPage, setEvidenciasPage] = useState(0)
+  const [reportesPage, setReportesPage] = useState(0)
+  const [totalEvidencias, setTotalEvidencias] = useState(0)
+  const [totalReportes, setTotalReportes] = useState(0)
+  const PAGE_SIZE = 25
 
   useEffect(() => {
     const getUser = async () => {
@@ -76,11 +71,11 @@ export default function EvidenciasContent() {
   // Cargar datos cuando se obtiene el ID del usuario
   useEffect(() => {
     if (currentUserId) {
-      loadTeacherData()
+      loadTeacherData(evidenciasPage, reportesPage)
     }
-  }, [currentUserId])
+  }, [currentUserId, evidenciasPage, reportesPage])
 
-  const loadTeacherData = async () => {
+  const loadTeacherData = async (evPage, repPage) => {
     try {
       setLoading(true)
       console.log("=== INICIANDO CARGA DE DATOS ===")
@@ -209,13 +204,18 @@ export default function EvidenciasContent() {
       console.log("IDs de participaciones para buscar evidencias:", participacionIds)
 
       if (participacionIds.length > 0) {
-        const { data: evidenciasData, error: evidenciasError } = await supabase
+        const from = evPage * PAGE_SIZE
+        const to = from + PAGE_SIZE - 1
+
+        const { data: evidenciasData, error: evidenciasError, count: evidenciasCount } = await supabase
           .from("Evidencia")
-          .select("*")
+          .select("*", { count: "exact" })
           .in("id_participacion", participacionIds)
           .order("fecha_envio", { ascending: false })
+          .range(from, to)
 
         console.log("Evidencias encontradas:", evidenciasData, evidenciasError)
+        setTotalEvidencias(evidenciasCount)
 
         if (evidenciasError) {
           console.error("Error fetching evidencias:", evidenciasError)
@@ -259,9 +259,13 @@ export default function EvidenciasContent() {
         setEvidencias(evidenciasFormateadas)
 
         // PASO 11: Obtener reportes de desempeño creados por este profesor
-        const { data: reportesData, error: reportesError } = await supabase
+        const repFrom = repPage * PAGE_SIZE
+        const repTo = repFrom + PAGE_SIZE - 1
+
+        const { data: reportesData, error: reportesError, count: reportesCount } = await supabase
           .from("ReporteDesempeno")
-          .select(`
+          .select(
+            `
             *,
             ParticipacionEstudiante!inner(
               id_estudiante,
@@ -271,11 +275,15 @@ export default function EvidenciasContent() {
                 nombre_publico
               )
             )
-          `)
+          `,
+            { count: "exact" },
+          )
           .eq("ParticipacionEstudiante.TallerImpartido.profesor_asignado", currentUserId)
           .order("fecha_generacion", { ascending: false })
+          .range(repFrom, repTo)
 
         console.log("Reportes del profesor encontrados:", reportesData, reportesError)
+        setTotalReportes(reportesCount)
 
         if (!reportesError && reportesData) {
           const reportesFormateados = reportesData.map((reporte) => {
@@ -327,19 +335,6 @@ export default function EvidenciasContent() {
     navigate("/")
   }
 
-  const openUploadModal = () => {
-    setShowUploadModal(true)
-    setFormData({
-      idTaller: "",
-      alumno: "",
-      semana: "",
-      descripcion: "",
-      archivoUrl: "",
-      fecha: new Date().toISOString().split("T")[0],
-      validadoPor: user?.email || "",
-      observaciones: "",
-    })
-  }
 
   const closeUploadModal = () => {
     setShowUploadModal(false)
@@ -528,6 +523,17 @@ export default function EvidenciasContent() {
     return date.toLocaleDateString("es-CL")
   }
 
+  const formatDateTime = (dateString) => {
+    const date = new Date(dateString)
+    return date.toLocaleString("es-CL", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  }
+
   const evidenciasPendientes = evidencias.filter((e) => e.estado === "Pendiente").length
   const evidenciasAprobadas = evidencias.filter((e) => e.estado === "Aprobado").length
   const reportesEntregados = reportes.filter((r) => r.entregado).length
@@ -619,16 +625,8 @@ export default function EvidenciasContent() {
             {/* Controles superiores */}
             <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
               <p className="text-gray-600">
-                Gestiona las evidencias de progreso y reportes de desempeño de tus alumnos
+                Gestiona las evidencias de progreso y reportes de desempeño de tus talleres
               </p>
-
-              <button
-                onClick={openUploadModal}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg flex items-center transition-colors"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Subir Evidencia
-              </button>
             </div>
 
             {/* Filtros avanzados */}
@@ -727,7 +725,7 @@ export default function EvidenciasContent() {
                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                     }`}
                   >
-                    Evidencias Aprobadas ({evidenciasPendientes})
+                    Evidencias Aprobadas ({totalEvidencias})
                   </button>
                   <button
                     onClick={() => setActiveTab("reportes")}
@@ -737,7 +735,7 @@ export default function EvidenciasContent() {
                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                     }`}
                   >
-                    Historial de Reportes ({reportes.length})
+                    Historial de Reportes ({totalReportes})
                   </button>
                 </nav>
               </div>
@@ -812,7 +810,7 @@ export default function EvidenciasContent() {
                             {evidencia.descripcion}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {formatDate(evidencia.fecha)}
+                            {formatDateTime(evidencia.fecha)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span
@@ -845,6 +843,27 @@ export default function EvidenciasContent() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+
+                {/* Paginación de Evidencias */}
+                <div className="p-4 border-t border-gray-200 flex items-center justify-between">
+                  <button
+                    onClick={() => setEvidenciasPage(evidenciasPage - 1)}
+                    disabled={evidenciasPage === 0}
+                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Anterior
+                  </button>
+                  <span className="text-sm text-gray-600">
+                    Página {evidenciasPage + 1} de {Math.ceil(totalEvidencias / PAGE_SIZE)}
+                  </span>
+                  <button
+                    onClick={() => setEvidenciasPage(evidenciasPage + 1)}
+                    disabled={(evidenciasPage + 1) * PAGE_SIZE >= totalEvidencias}
+                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Siguiente
+                  </button>
                 </div>
 
                 {evidenciasFiltradas.length === 0 && (
@@ -882,7 +901,7 @@ export default function EvidenciasContent() {
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Alumno
+                          Tipo de Reporte
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Taller
@@ -905,16 +924,18 @@ export default function EvidenciasContent() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                <span className="text-blue-600 font-medium text-sm">{reporte.alumno.charAt(0)}</span>
+                                <FileText className="h-5 w-5 text-blue-600" />
                               </div>
                               <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900">{reporte.alumno}</div>
+                                <div className="text-sm font-medium text-gray-900">
+                                  {`${reporte.resumenSemana.substring(0, 42)}...`}
+                                </div>
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{reporte.tallerNombre}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {formatDate(reporte.fechaGeneracion)}
+                            {formatDateTime(reporte.fechaGeneracion)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-xs truncate">
                             {reporte.resumenSemana}
@@ -933,6 +954,27 @@ export default function EvidenciasContent() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+
+                {/* Paginación de Reportes */}
+                <div className="p-4 border-t border-gray-200 flex items-center justify-between">
+                  <button
+                    onClick={() => setReportesPage(reportesPage - 1)}
+                    disabled={reportesPage === 0}
+                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Anterior
+                  </button>
+                  <span className="text-sm text-gray-600">
+                    Página {reportesPage + 1} de {Math.ceil(totalReportes / PAGE_SIZE)}
+                  </span>
+                  <button
+                    onClick={() => setReportesPage(reportesPage + 1)}
+                    disabled={(reportesPage + 1) * PAGE_SIZE >= totalReportes}
+                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Siguiente
+                  </button>
                 </div>
 
                 {reportesFiltrados.length === 0 && (
@@ -1168,7 +1210,7 @@ export default function EvidenciasContent() {
                   <h3 className="text-sm font-medium text-gray-700 mb-1">Fecha</h3>
                   <p className="text-gray-900 flex items-center">
                     <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                    {formatDate(selectedEvidencia.fecha)}
+                    {formatDateTime(selectedEvidencia.fecha)}
                   </p>
                 </div>
 
@@ -1255,11 +1297,6 @@ export default function EvidenciasContent() {
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-1">Alumno</h3>
-                  <p className="text-gray-900 font-medium">{selectedReporte.alumno}</p>
-                </div>
-
-                <div>
                   <h3 className="text-sm font-medium text-gray-700 mb-1">Taller</h3>
                   <p className="text-gray-900">{selectedReporte.tallerNombre}</p>
                 </div>
@@ -1268,7 +1305,7 @@ export default function EvidenciasContent() {
                   <h3 className="text-sm font-medium text-gray-700 mb-1">Fecha de Generación</h3>
                   <p className="text-gray-900 flex items-center">
                     <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                    {formatDate(selectedReporte.fechaGeneracion)}
+                    {formatDateTime(selectedReporte.fechaGeneracion)}
                   </p>
                 </div>
               </div>
@@ -1312,21 +1349,20 @@ export default function EvidenciasContent() {
 
                     // Información del estudiante
                     doc.setFontSize(12)
-                    doc.text(`Alumno: ${selectedReporte.alumno}`, 20, 50)
-                    doc.text(`Taller: ${selectedReporte.tallerNombre}`, 20, 60)
-                    doc.text(`Fecha de Generación: ${formatDate(selectedReporte.fechaGeneracion)}`, 20, 70)
+                    doc.text(`Taller: ${selectedReporte.tallerNombre}`, 20, 50)
+                    doc.text(`Fecha de Generación: ${formatDateTime(selectedReporte.fechaGeneracion)}`, 20, 60)
 
                     // Resumen semanal
                     doc.setFontSize(14)
-                    doc.text("RESUMEN SEMANAL:", 20, 90)
+                    doc.text("RESUMEN SEMANAL:", 20, 80)
                     doc.setFontSize(10)
 
                     const resumenText = selectedReporte.resumenSemana || "No hay resumen disponible"
                     const resumenLines = doc.splitTextToSize(resumenText, 170)
-                    doc.text(resumenLines, 20, 100)
+                    doc.text(resumenLines, 20, 90)
 
                     // Recomendaciones
-                    const yPosition = 100 + resumenLines.length * 5 + 10
+                    const yPosition = 90 + resumenLines.length * 5 + 10
                     doc.setFontSize(14)
                     doc.text("RECOMENDACIONES:", 20, yPosition)
                     doc.setFontSize(10)
@@ -1336,7 +1372,7 @@ export default function EvidenciasContent() {
                     doc.text(recomendacionesLines, 20, yPosition + 10)
 
                     // Descargar el PDF
-                    const fileName = `Reporte_${selectedReporte.alumno.replace(/\s+/g, "_")}_${formatDate(selectedReporte.fechaGeneracion).replace(/\//g, "-")}.pdf`
+                    const fileName = `Reporte_${selectedReporte.tallerNombre.replace(/\s+/g, "_")}_${new Date(selectedReporte.fechaGeneracion).toLocaleDateString("es-CL").replace(/\//g, "-")}.pdf`
                     doc.save(fileName)
                   }}
                 >

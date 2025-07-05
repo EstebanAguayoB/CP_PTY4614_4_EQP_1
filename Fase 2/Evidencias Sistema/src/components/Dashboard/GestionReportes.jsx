@@ -48,6 +48,9 @@ export default function GestionReportes() {
   const [previewReport, setPreviewReport] = useState(null)
   const [showPreview, setShowPreview] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
+  const [currentPage, setCurrentPage] = useState(0)
+  const [reportsPerPage] = useState(25)
+  const [totalReportes, setTotalReportes] = useState(0)
   const navigate = useNavigate()
 
   // Obtener el usuario
@@ -56,7 +59,6 @@ export default function GestionReportes() {
       const { data } = await supabase.auth.getUser()
       if (data.user) {
         setUser(data.user)
-        fetchReportes()
       } else {
         navigate("/")
       }
@@ -64,11 +66,23 @@ export default function GestionReportes() {
     getUser()
   }, [navigate])
 
+  useEffect(() => {
+    if (user) {
+      fetchReportes()
+    }
+  }, [user, currentPage])
+
   const fetchReportes = async () => {
     setLoading(true)
     setError(null)
     try {
-      const { data, error } = await supabase.from("ReporteDesempeno").select(`
+      const from = currentPage * reportsPerPage
+      const to = from + reportsPerPage - 1
+
+      const { data, error, count } = await supabase
+        .from("ReporteDesempeno")
+        .select(
+          `
           id_reporte,
           fecha_generacion,
           resumen_semana,
@@ -87,7 +101,11 @@ export default function GestionReportes() {
               )
             )
           )
-        `)
+        `,
+          { count: "exact" },
+        )
+        .order("fecha_generacion", { ascending: false })
+        .range(from, to)
 
       if (error) throw error
 
@@ -177,9 +195,13 @@ export default function GestionReportes() {
               return { nombre: nombre.trim(), recomendacion: recomendacion.trim() }
             })
 
+          const nombreReporte = `${tallerImpartido.nombre_publico || "Reporte"}: ${resumen.substring(0, 42)}${
+            resumen.length > 42 ? "..." : ""
+          }`
+
           return {
             id: reporte.id_reporte,
-            nombre: tallerImpartido.nombre_publico || "Taller no especificado",
+            nombre: nombreReporte,
             profesor: `${tallerImpartido.Usuario?.nombre || "Profesor"} ${
               tallerImpartido.Usuario?.apellido || "No asignado"
             }`,
@@ -204,6 +226,7 @@ export default function GestionReportes() {
         .filter(Boolean) // Eliminar entradas nulas
 
       setReportes(formattedReportes)
+      setTotalReportes(count)
     } catch (error) {
       console.error("Error fetching reportes:", error)
       setError("No se pudieron cargar los reportes. Intente de nuevo más tarde.")
@@ -372,6 +395,8 @@ export default function GestionReportes() {
     setShowPreview(false)
     setPreviewReport(null)
   }
+
+  const totalPages = Math.ceil(totalReportes / reportsPerPage)
 
   const getMetricIcon = (type) => {
     switch (type) {
@@ -590,6 +615,29 @@ export default function GestionReportes() {
                     </div>
                   ))}
                 </div>
+
+                {/* Barra de Paginación */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-8">
+                    <button
+                      onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))}
+                      disabled={currentPage === 0}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Anterior
+                    </button>
+                    <span className="text-sm text-gray-600">
+                      Página {currentPage + 1} de {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))}
+                      disabled={currentPage >= totalPages - 1}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </div>

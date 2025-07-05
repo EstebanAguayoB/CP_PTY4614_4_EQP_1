@@ -37,7 +37,7 @@ const DashboardProfeSidebar = ({ sidebarOpen, toggleSidebar, userRole = "Profeso
       icon: Users,
     },
     {
-      name: "Evidencias",
+      name: "Evidencias y Reportes",
       path: "/dashboardprofesor/evidencias",
       icon: FileText,
     },

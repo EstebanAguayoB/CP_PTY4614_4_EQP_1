@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react"
 import { BookOpen, Users, Upload, Menu, FileText, X, Check, Package, Calendar } from "lucide-react"
 import { useNavigate } from "react-router-dom"
@@ -126,11 +125,11 @@ export default function MisTalleresContent() {
               const estudiante = participacion.Estudiante
               const nivelActual = participacion.Nivel
 
-                // Reemplazar esta sección:
-                // Calcular progreso basado en el nivel actual vs niveles totales
-                // const progresoCalculado = nivelActual
-                //   ? Math.round((nivelActual.numero_nivel / taller.TallerDefinido.niveles_totales) * 100)
-                //   : 0
+              // Reemplazar esta sección:
+              // Calcular progreso basado en el nivel actual vs niveles totales
+              // const progresoCalculado = nivelActual
+              //   ? Math.round((nivelActual.numero_nivel / taller.TallerDefinido.niveles_totales) * 100)
+              //   : 0
 
               // Por esta nueva lógica:
               // Obtener evidencias validadas para este alumno
@@ -610,7 +609,8 @@ export default function MisTalleresContent() {
       // Auto-cerrar el modal después de 2 segundos
       setTimeout(() => {
         closeEvidenciaModal()
-      }, 2000)    } catch (error) {
+      }, 2000)
+    } catch (error) {
       console.error("Error inesperado:", error)
       alert("Error inesperado al guardar la evidencia. Por favor, inténtelo de nuevo.")
     } finally {
@@ -635,7 +635,7 @@ export default function MisTalleresContent() {
       }
 
       const tipoReporte = document.querySelector('input[name="tipo-reporte"]:checked')?.id
-      
+
       if (!tipoReporte) {
         alert("Por favor seleccione un tipo de reporte")
         return
@@ -643,246 +643,234 @@ export default function MisTalleresContent() {
 
       const doc = new jsPDF()
 
-    // Configuración del documento
-    doc.setFontSize(20)
-    doc.setTextColor(40, 40, 40)
+      // Configuración del documento
+      doc.setFontSize(20)
+      doc.setTextColor(40, 40, 40)
 
-    // Título principal
-    doc.text(`REPORTE - ${selectedTaller.nombre.toUpperCase()}`, 105, 30, { align: "center" })
+      // Título principal
+      doc.text(`REPORTE - ${selectedTaller.nombre.toUpperCase()}`, 105, 30, { align: "center" })
 
-    // Línea decorativa
-    doc.setLineWidth(0.5)
-    doc.setDrawColor(34, 197, 94)
-    doc.line(20, 40, 190, 40)
+      // Línea decorativa
+      doc.setLineWidth(0.5)
+      doc.setDrawColor(34, 197, 94)
+      doc.line(20, 40, 190, 40)
 
-    // Información general del taller
-    doc.setFontSize(14)
-    doc.setTextColor(60, 60, 60)
-    doc.text("INFORMACIÓN GENERAL", 20, 55)
-
-    doc.setFontSize(12)
-    doc.setTextColor(80, 80, 80)
-    doc.text(`Nombre: ${selectedTaller.nombre}`, 20, 70)
-    doc.text(`Descripción: ${selectedTaller.descripcion}`, 20, 80)
-    doc.text(`Estado: ${selectedTaller.estado}`, 20, 90)
-    doc.text(`Total de Alumnos: ${selectedTaller.totalAlumnos}`, 20, 100)
-    doc.text(`Fecha de generación: ${new Date().toLocaleDateString("es-CL")} - ${new Date().toLocaleTimeString("es-CL")}`, 20, 110)
-
-    let currentY = 130
-
-    if (tipoReporte === "completo") {
-      // Reporte completo
+      // Información general del taller
       doc.setFontSize(14)
       doc.setTextColor(60, 60, 60)
-      doc.text("PROGRESO GENERAL", 20, currentY)
-      currentY += 15
+      doc.text("INFORMACIÓN GENERAL", 20, 55)
 
       doc.setFontSize(12)
       doc.setTextColor(80, 80, 80)
-      doc.text(`Progreso promedio: ${selectedTaller.progreso}%`, 20, currentY)
-      doc.text(`Evidencias pendientes: ${selectedTaller.evidenciasPendientes}`, 20, currentY + 10)
-      currentY += 30
+      doc.text(`Nombre: ${selectedTaller.nombre}`, 20, 70)
+      doc.text(`Descripción: ${selectedTaller.descripcion}`, 20, 80)
+      doc.text(`Estado: ${selectedTaller.estado}`, 20, 90)
+      doc.text(`Total de Alumnos: ${selectedTaller.totalAlumnos}`, 20, 100)
+      // Opción con formato personalizado:
+      const ahora = new Date()
+      const fecha = ahora.toLocaleDateString("es-CL")
+      const hora = ahora.toLocaleTimeString("es-CL", { hour12: false })
+      doc.text(`Fecha de generación: ${fecha} a las ${hora}`, 20, 110)
 
-      // Distribución por niveles
-      doc.setFontSize(14)
-      doc.setTextColor(60, 60, 60)
-      doc.text("DISTRIBUCIÓN POR NIVELES", 20, currentY)
-      currentY += 15
+      let currentY = 130
 
-      doc.setFontSize(12)
-      doc.setTextColor(80, 80, 80)
-      doc.text(`Básico: ${selectedTaller.distribucionNiveles.basico} alumnos`, 20, currentY)
-      doc.text(`Intermedio: ${selectedTaller.distribucionNiveles.intermedio} alumnos`, 20, currentY + 10)
-      doc.text(`Avanzado: ${selectedTaller.distribucionNiveles.avanzado} alumnos`, 20, currentY + 20)
-      currentY += 40
-
-      // Lista de alumnos
-      doc.setFontSize(14)
-      doc.setTextColor(60, 60, 60)
-      doc.text("LISTA DE ALUMNOS", 20, currentY)
-      currentY += 15
-
-      doc.setFontSize(10)
-      selectedTaller.alumnos.forEach((alumno, index) => {
-        if (currentY > 250) {
-          doc.addPage()
-          currentY = 30
-        }
-        doc.text(
-          `${index + 1}. ${alumno.nombre} - Nivel: ${alumno.nivel} - Progreso: ${alumno.progreso}%`,
-          20,
-          currentY,
-        )
-        currentY += 8
-      })
-    } else if (tipoReporte === "alumnos") {
-      // Solo alumnos y progreso
-      doc.setFontSize(14)
-      doc.setTextColor(60, 60, 60)
-      doc.text("ALUMNOS Y PROGRESO", 20, currentY)
-      currentY += 15
-
-      doc.setFontSize(12)
-      doc.setTextColor(80, 80, 80)
-      doc.text(`Progreso promedio del taller: ${selectedTaller.progreso}%`, 20, currentY)
-      currentY += 20
-
-      doc.setFontSize(10)
-      selectedTaller.alumnos.forEach((alumno, index) => {
-        if (currentY > 250) {
-          doc.addPage()
-          currentY = 30
-        }
-        doc.text(`${index + 1}. ${alumno.nombre}`, 20, currentY)
-        doc.text(`Nivel: ${alumno.nivel}`, 80, currentY)
-        doc.text(`Progreso: ${alumno.progreso}%`, 130, currentY)
-        doc.text(`Email: ${alumno.email}`, 20, currentY + 8)
-        currentY += 18
-      })
-    } else if (tipoReporte === "evidencias") {
-      // Solo evidencias recientes
-      doc.setFontSize(14)
-      doc.setTextColor(60, 60, 60)
-      doc.text("EVIDENCIAS RECIENTES", 20, currentY)
-      currentY += 15
-
-      doc.setFontSize(12)
-      doc.setTextColor(80, 80, 80)
-      doc.text(`Evidencias pendientes de revisión: ${selectedTaller.evidenciasPendientes}`, 20, currentY)
-      currentY += 20
-
-      doc.setFontSize(10)
-      doc.text("Estado de evidencias por alumno:", 20, currentY)
-      currentY += 15
-
-      selectedTaller.alumnos.forEach((alumno, index) => {
-        if (currentY > 250) {
-          doc.addPage()
-          currentY = 30
-        }
-        doc.text(`${index + 1}. ${alumno.nombre} - Nivel: ${alumno.nivel}`, 20, currentY)
-        doc.text(`Estado: Evidencias al día`, 20, currentY + 8)
-        currentY += 18
-      })
-    }    // Guardar reportes en la base de datos ANTES de generar el PDF
-    try {
-      console.log("Iniciando guardado de reportes en base de datos...")
-      console.log("Taller seleccionado:", selectedTaller)
-      console.log("Tipo de reporte:", tipoReporte)
-      
-      // Preparar el resumen del reporte basado en el tipo
-      let resumenSemana = ""
-      let recomendaciones = ""
-      
       if (tipoReporte === "completo") {
-        resumenSemana = `Reporte completo del taller ${selectedTaller.nombre}. Progreso promedio: ${selectedTaller.progreso}%. Total de alumnos: ${selectedTaller.totalAlumnos}. Evidencias pendientes: ${selectedTaller.evidenciasPendientes}.`
-        recomendaciones = "Se recomienda mantener seguimiento constante del progreso de los estudiantes y revisar las evidencias pendientes."
+        // Reporte completo
+        doc.setFontSize(14)
+        doc.setTextColor(60, 60, 60)
+        doc.text("PROGRESO GENERAL", 20, currentY)
+        currentY += 15
+
+        doc.setFontSize(12)
+        doc.setTextColor(80, 80, 80)
+        doc.text(`Progreso promedio: ${selectedTaller.progreso}%`, 20, currentY)
+        doc.text(`Evidencias pendientes: ${selectedTaller.evidenciasPendientes}`, 20, currentY + 10)
+        currentY += 30
+
+        // Distribución por niveles
+        doc.setFontSize(14)
+        doc.setTextColor(60, 60, 60)
+        doc.text("DISTRIBUCIÓN POR NIVELES", 20, currentY)
+        currentY += 15
+
+        doc.setFontSize(12)
+        doc.setTextColor(80, 80, 80)
+        doc.text(`Básico: ${selectedTaller.distribucionNiveles.basico} alumnos`, 20, currentY)
+        doc.text(`Intermedio: ${selectedTaller.distribucionNiveles.intermedio} alumnos`, 20, currentY + 10)
+        doc.text(`Avanzado: ${selectedTaller.distribucionNiveles.avanzado} alumnos`, 20, currentY + 20)
+        currentY += 40
+
+        // Lista de alumnos
+        doc.setFontSize(14)
+        doc.setTextColor(60, 60, 60)
+        doc.text("LISTA DE ALUMNOS", 20, currentY)
+        currentY += 15
+
+        doc.setFontSize(10)
+        selectedTaller.alumnos.forEach((alumno, index) => {
+          if (currentY > 250) {
+            doc.addPage()
+            currentY = 30
+          }
+          doc.text(
+            `${index + 1}. ${alumno.nombre} - Nivel: ${alumno.nivel} - Progreso: ${alumno.progreso}%`,
+            20,
+            currentY,
+          )
+          currentY += 8
+        })
       } else if (tipoReporte === "alumnos") {
-        resumenSemana = `Reporte de alumnos y progreso del taller ${selectedTaller.nombre}. Se incluye el estado de ${selectedTaller.totalAlumnos} estudiantes con progreso promedio del ${selectedTaller.progreso}%.`
-        recomendaciones = "Considerar apoyo adicional para estudiantes con progreso menor al promedio del grupo."
+        // Solo alumnos y progreso
+        doc.setFontSize(14)
+        doc.setTextColor(60, 60, 60)
+        doc.text("ALUMNOS Y PROGRESO", 20, currentY)
+        currentY += 15
+
+        doc.setFontSize(12)
+        doc.setTextColor(80, 80, 80)
+        doc.text(`Progreso promedio del taller: ${selectedTaller.progreso}%`, 20, currentY)
+        currentY += 20
+
+        doc.setFontSize(10)
+        selectedTaller.alumnos.forEach((alumno, index) => {
+          if (currentY > 250) {
+            doc.addPage()
+            currentY = 30
+          }
+          doc.text(`${index + 1}. ${alumno.nombre}`, 20, currentY)
+          doc.text(`Nivel: ${alumno.nivel}`, 80, currentY)
+          doc.text(`Progreso: ${alumno.progreso}%`, 130, currentY)
+          doc.text(`Email: ${alumno.email}`, 20, currentY + 8)
+          currentY += 18
+        })
       } else if (tipoReporte === "evidencias") {
-        resumenSemana = `Reporte de evidencias del taller ${selectedTaller.nombre}. Total de evidencias pendientes: ${selectedTaller.evidenciasPendientes}.`
-        recomendaciones = "Priorizar la revisión de evidencias pendientes para mantener el seguimiento actualizado del progreso estudiantil."
-      }
+        // Solo evidencias recientes
+        doc.setFontSize(14)
+        doc.setTextColor(60, 60, 60)
+        doc.text("EVIDENCIAS RECIENTES", 20, currentY)
+        currentY += 15
 
-      console.log("Resumen preparado:", resumenSemana)
-      console.log("Recomendaciones preparadas:", recomendaciones)
-      console.log("Total de alumnos a procesar:", selectedTaller.alumnos.length)
+        doc.setFontSize(12)
+        doc.setTextColor(80, 80, 80)
+        doc.text(`Evidencias pendientes de revisión: ${selectedTaller.evidenciasPendientes}`, 20, currentY)
+        currentY += 20
 
-      // Crear reportes para cada alumno del taller
-      const reportesPromises = selectedTaller.alumnos.map(async (alumno, index) => {
-        console.log(`Procesando alumno ${index + 1}/${selectedTaller.alumnos.length}: ${alumno.nombre}`)
-        
-        try {
-          // Obtener la participación del alumno
-          const { data: participacion, error: participacionError } = await supabase
-            .from("ParticipacionEstudiante")
-            .select("id_participacion")
-            .eq("id_estudiante", alumno.id)
-            .eq("id_taller_impartido", selectedTaller.id)
-            .single()
+        doc.setFontSize(10)
+        doc.text("Estado de evidencias por alumno:", 20, currentY)
+        currentY += 15
 
-          if (participacionError) {
-            console.error(`Error al obtener participación para alumno ${alumno.nombre}:`, participacionError)
-            return { success: false, alumno: alumno.nombre, error: participacionError.message }
+        selectedTaller.alumnos.forEach((alumno, index) => {
+          if (currentY > 250) {
+            doc.addPage()
+            currentY = 30
           }
+          doc.text(`${index + 1}. ${alumno.nombre} - Nivel: ${alumno.nivel}`, 20, currentY)
+          doc.text(`Estado: Evidencias al día`, 20, currentY + 8)
+          currentY += 18
+        })
+      }    // Guardar UN SOLO reporte en la base de datos ANTES de generar el PDF
+      try {
+        console.log("Iniciando guardado de reporte en base de datos...")
+        console.log("Taller seleccionado:", selectedTaller)
+        console.log("Tipo de reporte:", tipoReporte)
 
-          if (!participacion) {
-            console.error(`No se encontró participación para alumno ${alumno.nombre}`)
-            return { success: false, alumno: alumno.nombre, error: "Participación no encontrada" }
-          }
+        // Preparar el resumen del reporte basado en el tipo (para TODO el taller)
+        let resumenSemana = ""
+        let recomendaciones = ""
 
-          console.log(`Participación encontrada para ${alumno.nombre}:`, participacion.id_participacion)
-
-          // Preparar datos del reporte específico para este alumno
-          const reporteData = {
-            id_participacion: participacion.id_participacion,
-            fecha_generacion: new Date().toISOString(),
-            resumen_semana: `${resumenSemana} Alumno: ${alumno.nombre}, Nivel: ${alumno.nivel}, Progreso individual: ${alumno.progreso}%.`,
-            recomendaciones: `${recomendaciones} Estudiante: ${alumno.nombre} - ${alumno.progreso < 50 ? 'Requiere atención especial para mejorar su progreso.' : 'Mantiene buen ritmo de aprendizaje.'}`,
-            entregado: 1 // Marcado como entregado al generar el PDF
-          }
-
-          console.log(`Datos del reporte para ${alumno.nombre}:`, reporteData)
-
-          // Insertar el reporte en la base de datos
-          const { data: reporteInsertado, error: reporteError } = await supabase
-            .from("ReporteDesempeno")
-            .insert(reporteData)
-            .select()
-
-          if (reporteError) {
-            console.error(`Error al guardar reporte para alumno ${alumno.nombre}:`, reporteError)
-            return { success: false, alumno: alumno.nombre, error: reporteError.message }
-          }
-
-          console.log(`Reporte guardado exitosamente para ${alumno.nombre}:`, reporteInsertado)
-          return { success: true, alumno: alumno.nombre, data: reporteInsertado }
-
-        } catch (error) {
-          console.error(`Error inesperado para alumno ${alumno.nombre}:`, error)
-          return { success: false, alumno: alumno.nombre, error: error.message }
+        if (tipoReporte === "completo") {
+          // Crear resumen completo del taller con información de todos los alumnos
+          const alumnosInfo = selectedTaller.alumnos.map(alumno => 
+            `${alumno.nombre} (Nivel: ${alumno.nivel}, Progreso: ${alumno.progreso}%)`
+          ).join(", ")
+          
+          resumenSemana = `Reporte completo del taller ID ${selectedTaller.id} - ${selectedTaller.nombre}. El taller cuenta con ${selectedTaller.totalAlumnos} estudiantes, progreso promedio de ${selectedTaller.progreso}% y ${selectedTaller.evidenciasPendientes} evidencias pendientes de revisión. Distribución por niveles: Básico (${selectedTaller.distribucionNiveles.basico}), Intermedio (${selectedTaller.distribucionNiveles.intermedio}), Avanzado (${selectedTaller.distribucionNiveles.avanzado}). Alumnos inscritos: ${alumnosInfo}.`
+          
+          recomendaciones = `Para el taller ID ${selectedTaller.id}, se recomienda mantener seguimiento constante del progreso de los ${selectedTaller.totalAlumnos} estudiantes y revisar las ${selectedTaller.evidenciasPendientes} evidencias pendientes. Prestar especial atención a estudiantes con progreso menor al 50%.`
+          
+        } else if (tipoReporte === "alumnos") {
+          // Crear resumen enfocado en el avance de los alumnos
+          const progresoDetallado = selectedTaller.alumnos.map(alumno => 
+            `${alumno.nombre}: ${alumno.progreso}% (${alumno.nivel})`
+          ).join(", ")
+          
+          resumenSemana = `Reporte de avance de alumnos del taller ID ${selectedTaller.id} - ${selectedTaller.nombre}. El taller tiene ${selectedTaller.totalAlumnos} estudiantes inscritos con un progreso promedio grupal del ${selectedTaller.progreso}%. Progreso individual por estudiante: ${progresoDetallado}.`
+          
+          recomendaciones = `Para el taller ID ${selectedTaller.id}, considerar apoyo adicional para estudiantes con progreso menor al promedio grupal del ${selectedTaller.progreso}%. Continuar monitoreando el progreso semanal de todos los estudiantes.`
+          
+        } else if (tipoReporte === "evidencias") {
+          // Crear resumen enfocado en las evidencias
+          const estadoEvidencias = selectedTaller.alumnos.map(alumno => 
+            `${alumno.nombre}: ${alumno.progreso >= 70 ? 'Al día' : 'Requiere seguimiento'}`
+          ).join(", ")
+          
+          resumenSemana = `Reporte de evidencias del taller ID ${selectedTaller.id} - ${selectedTaller.nombre}. El taller tiene actualmente ${selectedTaller.evidenciasPendientes} evidencias pendientes de revisión de un total de ${selectedTaller.totalAlumnos} estudiantes. Estado de evidencias por estudiante: ${estadoEvidencias}.`
+          
+          recomendaciones = `Para el taller ID ${selectedTaller.id}, priorizar la revisión de las ${selectedTaller.evidenciasPendientes} evidencias pendientes para mantener el seguimiento actualizado del progreso estudiantil. Contactar a estudiantes que requieren seguimiento.`
         }
-      })
 
-      // Esperar a que se procesen todos los reportes
-      const resultados = await Promise.all(reportesPromises)
-      const reportesExitosos = resultados.filter(resultado => resultado.success)
-      const reportesFallidos = resultados.filter(resultado => !resultado.success)
-      
-      console.log(`RESUMEN DEL GUARDADO:`)
-      console.log(`- Reportes exitosos: ${reportesExitosos.length}`)
-      console.log(`- Reportes fallidos: ${reportesFallidos.length}`)
-      console.log(`- Total procesado: ${resultados.length}`)
-      
-      if (reportesFallidos.length > 0) {
-        console.error("Reportes que fallaron:", reportesFallidos)
-      }      // Mostrar mensaje al usuario
-      if (reportesExitosos.length > 0) {
-        console.log(`✅ Se guardaron ${reportesExitosos.length} reportes de ${selectedTaller.alumnos?.length || 0} alumnos en la base de datos.`)
-      } else {
-        console.warn("⚠️ No se pudo guardar ningún reporte en la base de datos.")
+        console.log("Resumen preparado:", resumenSemana)
+        console.log("Recomendaciones preparadas:", recomendaciones)
+
+        // Obtener el ID de participación del primer alumno para asociar el reporte al taller
+        // (Nota: Esto es temporal, idealmente deberías tener una relación directa con el taller)
+        const { data: participacionReferencia, error: participacionError } = await supabase
+          .from("ParticipacionEstudiante")
+          .select("id_participacion")
+          .eq("id_taller_impartido", selectedTaller.id)
+          .limit(1)
+          .single()
+
+        if (participacionError) {
+          console.error("Error al obtener participación de referencia:", participacionError)
+          throw new Error("No se pudo obtener referencia del taller")
+        }
+
+        // Preparar datos del reporte único para todo el taller
+        const reporteData = {
+          id_participacion: participacionReferencia.id_participacion, // Usar como referencia al taller
+          fecha_generacion: new Date().toISOString(),
+          resumen_semana: resumenSemana,
+          recomendaciones: recomendaciones,
+          entregado: 1 // Marcado como entregado al generar el PDF
+        }
+
+        console.log("Datos del reporte único:", reporteData)
+
+        // Insertar UN SOLO reporte en la base de datos
+        const { data: reporteInsertado, error: reporteError } = await supabase
+          .from("ReporteDesempeno")
+          .insert(reporteData)
+          .select()
+
+        if (reporteError) {
+          console.error("Error al guardar reporte:", reporteError)
+          throw new Error(`Error al guardar el reporte: ${reporteError.message}`)
+        }
+
+        console.log("Reporte guardado exitosamente:", reporteInsertado)
+        console.log(`✅ Se guardó 1 reporte completo para el taller ${selectedTaller.nombre} en la base de datos.`)
+
+      } catch (error) {
+        console.error("Error general al guardar reporte en la base de datos:", error)
+        alert("Error al guardar el reporte en la base de datos, pero el PDF se generará correctamente.")
+        // No interrumpir la generación del PDF aunque haya error en la BD
       }
-      
-    } catch (error) {
-      console.error("Error general al guardar reportes en la base de datos:", error)
-      // No interrumpir la generación del PDF aunque haya error en la BD
-    }
 
-    // Pie de página
-    const totalPages = doc.internal.getNumberOfPages()
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i)
-      doc.setFontSize(10)
-      doc.setTextColor(120, 120, 120)
-      doc.text(`Página ${i} de ${totalPages}`, 105, 285, { align: "center" })
-      doc.text("Este documento fue generado automáticamente por Skiltrack©", 105, 290, { align: "center" })
-    }    // Descargar el PDF
-    const tipoTexto = tipoReporte === "completo" ? "Completo" : tipoReporte === "alumnos" ? "Alumnos" : "Evidencias"
-    doc.save(`Reporte_${tipoTexto}_${selectedTaller.nombre}_${new Date().toISOString().replace(/:/g, '-').split('.')[0]}.pdf`)
+      // Pie de página
+      const totalPages = doc.internal.getNumberOfPages()
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i)
+        doc.setFontSize(10)
+        doc.setTextColor(120, 120, 120)
+        doc.text(`Página ${i} de ${totalPages}`, 105, 285, { align: "center" })
+        doc.text("Este documento fue generado automáticamente por Skiltrack©", 105, 290, { align: "center" })
+      }    // Descargar el PDF
+      const tipoTexto = tipoReporte === "completo" ? "Completo" : tipoReporte === "alumnos" ? "Alumnos" : "Evidencias"
+      doc.save(`Reporte_${tipoTexto}_${selectedTaller.nombre}_${new Date().toISOString().replace(/:/g, '-').split('.')[0]}.pdf`)
 
-    setReporteGenerado(true)
-    
+      setReporteGenerado(true)
+
     } catch (error) {
       console.error("Error en handleGenerarReporte:", error)
       alert("Error al generar el reporte. Por favor, inténtelo de nuevo.")
@@ -1219,13 +1207,12 @@ export default function MisTalleresContent() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
-                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              alumno.nivel === "Avanzado"
+                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${alumno.nivel === "Avanzado"
                                 ? "bg-green-100 text-green-800"
                                 : alumno.nivel === "Intermedio"
                                   ? "bg-yellow-100 text-yellow-800"
                                   : "bg-blue-100 text-blue-800"
-                            }`}
+                              }`}
                           >
                             {alumno.nivel}
                           </span>
@@ -1600,37 +1587,37 @@ export default function MisTalleresContent() {
             <div className="p-6">
               <div className="mb-6">
                 <label htmlFor="profesorSolicitanteActividad" className="block text-sm font-medium text-gray-700 mb-2">
-                  Profesor Solicitante
-                </label>
-                <input
-                  id="profesorSolicitanteActividad"
-                  type="text"
-                  value={user?.email || ""}
-                  disabled
-                  className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
-                />
-              </div>
+                    Profesor Solicitante
+                  </label>
+                  <input
+                    id="profesorSolicitanteActividad"
+                    type="text"
+                    value={user?.email || ""}
+                    disabled
+                    className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                  />
+                </div>
 
-              <div className="mb-6">
-                <label htmlFor="tallerSolicitudActividad" className="block text-sm font-medium text-gray-700 mb-2">
-                  Taller
-                </label>
-                <select
-                  id="tallerSolicitudActividad"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  value={solicitudActividad.taller}
-                  onChange={(e) => handleSolicitudActividadChange("taller", e.target.value)}
-                >
-                  <option value="">Seleccione un taller</option>
-                  {misTalleres.map((taller) => (
-                    <option key={taller.id} value={taller.id}>
-                      {taller.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                <div className="mb-6">
+                  <label htmlFor="tallerSolicitudActividad" className="block text-sm font-medium text-gray-700 mb-2">
+                    Taller
+                  </label>
+                  <select
+                    id="tallerSolicitudActividad"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    value={solicitudActividad.taller}
+                    onChange={(e) => handleSolicitudActividadChange("taller", e.target.value)}
+                  >
+                    <option value="">Seleccione un taller</option>
+                    {misTalleres.map((taller) => (
+                      <option key={taller.id} value={taller.id}>
+                        {taller.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <div className="mb-6">
+                <div className="mb-6">
                 <label htmlFor="actividadSolicitud" className="block text-sm font-medium text-gray-700 mb-2">
                   Actividad a Realizar (máx. 50 caracteres)
                 </label>
@@ -1678,7 +1665,7 @@ export default function MisTalleresContent() {
             </div>
           </div>
         </div>
-      )}
-    </div>
-  )
-}
+        )}
+      </div>
+    )
+  }
