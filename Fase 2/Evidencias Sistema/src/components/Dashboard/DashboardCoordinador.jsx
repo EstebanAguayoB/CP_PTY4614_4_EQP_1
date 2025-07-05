@@ -112,7 +112,7 @@ export default function DashboardCoordinador() {
           ),
           TallerDefinido (nombre)
         `)
-        
+
         if (error) {
           console.error("Error al cargar profesores:", error)
           setErrorProfesores(error)
@@ -133,11 +133,11 @@ export default function DashboardCoordinador() {
           if (!profesoresMap[profId] && taller.Usuario) {
             profesoresMap[profId] = {
               id_usuario: taller.Usuario.id_usuario,
-              nombre: taller.Usuario.nombre || 'N/A',
-              apellido: taller.Usuario.apellido || 'N/A',
-              correo: taller.Usuario.correo || 'N/A',
-              nivel_educativo: taller.Usuario.ProfesorDetalle?.nivel_educativo || 'N/A',
-              especialidad: taller.Usuario.ProfesorDetalle?.especialidad || 'N/A',
+              nombre: taller.Usuario.nombre || "N/A",
+              apellido: taller.Usuario.apellido || "N/A",
+              correo: taller.Usuario.correo || "N/A",
+              nivel_educativo: taller.Usuario.ProfesorDetalle?.nivel_educativo || "N/A",
+              especialidad: taller.Usuario.ProfesorDetalle?.especialidad || "N/A",
               talleres: [],
             }
           }
@@ -150,7 +150,7 @@ export default function DashboardCoordinador() {
         const profesoresArray = Object.values(profesoresMap).map((prof) => ({
           ...prof,
           cantidad_talleres: prof.talleres.length,
-          nombres_talleres: prof.talleres.join(", ") || 'Sin talleres asignados',
+          nombres_talleres: prof.talleres.join(", ") || "Sin talleres asignados",
         }))
 
         setProfesoresActivos(profesoresArray)
@@ -173,12 +173,13 @@ export default function DashboardCoordinador() {
         // Obtener total de talleres impartidos
         const { data: talleresData, error: talleresError } = await supabase
           .from("TallerImpartido")
-          .select("id_taller_impartido", { count: "exact" }).eq("estado", "activo")
+          .select("id_taller_impartido", { count: "exact" })
+          .eq("estado", "activo")
 
         if (talleresError) throw talleresError
         setTotalTalleres(talleresData?.length || 0)
 
-        // Obtener total de evidencias 
+        // Obtener total de evidencias
         const { data: evidenciasData, error: evidenciasError } = await supabase
           .from("Evidencia")
           .select("id_evidencia", { count: "exact" })
@@ -186,7 +187,7 @@ export default function DashboardCoordinador() {
         if (evidenciasError) throw evidenciasError
         setTotalEvidencias(evidenciasData?.length || 0)
 
-                // Obtener total de evidencias 
+        // Obtener total de evidencias
         const { data: reportesData, error: reportesError } = await supabase
           .from("ReporteDesempeno")
           .select("id_reporte", { count: "exact" })
@@ -227,7 +228,44 @@ export default function DashboardCoordinador() {
     setSidebarOpen(!sidebarOpen)
   }
 
- 
+  // Efecto para cargar actividad reciente
+  useEffect(() => {
+    const fetchActividadReciente = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("LogAccion")
+          .select(`
+            id_log,
+            accion,
+            fecha_hora,
+            detalle,
+            Usuario:Usuario(id_usuario, nombre, apellido)
+          `)
+          .order("fecha_hora", { ascending: false })
+          .limit(10)
+
+        if (!error && data) {
+          setActividadReciente(
+            data.map((a) => ({
+              id: a.id_log,
+              accion: a.accion || "Acción no especificada",
+              tiempo: calcularTiempoTranscurrido(a.fecha_hora),
+              usuario: a.Usuario
+                ? `${a.Usuario.nombre || ""} ${a.Usuario.apellido || ""}`.trim() || "Usuario desconocido"
+                : "Sistema",
+            })),
+          )
+        } else if (error) {
+          console.error("Error al cargar actividad reciente:", error)
+          setActividadReciente([])
+        }
+      } catch (err) {
+        console.error("Error en fetchActividadReciente:", err)
+        setActividadReciente([])
+      }
+    }
+    fetchActividadReciente()
+  }, [])
 
   // Función para mostrar tiempo relativo
   function calcularTiempoTranscurrido(fecha) {
@@ -246,10 +284,8 @@ export default function DashboardCoordinador() {
     // Contar alumnos inscritos/en progreso - validar que ParticipacionEstudiante existe
     const participaciones = taller.ParticipacionEstudiante || []
     console.log(`Taller: ${taller.nombre_publico}, Participaciones:`, participaciones) // Debug
-    
-    const alumnos = participaciones.filter(
-      (p) => p.estado === "INSCRITO" || p.estado === "EN_PROGRESO",
-    ).length
+
+    const alumnos = participaciones.filter((p) => p.estado === "INSCRITO" || p.estado === "EN_PROGRESO").length
 
     console.log(`Taller: ${taller.nombre_publico}, Alumnos contados: ${alumnos}`) // Debug
 
@@ -260,7 +296,7 @@ export default function DashboardCoordinador() {
       nivelesArray.length > 0
         ? nivelesArray
             .sort((a, b) => (a.numero_nivel || 0) - (b.numero_nivel || 0))
-            .map((n) => `Nivel ${n.numero_nivel || 'N/A'}: ${n.descripcion || 'Sin descripción'}`)
+            .map((n) => `Nivel ${n.numero_nivel || "N/A"}: ${n.descripcion || "Sin descripción"}`)
             .join(", ")
         : "Sin niveles definidos"
 
@@ -269,9 +305,9 @@ export default function DashboardCoordinador() {
       alumnos,
       niveles,
       // Agregar valores por defecto para evitar errores de renderizado
-      nombre_publico: taller.nombre_publico || tallerDefinido.nombre || 'Taller sin nombre',
-      descripcion_publica: taller.descripcion_publica || tallerDefinido.descripcion || 'Sin descripción',
-      Usuario: taller.Usuario || { nombre: 'N/A', apellido: '' }
+      nombre_publico: taller.nombre_publico || tallerDefinido.nombre || "Taller sin nombre",
+      descripcion_publica: taller.descripcion_publica || tallerDefinido.descripcion || "Sin descripción",
+      Usuario: taller.Usuario || { nombre: "N/A", apellido: "" },
     }
   })
 
@@ -431,7 +467,7 @@ export default function DashboardCoordinador() {
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-500">Profesor:</span>
                             <span className="text-gray-900">
-                              {taller.Usuario?.nombre || 'N/A'} {taller.Usuario?.apellido || ''}
+                              {taller.Usuario?.nombre || "N/A"} {taller.Usuario?.apellido || ""}
                             </span>
                           </div>
                           <div className="flex justify-between text-sm">
@@ -460,8 +496,8 @@ export default function DashboardCoordinador() {
                 ) : errorProfesores ? (
                   <div className="text-center py-8">
                     <div className="text-red-600">Error: {errorProfesores.message}</div>
-                    <button 
-                      onClick={() => window.location.reload()} 
+                    <button
+                      onClick={() => window.location.reload()}
                       className="mt-2 text-sm text-blue-600 hover:text-blue-800"
                     >
                       Reintentar
@@ -519,6 +555,31 @@ export default function DashboardCoordinador() {
               <div className="p-6 border-b border-gray-200">
                 <h2 className="text-xl font-semibold text-gray-900">Actividad Reciente</h2>
                 <p className="text-gray-600">Últimas actividades en el sistema</p>
+              </div>
+
+              <div className="p-6">
+                {actividadReciente.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">No hay actividad reciente registrada</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {actividadReciente.map((actividad) => (
+                      <div
+                        key={actividad.id || `actividad-${Math.random()}`}
+                        className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg"
+                      >
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2"></div>
+                        <div className="flex-1">
+                          <p className="text-gray-900 font-medium">{actividad.accion}</p>
+                          <p className="text-sm text-gray-500">
+                            {actividad.tiempo} por {actividad.usuario}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
