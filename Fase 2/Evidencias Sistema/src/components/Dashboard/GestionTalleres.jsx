@@ -24,6 +24,8 @@ import { TallerForm } from "./Talleres/Form/TallerForm"
 import { TallerDetails } from "./Talleres/Details/TallerDetails"
 import { useTalleres } from "../../hooks/useTalleres"
 import { registrarAccion } from "../../utils/logAccion"
+import { jsPDF } from "jspdf"
+import { MetricasService } from '../../services/metricasService';
 
 // Componente de Loading Animation
 const LoadingSpinner = ({ message = "Cargando información..." }) => {
@@ -81,7 +83,6 @@ export function GestionTalleres() {
   })
   const [selectedPreconfiguracionId, setSelectedPreconfiguracionId] = useState("")
   const [error, setError] = useState(null)
-  const [selectedPeriodoId, setSelectedPeriodoId] = useState("")
   const [selectedProfesorId, setSelectedProfesorId] = useState("")
 
   const [periodos, setPeriodos] = useState([])
@@ -95,6 +96,11 @@ export function GestionTalleres() {
   })
   const [periodoError, setPeriodoError] = useState(null)
   const [periodoLoading, setPeriodoLoading] = useState(false)
+
+  const [metrics, setMetrics] = useState(null)
+  const [loadingMetrics, setLoadingMetrics] = useState(false)
+  const [errorMetrics, setErrorMetrics] = useState(null)
+  const [selectedPeriodoId, setSelectedPeriodoId] = useState("")
 
   useEffect(() => {
     async function getUser() {
@@ -138,6 +144,38 @@ export function GestionTalleres() {
         if (!error) setProfesores(data || [])
       })
   }, [])
+
+  const fetchMetrics = async (periodoId = null) => {
+    try {
+      setLoadingMetrics(true);
+      setErrorMetrics(null);
+
+      const periodoIdInt = periodoId !== null ? parseInt(periodoId) : null;
+
+      // Llamadas al servicio
+      const talleresPorPeriodo = await MetricasService.getTalleresPorPeriodo(periodoIdInt);
+      const estudiantesPorPeriodo = await MetricasService.getEstudiantesPorPeriodo(periodoIdInt);
+      const tasaFinalizacion = await MetricasService.getTasaFinalizacionPorPeriodo(periodoIdInt);
+      const promedioEstudiantes = await MetricasService.getPromedioEstudiantesPorTaller(periodoIdInt);
+      const rankingTalleres = await MetricasService.getRankingTalleresPorPeriodo(periodoIdInt);
+      const profesoresActivos = await MetricasService.getProfesoresActivosPorPeriodo(periodoIdInt);
+
+      // Guardar las métricas en el estado
+      setMetrics({
+        talleresPorPeriodo,
+        estudiantesPorPeriodo,
+        tasaFinalizacion,
+        promedioEstudiantes,
+        rankingTalleres,
+        profesoresActivos,
+      });
+    } catch (error) {
+      console.error('Error al cargar métricas:', error);
+      setErrorMetrics(error.message);
+    } finally {
+      setLoadingMetrics(false);
+    }
+  };
 
   const handleSearch = (event) => {
     setSearchTerm(event.target.value)
@@ -366,6 +404,119 @@ export function GestionTalleres() {
     await supabase.auth.signOut()
     navigate("/")
   }
+
+const generatePDF = (metrics) => {
+  if (!metrics) {
+    alert("Error: Las métricas no están disponibles.");
+    return;
+  }
+
+  const doc = new jsPDF();
+
+  // Configuración inicial
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20);
+  doc.setTextColor(40, 40, 40);
+
+  // Encabezado
+  doc.text("Reporte de Métricas Estratégicas", 105, 20, { align: "center" });
+  doc.setDrawColor(16, 185, 129); // Verde
+  doc.line(20, 25, 190, 25); // Línea decorativa
+
+  let currentY = 40;
+
+  // Sección: Total de Talleres por Periodo
+  doc.setFontSize(14);
+  doc.setTextColor(60, 60, 60);
+  doc.text("Total de Talleres por Periodo", 20, currentY);
+  currentY += 10;
+
+  if (metrics.talleresPorPeriodo) {
+    doc.setFontSize(12);
+    doc.setTextColor(80, 80, 80);
+    metrics.talleresPorPeriodo.forEach((item, index) => {
+      if (currentY > 270) {
+        doc.addPage();
+        currentY = 20;
+      }
+      doc.text(`${index + 1}. Periodo: ${item.nombre_periodo} - Total: ${item.total_talleres}`, 20, currentY);
+      currentY += 8;
+    });
+  } else {
+    doc.text("No disponible", 20, currentY);
+    currentY += 10;
+  }
+
+  // Sección: Total de Estudiantes por Periodo
+  doc.setFontSize(14);
+  doc.setTextColor(60, 60, 60);
+  doc.text("Total de Estudiantes por Periodo", 20, currentY);
+  currentY += 10;
+
+  if (metrics.estudiantesPorPeriodo) {
+    doc.setFontSize(12);
+    doc.setTextColor(80, 80, 80);
+    metrics.estudiantesPorPeriodo.forEach((item, index) => {
+      if (currentY > 270) {
+        doc.addPage();
+        currentY = 20;
+      }
+      doc.text(`${index + 1}. Periodo: ${item.nombre_periodo} - Total: ${item.total_estudiantes}`, 20, currentY);
+      currentY += 8;
+    });
+  } else {
+    doc.text("No disponible", 20, currentY);
+    currentY += 10;
+  }
+
+  // Repetir el mismo patrón para las demás métricas
+  const sections = [
+    { title: "Tasa de Finalización por Periodo", data: metrics.tasaFinalizacion, key: "tasa_finalizacion_porcentaje" },
+    { title: "Promedio de Estudiantes por Taller", data: metrics.promedioEstudiantes, key: "promedio_estudiantes_por_taller" },
+    { title: "Ranking de Talleres por Cantidad de Estudiantes", data: metrics.rankingTalleres, key: "total_estudiantes" },
+    { title: "Profesores Más Activos por Periodo", data: metrics.profesoresActivos, key: "talleres_asignados" },
+  ];
+
+  sections.forEach((section) => {
+    doc.setFontSize(14);
+    doc.setTextColor(60, 60, 60);
+    doc.text(section.title, 20, currentY);
+    currentY += 10;
+
+    if (section.data) {
+      doc.setFontSize(12);
+      doc.setTextColor(80, 80, 80);
+      section.data.forEach((item, index) => {
+        if (currentY > 270) {
+          doc.addPage();
+          currentY = 20;
+        }
+        doc.text(
+          `${index + 1}. Periodo: ${item.nombre_periodo} - ${section.key}: ${item[section.key]}`,
+          20,
+          currentY
+        );
+        currentY += 8;
+      });
+    } else {
+      doc.text("No disponible", 20, currentY);
+      currentY += 10;
+    }
+  });
+
+  // Pie de página
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(10);
+    doc.setTextColor(120, 120, 120);
+    doc.text(`Página ${i} de ${totalPages}`, 105, 290, { align: "center" });
+    doc.text(`Generado el ${new Date().toLocaleDateString("es-ES")}`, 20, 290);
+  }
+
+  // Guardar el PDF
+  doc.save("Reporte_Metricas.pdf");
+};
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -1098,6 +1249,21 @@ export function GestionTalleres() {
                 </div>
               </div>
             )}
+            <div>
+              <button
+                onClick={async () => {
+                  await fetchMetrics(selectedPeriodoId)
+                  if (metrics) {
+                    generatePDF(metrics)
+                  }
+                }}
+                className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
+              >
+                Generar Reporte PDF
+              </button>
+              {loadingMetrics && <LoadingSpinner message="Cargando métricas..." />}
+              {errorMetrics && <div className="text-red-600">{errorMetrics}</div>}
+            </div>
           </div>
         </main>
       </div>
