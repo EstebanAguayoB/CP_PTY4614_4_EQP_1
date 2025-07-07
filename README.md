@@ -1,4 +1,4 @@
-# Skilltrack
+#  Proyecto Skilltrack: Gestion de talleres extracurriculares.
 
 ## 👥 Integrantes
 
@@ -8,7 +8,7 @@
 
 ## 📝 Descripción General
 
-Este repositorio corresponde a un proyecto académico enfocado en el desarrollo de una aplicación web para la gestión de talleres, usuarios y evidencias. El desarrollo se realiza principalmente con JavaScript (React) para el frontend y utiliza **Supabase** como backend (Base de Datos y autenticación).
+El objetivo de este proyecto es proporcionar una plataforma web eficiente para la gestión de talleres extrarriculares, permitiendo a los usuarios administrar inscripciones, evidencias y reportes de los participantes de forma centralizada y sencilla.
 
 ---
 
@@ -125,5 +125,3 @@ Las pruebas están en `src/test/` y cubren:
 4. Realiza un Pull Request.
 
 ---
-
-**¡Listo para desarrollar, probar y desplegar!**
