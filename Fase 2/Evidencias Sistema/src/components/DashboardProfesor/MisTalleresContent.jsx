@@ -125,13 +125,6 @@ export default function MisTalleresContent() {
               const estudiante = participacion.Estudiante
               const nivelActual = participacion.Nivel
 
-              // Reemplazar esta sección:
-              // Calcular progreso basado en el nivel actual vs niveles totales
-              // const progresoCalculado = nivelActual
-              //   ? Math.round((nivelActual.numero_nivel / taller.TallerDefinido.niveles_totales) * 100)
-              //   : 0
-
-              // Por esta nueva lógica:
               // Obtener evidencias validadas para este alumno
               const { data: evidenciasValidadas } = await supabase
                 .from("Evidencia")
@@ -160,14 +153,6 @@ export default function MisTalleresContent() {
             avanzado: alumnosResolved.filter((a) => a.nivel === "Avanzado").length,
           }
 
-          // Reemplazar:
-          // Calcular progreso promedio del taller
-          // const progresoPromedio =
-          //   alumnos.length > 0
-          //     ? Math.round(alumnos.reduce((sum, alumno) => sum + alumno.progreso, 0) / alumnos.length)
-          //     : 0
-
-          // Por:
           // Calcular progreso promedio del taller basado en evidencias
           const totalEvidenciasEsperadas = alumnosResolved.length * 16
           const { data: todasEvidenciasValidadas } = await supabase
@@ -190,7 +175,7 @@ export default function MisTalleresContent() {
             estado: taller.estado === "activo" ? "activo" : "inactivo",
             distribucionNiveles,
             progreso: progresoPromedio,
-            proximasActividades: [], // Esto se puede implementar más adelante
+            proximasActividades: [],
             alumnos: alumnosResolved,
           }
         }),
@@ -252,7 +237,6 @@ export default function MisTalleresContent() {
     setEvidenciaText("")
     setEvidenciaUrl("")
     setShowSuccessMessage(false)
-    // Limpiar también el select de semana
     const semanaSelect = document.getElementById("semana")
     if (semanaSelect) {
       semanaSelect.value = ""
@@ -575,7 +559,7 @@ export default function MisTalleresContent() {
         descripcion: evidenciaText.trim(),
         archivo_url: evidenciaUrl.trim(),
         fecha_envio: new Date().toISOString(),
-        validada_por_profesor: 1, // Marcada como validada por el profesor
+        validada_por_profesor: 1, 
         observaciones: `Evidencia registrada por el profesor ${user?.email || "Sistema"} para el alumno ${selectedAlumno.nombre}`,
       }
 
@@ -813,7 +797,6 @@ export default function MisTalleresContent() {
         console.log("Recomendaciones preparadas:", recomendaciones)
 
         // Obtener el ID de participación del primer alumno para asociar el reporte al taller
-        // (Nota: Esto es temporal, idealmente deberías tener una relación directa con el taller)
         const { data: participacionReferencia, error: participacionError } = await supabase
           .from("ParticipacionEstudiante")
           .select("id_participacion")
@@ -832,7 +815,7 @@ export default function MisTalleresContent() {
           fecha_generacion: new Date().toISOString(),
           resumen_semana: resumenSemana,
           recomendaciones: recomendaciones,
-          entregado: 1 // Marcado como entregado al generar el PDF
+          entregado: 1 
         }
 
         console.log("Datos del reporte único:", reporteData)
@@ -854,7 +837,6 @@ export default function MisTalleresContent() {
       } catch (error) {
         console.error("Error general al guardar reporte en la base de datos:", error)
         alert("Error al guardar el reporte en la base de datos, pero el PDF se generará correctamente.")
-        // No interrumpir la generación del PDF aunque haya error en la BD
       }
 
       // Pie de página

@@ -289,7 +289,7 @@ export default function DashboardCoordinador() {
 
     console.log(`Taller: ${taller.nombre_publico}, Alumnos contados: ${alumnos}`) // Debug
 
-    // Obtener niveles (array de objetos) - validar que TallerDefinido y Nivel existen
+    // Obtener niveles, validar que TallerDefinido y Nivel existen
     const tallerDefinido = taller.TallerDefinido || {}
     const nivelesArray = tallerDefinido.Nivel || []
     const niveles =
@@ -614,9 +614,7 @@ export default function DashboardCoordinador() {
               <div>
                 <span className="font-medium">Alumnos asignados:</span> {profesorSeleccionado.alumnos ?? "-"}
               </div>
-              {/* Puedes agregar más información relevante aquí */}
             </div>
-            {/* Si tienes más detalles, puedes agregarlos aquí */}
           </div>
         </div>
       )}

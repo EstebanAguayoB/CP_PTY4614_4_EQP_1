@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { BookOpen, Users, Calendar, MapPin, GraduationCap, Edit } from 'lucide-react'
+import { BookOpen, Users, Calendar, MapPin, GraduationCap, Edit, FileText, Loader2 } from 'lucide-react'
 import { useTalleres } from '../../../../hooks/useTalleres'
 import { EvidenciasForm } from '../Form/EvidenciasForm'
 import { EvidenciasList } from '../List/EvidenciasList'
 
-export function TallerDetails({ taller, onEdit }) {
+export function TallerDetails({ taller, onEdit, onGenerateReport, loadingMetrics, errorMetrics }) {
   const [showEvidenciasForm, setShowEvidenciasForm] = useState(false)
   const { updateTaller } = useTalleres()
 
@@ -21,13 +21,32 @@ export function TallerDetails({ taller, onEdit }) {
             <h3 className="text-2xl font-bold text-gray-900">{taller.nombre_publico}</h3>
             <p className="mt-1 text-sm text-gray-500">{taller.descripcion_publica}</p>
           </div>
-          <button
-            onClick={onEdit}
-            className="ml-3 inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-emerald-700 bg-emerald-100 hover:bg-emerald-200"
-          >
-            <Edit className="-ml-0.5 mr-2 h-4 w-4" /> Editar
-          </button>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => onGenerateReport && onGenerateReport(taller.id_periodo)}
+              disabled={loadingMetrics}
+              className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {loadingMetrics ? (
+                <Loader2 className="-ml-0.5 mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <FileText className="-ml-0.5 mr-2 h-4 w-4" />
+              )}
+              {loadingMetrics ? 'Generando...' : 'Reporte PDF'}
+            </button>
+            <button
+              onClick={onEdit}
+              className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-emerald-700 bg-emerald-100 hover:bg-emerald-200"
+            >
+              <Edit className="-ml-0.5 mr-2 h-4 w-4" /> Editar
+            </button>
+          </div>
         </div>
+        {errorMetrics && (
+          <div className="mt-2 text-red-600 text-sm bg-red-50 p-2 rounded">
+            Error al generar reporte: {errorMetrics}
+          </div>
+        )}
       </div>
 
       {/* Información del taller */}

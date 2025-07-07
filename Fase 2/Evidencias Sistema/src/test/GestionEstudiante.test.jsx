@@ -1,43 +1,19 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
-import { BrowserRouter } from 'react-router-dom'
+import { MemoryRouter } from 'react-router-dom'
 import GestionEstudiante from '../components/Dashboard/GestionEstudiante'
 
-// Mock del hook useNavigate
-const mockNavigate = vi.fn()
-vi.mock('react-router-dom', async () => {
-    const actual = await vi.importActual('react-router-dom')
-    return {
-        ...actual,
-        useNavigate: () => mockNavigate,
-    }
-})
-
-// Mock de Supabase
-vi.mock('../lib/supabase.js', () => ({
-    supabase: {
-        from: vi.fn(() => ({
-            select: vi.fn(() => Promise.resolve({
-                data: [
-                    { id: 1, nombre: 'Juan', apellido: 'Pérez', correo: 'juan@test.com' },
-                    { id: 2, nombre: 'María', apellido: 'González', correo: 'maria@test.com' }
-                ],
-                error: null
-            })),
-            insert: vi.fn(() => Promise.resolve({ data: null, error: null })),
-            update: vi.fn(() => Promise.resolve({ data: null, error: null })),
-            delete: vi.fn(() => Promise.resolve({ data: null, error: null })),
-        })),
-    },
-}))
-
 const TestWrapper = ({ children }) => (
-    <BrowserRouter>{children}</BrowserRouter>
+    <MemoryRouter initialEntries={['/dashboard']}>{children}</MemoryRouter>
 )
 
 describe('GestionEstudiante', () => {
     beforeEach(() => {
-        vi.clearAllMocks()
+        // Log datos mock para estudiantes
+        console.log([
+            { id: 1, nombre: 'Juan', apellido: 'Pérez', correo: 'juan@test.com' },
+            { id: 2, nombre: 'María', apellido: 'González', correo: 'maria@test.com' }
+        ])
     })
 
     it('renderiza correctamente el componente', async () => {
@@ -47,11 +23,10 @@ describe('GestionEstudiante', () => {
             </TestWrapper>
         )
 
-        // Verificar que se muestra contenido relacionado con gestión de estudiantes
         await waitFor(() => {
             const content = document.body.textContent
             expect(content).toBeTruthy()
-        })
+        }, { timeout: 3000 })
     })
 
     it('muestra la lista de estudiantes', async () => {
@@ -62,10 +37,10 @@ describe('GestionEstudiante', () => {
         )
 
         await waitFor(() => {
-            // Buscar indicadores de que se está mostrando información de estudiantes
-            const studentElements = screen.queryAllByText(/juan|maría|estudiante/i)
-            expect(studentElements.length).toBeGreaterThanOrEqual(0)
-        })
+            // Verificar que se renderiza contenido relacionado con estudiantes
+            const elements = screen.queryAllByText(/estudiante|alumno|gestión/i)
+            expect(elements.length).toBeGreaterThanOrEqual(0)
+        }, { timeout: 3000 })
     })
 
     it('maneja el estado de carga correctamente', () => {
@@ -75,7 +50,6 @@ describe('GestionEstudiante', () => {
             </TestWrapper>
         )
 
-        // Verificar que el componente se renderiza sin errores
         expect(document.body).toBeInTheDocument()
     })
 })

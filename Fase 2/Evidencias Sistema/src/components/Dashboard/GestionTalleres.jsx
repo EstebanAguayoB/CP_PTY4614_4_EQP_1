@@ -551,7 +551,18 @@ const generatePDF = (metrics) => {
 
             {/* Detalle del Taller */}
             {showDetailView && selectedTaller && (
-              <TallerDetails taller={selectedTaller} onEdit={() => handleEditTaller(selectedTaller)} />
+              <TallerDetails 
+                taller={selectedTaller} 
+                onEdit={() => handleEditTaller(selectedTaller)}
+                onGenerateReport={async (periodoId) => {
+                  await fetchMetrics(periodoId)
+                  if (metrics) {
+                    generatePDF(metrics)
+                  }
+                }}
+                loadingMetrics={loadingMetrics}
+                errorMetrics={errorMetrics}
+              />
             )}
 
             {/* Contenido principal: tabs, búsqueda, filtros, lista */}
@@ -563,7 +574,6 @@ const generatePDF = (metrics) => {
                     {[
                       { name: "Activos", key: "activos", icon: Power },
                       { name: "Finalizados", key: "finalizados", icon: PowerOff },
-                      //{ name: "Cancelados", key: "cancelados", icon: X },
                       {
                         name: "Preconfiguraciones",
                         key: "preconfiguraciones",
@@ -869,7 +879,6 @@ const generatePDF = (metrics) => {
                         accion: "Crear Taller",
                         detalle: `Se creó el taller "${selectedTaller.nombre_publico}" en el período ${selectedPeriodoId} con el profesor ${selectedProfesorId}`,
                       })
-                      // --- SOLUCIÓN: Cierra el formulario y resetea el estado ---
                       setShowAddForm(false)
                       setSelectedTaller({
                         id_taller_definido: "",
@@ -1079,10 +1088,7 @@ const generatePDF = (metrics) => {
                       <option value="">Selecciona un profesor</option>
                       {profesores
                         .filter((prof) => {
-                          // Suponiendo que tienes el nivel educativo mínimo del taller en selectedTaller.nivel_minimo
-                          // y el nivel educativo del profesor en prof.ProfesorDetalle.nivel_educativo
                           if (!selectedTaller?.nivel_minimo) return true
-                          // Puedes definir un orden para comparar niveles
                           const orden = { BASICA: 1, MEDIA: 2 }
                           return orden[prof.ProfesorDetalle.nivel_educativo] >= orden[selectedTaller.nivel_minimo]
                         })
@@ -1249,21 +1255,6 @@ const generatePDF = (metrics) => {
                 </div>
               </div>
             )}
-            <div>
-              <button
-                onClick={async () => {
-                  await fetchMetrics(selectedPeriodoId)
-                  if (metrics) {
-                    generatePDF(metrics)
-                  }
-                }}
-                className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
-              >
-                Generar Reporte PDF
-              </button>
-              {loadingMetrics && <LoadingSpinner message="Cargando métricas..." />}
-              {errorMetrics && <div className="text-red-600">{errorMetrics}</div>}
-            </div>
           </div>
         </main>
       </div>

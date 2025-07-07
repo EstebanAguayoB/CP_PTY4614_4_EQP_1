@@ -1,5 +1,18 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
+import React from 'react'
+
+// Variables de entorno para testing
+Object.defineProperty(import.meta, 'env', {
+    value: {
+        VITE_SUPABASE_URL: 'https://test.supabase.co',
+        VITE_SUPABASE_ANON_KEY: 'test-key-for-testing',
+        MODE: 'test',
+        DEV: false,
+        PROD: false
+    },
+    writable: true
+})
 
 // Mock para localStorage
 const localStorageMock = {
@@ -35,8 +48,12 @@ vi.mock('react-router-dom', async () => {
     return {
         ...actual,
         useNavigate: () => vi.fn(),
-        useLocation: () => ({ pathname: '/' }),
+        useLocation: () => ({ pathname: '/', search: '', hash: '', state: null, key: 'default' }),
+        useParams: () => ({}),
+        useSearchParams: () => [new URLSearchParams(), vi.fn()],
         BrowserRouter: ({ children }) => children,
+        Link: ({ children, to, ...props }) => React.createElement('a', { href: to, ...props }, children),
+        NavLink: ({ children, to, ...props }) => React.createElement('a', { href: to, ...props }, children),
     }
 })
 
@@ -74,7 +91,10 @@ vi.mock('../lib/supabase.js', () => {
             filter: vi.fn(() => mock),
             order: vi.fn(() => mock),
             limit: vi.fn(() => mock),
-            range: vi.fn(() => mock),
+            range: vi.fn(() => Promise.resolve({
+                data: finalData,
+                error: finalError
+            })),
             single: vi.fn(() => Promise.resolve({
                 data: Array.isArray(finalData) ? (finalData.length > 0 ? finalData[0] : null) : finalData,
                 error: finalError
@@ -83,7 +103,10 @@ vi.mock('../lib/supabase.js', () => {
                 data: Array.isArray(finalData) ? (finalData.length > 0 ? finalData[0] : null) : finalData,
                 error: finalError
             })),
-            then: vi.fn((resolve) => resolve({ data: finalData, error: finalError })),
+            then: vi.fn((resolve) => {
+                const result = { data: finalData, error: finalError }
+                return resolve ? resolve(result) : Promise.resolve(result)
+            }),
         }
 
         return mock

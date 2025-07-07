@@ -81,12 +81,12 @@ export default function EvidenciasContent() {
       console.log("=== INICIANDO CARGA DE DATOS ===")
       console.log("ID del usuario actual:", currentUserId)
 
-      // PASO 1: Verificar si hay evidencias en general
+      // Verificar si hay evidencias en general
       const { data: allEvidencias, error: allEvidenciasError } = await supabase.from("Evidencia").select("*").limit(5)
 
       console.log("Todas las evidencias (muestra):", allEvidencias, allEvidenciasError)
 
-      // PASO 2: Obtener talleres asignados al profesor
+      //  Obtener talleres asignados al profesor
       const { data: talleresData, error: talleresError } = await supabase
         .from("TallerImpartido")
         .select("*")
@@ -109,7 +109,7 @@ export default function EvidenciasContent() {
         return
       }
 
-      // PASO 3: Obtener nombres de talleres definidos
+      //  Obtener nombres de talleres definidos
       const tallerDefinidoIds = [...new Set(talleresData.map((t) => t.id_taller_definido))]
       const { data: tallerDefinidoData, error: tallerDefinidoError } = await supabase
         .from("TallerDefinido")
@@ -118,7 +118,7 @@ export default function EvidenciasContent() {
 
       console.log("Talleres definidos:", tallerDefinidoData, tallerDefinidoError)
 
-      // PASO 4: Combinar datos de talleres
+      // Combinar datos de talleres
       const talleres = talleresData.map((taller) => {
         const tallerDefinido = tallerDefinidoData?.find((td) => td.id_taller_definido === taller.id_taller_definido)
         return {
@@ -131,7 +131,7 @@ export default function EvidenciasContent() {
       console.log("Talleres procesados:", talleres)
       setMisTalleres(talleres)
 
-      // PASO 5: Obtener participaciones de estudiantes en estos talleres
+      //  Obtener participaciones de estudiantes en estos talleres
       const tallerIds = talleres.map((t) => t.id)
       const { data: participacionesData, error: participacionesError } = await supabase
         .from("ParticipacionEstudiante")
@@ -154,7 +154,7 @@ export default function EvidenciasContent() {
         return
       }
 
-      // PASO 6: Obtener datos de estudiantes
+      // Obtener datos de estudiantes
       const estudianteIds = [...new Set(participacionesData.map((p) => p.id_estudiante))]
       const { data: estudiantesData, error: estudiantesError } = await supabase
         .from("Estudiante")
@@ -176,7 +176,7 @@ export default function EvidenciasContent() {
         nivelesData = nivelesResult || []
       }
 
-      // PASO 8: Organizar alumnos por taller
+      //  Organizar alumnos por taller
       const alumnosMap = {}
       participacionesData.forEach((participacion) => {
         const tallerId = participacion.id_taller_impartido
@@ -199,7 +199,7 @@ export default function EvidenciasContent() {
       console.log("Alumnos por taller:", alumnosMap)
       setAlumnosPorTaller(alumnosMap)
 
-      // PASO 9: Obtener evidencias de estas participaciones
+      // Obtener evidencias de estas participaciones
       const participacionIds = participacionesData.map((p) => p.id_participacion)
       console.log("IDs de participaciones para buscar evidencias:", participacionIds)
 
@@ -222,7 +222,7 @@ export default function EvidenciasContent() {
           throw evidenciasError
         }
 
-        // PASO 10: Formatear evidencias
+        //  Formatear evidencias
         const evidenciasFormateadas =
           evidenciasData?.map((evidencia) => {
             const participacion = participacionesData.find((p) => p.id_participacion === evidencia.id_participacion)
@@ -258,7 +258,7 @@ export default function EvidenciasContent() {
         console.log("Evidencias formateadas:", evidenciasFormateadas)
         setEvidencias(evidenciasFormateadas)
 
-        // PASO 11: Obtener reportes de desempeño creados por este profesor
+        //  Obtener reportes de desempeño creados por este profesor
         const repFrom = repPage * PAGE_SIZE
         const repTo = repFrom + PAGE_SIZE - 1
 
@@ -404,7 +404,7 @@ export default function EvidenciasContent() {
         descripcion: formData.descripcion,
         archivo_url: formData.archivoUrl || null,
         fecha_envio: formData.fecha,
-        validada_por_profesor: 1, // Cambié a 1 para que aparezca como aprobada
+        validada_por_profesor: 1, 
         observaciones: formData.observaciones || null,
       }
 
@@ -475,7 +475,7 @@ export default function EvidenciasContent() {
     })
     .map((evidencia) => ({
       ...evidencia,
-      estado: "Aprobada", // Fuerza el estado visual a "Aprobada"
+      estado: "Aprobada", 
     }))
 
   // Filtrar reportes
@@ -496,7 +496,7 @@ export default function EvidenciasContent() {
       case "Pendiente":
         return "bg-yellow-100 text-yellow-800"
       case "Aprobado":
-      case "Aprobada": // Añade esta línea
+      case "Aprobada": 
         return "bg-green-100 text-green-800 border-green-300"
       case "Entregado":
         return "bg-blue-100 text-blue-800 border-blue-300"

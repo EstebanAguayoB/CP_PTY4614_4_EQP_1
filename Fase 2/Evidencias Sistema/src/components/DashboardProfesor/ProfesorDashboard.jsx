@@ -295,7 +295,7 @@ export default function DashboardProfesor() {
               return "Avanzado"
             }) || []
 
-          // Objetivos del taller (convertir string a array si es necesario)
+          // Objetivos del taller 
           let objetivos = []
           if (taller.TallerDefinido?.objetivos) {
             try {
@@ -316,7 +316,7 @@ export default function DashboardProfesor() {
             progreso: progresoReal,
             fechaInicio: fechaInicio,
             duracion: duracion,
-            horarios: ["Lunes 14:00-16:00", "Miércoles 14:00-16:00"], // Datos simulados
+            horarios: ["Lunes 14:00-16:00", "Miércoles 14:00-16:00"], 
             objetivos:
               objetivos.length > 0
                 ? objetivos
@@ -326,7 +326,7 @@ export default function DashboardProfesor() {
                     "Alcanzar los objetivos de aprendizaje",
                     "Preparar para el siguiente nivel",
                   ],
-            recursos: ["Materiales especializados", "Equipamiento técnico"], // Datos simulados
+            recursos: ["Materiales especializados", "Equipamiento técnico"],
             evaluaciones: [
               { nombre: "Evaluación Inicial", fecha: fechaInicio, estado: "Completada" },
               { nombre: "Evaluación Intermedia", fecha: "Pendiente", estado: "Pendiente" },

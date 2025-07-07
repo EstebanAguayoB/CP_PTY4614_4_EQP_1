@@ -101,7 +101,7 @@ export default function AlumnosContent() {
   // Función para calcular el progreso de evidencias
   const calcularProgresoEvidencias = (idParticipacion) => {
     const evidenciasEstudiante = evidencias.filter((ev) => ev.id_participacion === idParticipacion)
-    // Contar solo evidencias validadas por el profesor (validada_por_profesor = 1)
+    // filtro para contar solo evidencias validadas por el profesor (validada_por_profesor = 1)
     const totalEvidencias = evidenciasEstudiante.length
     const progreso = Math.min((evidenciasEstudiante.length / 16) * 100, 100)
 

@@ -339,7 +339,6 @@ export default function GestionReportes() {
       addText("MÉTRICAS DE RENDIMIENTO", 14, true, [16, 185, 129])
       addText(`Progreso Promedio: ${reporte.contenido.metricas.progresoPromedio}%`, 10)
       addText(`Total de Alumnos: ${reporte.contenido.metricas.totalAlumnos}`, 10)
-      // Removed evidencias pendientes line
       yPosition += 5
 
       if (reporte.contenido.alumnosDetalles && reporte.contenido.alumnosDetalles.length > 0) {
@@ -494,7 +493,6 @@ export default function GestionReportes() {
                     <h2 className="text-2xl font-bold text-gray-800 border-b-2 border-emerald-500 pb-2 mb-4">
                       Métricas de Rendimiento
                     </h2>
-                    {/* Modified grid to show only 2 columns instead of 3 */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                       <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
                         <h3 className="text-lg font-semibold text-gray-700">
@@ -508,7 +506,6 @@ export default function GestionReportes() {
                         </h3>
                         <p className="text-sm text-gray-600 font-medium">Total de Alumnos</p>
                       </div>
-                      {/* Removed evidencias pendientes card */}
                     </div>
                     {previewReport.contenido.alumnosDetalles && previewReport.contenido.alumnosDetalles.length > 0 && (
                       <div>

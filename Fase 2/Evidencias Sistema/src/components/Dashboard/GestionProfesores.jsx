@@ -335,7 +335,7 @@ export default function GestionProfesores() {
         throw new Error("No se pudo obtener la sesión del coordinador")
       }
 
-      // 1. Crear el nuevo usuario (esto cambiará temporalmente la sesión)
+      // Crear el nuevo usuario (esto cambiará temporalmente la sesión)
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: form.correo,
         password: form.contrasena,
@@ -353,11 +353,7 @@ export default function GestionProfesores() {
       // El id del usuario en auth.users
       const uid = signUpData.user?.id
       if (!uid) throw new Error("No se pudo obtener el ID del usuario autenticado.")
-
-      // 2. INMEDIATAMENTE CERRAR LA SESIÓN DEL NUEVO USUARIO
       await supabase.auth.signOut()
-
-      // 3. RESTAURAR LA SESIÓN DEL COORDINADOR
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: coordinadorSession.access_token,
         refresh_token: coordinadorSession.refresh_token,
@@ -365,12 +361,11 @@ export default function GestionProfesores() {
 
       if (sessionError) {
         console.error("Error restaurando sesión:", sessionError)
-        // Si no se puede restaurar la sesión, recargar la página
         window.location.reload()
         return
       }
 
-      // 4. Insertar en la tabla Usuario usando el uid de auth.users
+      //Insertar en la tabla Usuario usando el uid de auth.users
       const { data: usuario, error: errorUsuario } = await supabase
         .from("Usuario")
         .insert([
@@ -389,7 +384,7 @@ export default function GestionProfesores() {
 
       if (errorUsuario) throw new Error("Error al crear usuario en la base de datos: " + errorUsuario.message)
 
-      // 5. Crear detalle de profesor
+      //Crear detalle de profesor
       const { error: errorDetalle } = await supabase.from("ProfesorDetalle").insert([
         {
           id_usuario: usuario.id_usuario,
@@ -401,7 +396,7 @@ export default function GestionProfesores() {
 
       if (errorDetalle) throw new Error("Error al crear detalle de profesor: " + errorDetalle.message)
 
-      // 6. Crear asignación de taller
+      // Crear asignación de taller
       const { error: errorAsignacion } = await supabase.from("AsignacionProfesor").insert([
         {
           id_usuario: usuario.id_usuario,
@@ -413,7 +408,7 @@ export default function GestionProfesores() {
 
       if (errorAsignacion) throw new Error("Error al asignar taller: " + errorAsignacion.message)
 
-      // 7. Registrar acción en el log
+      // Registrar acción en el log
       await registrarAccion({
         id_usuario: user.id_usuario,
         accion: "Crear Profesor",
@@ -466,7 +461,7 @@ export default function GestionProfesores() {
     }
   }
 
-  // Opciones para el formulario (puedes obtenerlas dinámicamente si lo deseas)
+  // Opciones para el formulario 
   const especialidades = [
     "Lenguaje y Comunicación",
     "Matemática",

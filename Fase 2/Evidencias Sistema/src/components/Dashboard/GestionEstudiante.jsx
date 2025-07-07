@@ -145,7 +145,7 @@ export default function GestionEstudiante() {
       taller: participacion?.TallerImpartido?.nombre_publico || "NO ASIGNADO",
       nivel: participacion?.Nivel?.numero_nivel ? `Nivel ${participacion.Nivel.numero_nivel}` : "NO ASIGNADO",
       estado: participacion?.estado || "NO ASIGNADO",
-      progreso: calcularProgreso(alumno), // Implementa esta función según  reglas de negocio
+      progreso: calcularProgreso(alumno),
     }
   })
 
@@ -600,7 +600,6 @@ export default function GestionEstudiante() {
                                   >
                                     <Edit className="w-4 h-4" />
                                   </button>
-                                  {/* Botón de eliminar eliminado */}
                                 </div>
                               )}
                             </td>
