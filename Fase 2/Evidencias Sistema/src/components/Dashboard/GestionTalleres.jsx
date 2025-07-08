@@ -530,13 +530,27 @@ const generatePDF = (metrics) => {
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-3xl font-bold text-gray-900">Gestión de Talleres</h1>
               {!showAddForm && !showEditForm && !showDetailView && (
-                <button
-                  onClick={toggleAddForm}
-                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
-                >
-                  <Plus className="-ml-1 mr-2 h-5 w-5" />
-                  Crear Nuevo Taller
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={toggleAddForm}
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+                  >
+                    <Plus className="-ml-1 mr-2 h-5 w-5" />
+                    Crear Nuevo Taller
+                  </button>
+                  <button
+                    onClick={async () => {
+                      await fetchMetrics();
+                      if (metrics) {
+                        generatePDF(metrics);
+                      }
+                    }}
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-emerald-500 hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-400"
+                  >
+                    <BookOpen className="-ml-1 mr-2 h-5 w-5" />
+                    Reporte PDF
+                  </button>
+                </div>
               )}
               {(showAddForm || showEditForm || showDetailView) && (
                 <button
@@ -554,14 +568,6 @@ const generatePDF = (metrics) => {
               <TallerDetails 
                 taller={selectedTaller} 
                 onEdit={() => handleEditTaller(selectedTaller)}
-                onGenerateReport={async (periodoId) => {
-                  await fetchMetrics(periodoId)
-                  if (metrics) {
-                    generatePDF(metrics)
-                  }
-                }}
-                loadingMetrics={loadingMetrics}
-                errorMetrics={errorMetrics}
               />
             )}
 
@@ -644,7 +650,7 @@ const generatePDF = (metrics) => {
                   )}
                 </div>
 
-                {/* Cargando y errores - AQUÍ ESTÁ EL CAMBIO PRINCIPAL */}
+                {/* Cargando y errores*/}
                 {(loadingTalleres || loadingPreconfiguraciones) && (
                   <LoadingSpinner
                     message={

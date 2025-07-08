@@ -631,8 +631,20 @@ export default function MisTalleresContent() {
       doc.setFontSize(20)
       doc.setTextColor(40, 40, 40)
 
-      // Título principal
-      doc.text(`REPORTE - ${selectedTaller.nombre.toUpperCase()}`, 105, 30, { align: "center" })
+      // Determinar el título según el tipo de reporte
+      let tituloReporte = ""
+      if (tipoReporte === "completo") {
+        tituloReporte = "REPORTE COMPLETO DEL TALLER"
+      } else if (tipoReporte === "alumnos") {
+        tituloReporte = "REPORTE DE ALUMNOS Y PROGRESO"
+      } else if (tipoReporte === "evidencias") {
+        tituloReporte = "REPORTE DE EVIDENCIAS RECIENTES"
+      }
+
+      // Título principal centrado
+      doc.text(tituloReporte, 105, 25, { align: "center" })
+      doc.setFontSize(16)
+      doc.text(selectedTaller.nombre.toUpperCase(), 105, 35, { align: "center" })
 
       // Línea decorativa
       doc.setLineWidth(0.5)
@@ -1220,7 +1232,7 @@ export default function MisTalleresContent() {
         </div>
       )}
 
-      {/* Modal para subir evidencias - MEJORADO */}
+      {/* Modal para subir evidencias */}
       {showEvidenciaModal && selectedTaller && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"

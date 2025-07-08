@@ -1,16 +1,9 @@
 import { useState } from 'react'
 import { BookOpen, Users, Calendar, MapPin, GraduationCap, Edit, FileText, Loader2 } from 'lucide-react'
 import { useTalleres } from '../../../../hooks/useTalleres'
-import { EvidenciasForm } from '../Form/EvidenciasForm'
-import { EvidenciasList } from '../List/EvidenciasList'
 
 export function TallerDetails({ taller, onEdit, onGenerateReport, loadingMetrics, errorMetrics }) {
-  const [showEvidenciasForm, setShowEvidenciasForm] = useState(false)
   const { updateTaller } = useTalleres()
-
-  const handleToggleEvidenciasForm = () => {
-    setShowEvidenciasForm(!showEvidenciasForm)
-  }
 
   return (
     <div className="bg-white shadow overflow-hidden rounded-lg">
@@ -23,18 +16,6 @@ export function TallerDetails({ taller, onEdit, onGenerateReport, loadingMetrics
           </div>
           <div className="flex space-x-2">
             <button
-              onClick={() => onGenerateReport && onGenerateReport(taller.id_periodo)}
-              disabled={loadingMetrics}
-              className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50"
-            >
-              {loadingMetrics ? (
-                <Loader2 className="-ml-0.5 mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <FileText className="-ml-0.5 mr-2 h-4 w-4" />
-              )}
-              {loadingMetrics ? 'Generando...' : 'Reporte PDF'}
-            </button>
-            <button
               onClick={onEdit}
               className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-emerald-700 bg-emerald-100 hover:bg-emerald-200"
             >
@@ -42,11 +23,6 @@ export function TallerDetails({ taller, onEdit, onGenerateReport, loadingMetrics
             </button>
           </div>
         </div>
-        {errorMetrics && (
-          <div className="mt-2 text-red-600 text-sm bg-red-50 p-2 rounded">
-            Error al generar reporte: {errorMetrics}
-          </div>
-        )}
       </div>
 
       {/* Información del taller */}
@@ -79,11 +55,8 @@ export function TallerDetails({ taller, onEdit, onGenerateReport, loadingMetrics
             </dt>
             <dd className="mt-1 text-sm text-gray-900">
               {taller.PeriodoAcademico?.nombre_periodo}
-              {/* {new Date(taller.periodo).toLocaleDateString('es-ES')} */}
             </dd>
           </div>
-
-
 
           <div className="sm:col-span-1">
             <dt className="flex items-center text-sm font-medium text-gray-500">
@@ -122,32 +95,6 @@ export function TallerDetails({ taller, onEdit, onGenerateReport, loadingMetrics
             <dd className="mt-1 text-sm text-gray-900">{taller.TallerDefinido.requisitos}</dd>
           </div>
         </dl>
-      </div>
-
-      {/* Sección de evidencias */}
-      <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium text-gray-900">Evidencias</h3>
-          <button
-            onClick={handleToggleEvidenciasForm}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-emerald-700 bg-emerald-100 hover:bg-emerald-200"
-          >
-            {showEvidenciasForm ? 'Cancelar' : 'Subir evidencias'}
-          </button>
-        </div>
-
-        {showEvidenciasForm ? (
-          <EvidenciasForm
-            tallerId={taller.id}
-            onClose={handleToggleEvidenciasForm}
-          />
-        ) : (
-          <EvidenciasList
-            tallerId={taller.id}
-            evidencias={taller.evidencias}
-            canDelete={true}
-          />
-        )}
       </div>
     </div>
   )
